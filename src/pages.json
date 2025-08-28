@@ -67,6 +67,26 @@
       "style": {
         "navigationBarTitleText": "Alova 请求演示"
       }
+    },
+    {
+      "path": "pages/bind/index",
+      "type": "page",
+      "layout": "default",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "绑定账号"
+      },
+      "notLogin": true
+    },
+    {
+      "path": "pages/login/index",
+      "type": "page",
+      "layout": "default",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "登录中心"
+      },
+      "notLogin": true
     }
   ],
   "subPackages": [

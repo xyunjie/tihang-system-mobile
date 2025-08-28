@@ -2,19 +2,35 @@
  * 用户信息
  */
 export interface IUserInfoVo {
-  id: number
+  userId: string
   username: string
   avatar: string
-  token: string
+  accessToken: string
+  refreshToken?: string
+  expiresTime?: string
 }
 
 /**
- * 登录返回的信息
+ * 登录返回的信息 - 根据API文档更新
  */
 export interface IUserLogin {
-  id: string
+  userId: string
+  accessToken: string
+  refreshToken: string
+  expiresTime: string
+}
+
+/**
+ * 登录请求参数 - 根据API文档定义
+ */
+export interface ILoginForm {
   username: string
-  token: string
+  password: string
+  captchaVerification?: string
+  socialType?: number
+  socialCode?: string
+  socialState?: string
+  socialCodeValid?: boolean
 }
 
 /**
@@ -54,4 +70,19 @@ export interface IUpdatePassword {
   oldPassword: string
   newPassword: string
   confirmPassword: string
+}
+
+export interface IAuthSocialLoginReqVO {
+  type: number
+  code: string
+  state?: string
+}
+
+/**
+ * 绑定账号请求参数
+ */
+export interface IBindAccountForm {
+  type: number
+  code: string
+  state: string
 }

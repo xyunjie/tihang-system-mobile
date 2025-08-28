@@ -1,44 +1,40 @@
-import type { ICaptcha, IUpdateInfo, IUpdatePassword, IUserInfoVo, IUserLogin } from './types/login'
+import type { ICaptcha, IUpdateInfo, IUpdatePassword, IUserInfoVo, IUserLogin, ILoginForm, IAuthSocialLoginReqVO, IBindAccountForm } from './types/login'
 import { http } from '@/http/http'
-
-/**
- * 登录表单
- */
-export interface ILoginForm {
-  username: string
-  password: string
-  code: string
-  uuid: string
-}
 
 /**
  * 获取验证码
  * @returns ICaptcha 验证码
  */
 export function getCode() {
-  return http.get<ICaptcha>('/user/getCode')
+  return http.get<ICaptcha>('/admin-api/system/captcha/get')
 }
 
 /**
- * 用户登录
+ * 用户登录 - 根据API文档更新
  * @param loginForm 登录表单
  */
 export function login(loginForm: ILoginForm) {
-  return http.post<IUserLogin>('/user/login', loginForm)
+  const headers: Record<string, any> = {
+    'tenant-id': 1, // 默认租户ID
+  }
+  
+  return http.post<IUserLogin>('/admin-api/system/auth/login', loginForm, {
+    headers
+  })
 }
 
 /**
  * 获取用户信息
  */
 export function getUserInfo() {
-  return http.get<IUserInfoVo>('/user/info')
+  return http.get<IUserInfoVo>('/admin-api/system/auth/get-permission-info')
 }
 
 /**
  * 退出登录
  */
 export function logout() {
-  return http.get<void>('/user/logout')
+  return http.post<void>('/admin-api/system/auth/logout')
 }
 
 /**
@@ -80,4 +76,21 @@ export function getWxCode() {
  */
 export function wxLogin(data: { code: string }) {
   return http.post<IUserLogin>('/user/wxLogin', data)
+}
+
+/**
+ * 三方登录
+ * @returns Promise 包含登录结果
+ */
+export function socialLogin(data: IAuthSocialLoginReqVO) {
+  return http.post<IUserLogin>('/admin-api/system/auth/social-login', data)
+}
+
+/**
+ * 绑定账号
+ * @param data 绑定账号参数
+ * @returns Promise 包含登录结果
+ */
+export function bindAccount(data: IBindAccountForm) {
+  return http.post<IUserLogin>('/admin-api/system/social-user/bind', data)
 }

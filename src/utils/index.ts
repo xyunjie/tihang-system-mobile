@@ -15,19 +15,28 @@ export function getLastPage() {
  * redirectPath 如 '/pages/demo/base/route-interceptor'
  */
 export function currRoute() {
-  const lastPage = getLastPage()
-  const currRoute = (lastPage as any).$page
-  // console.log('lastPage.$page:', currRoute)
-  // console.log('lastPage.$page.fullpath:', currRoute.fullPath)
-  // console.log('lastPage.$page.options:', currRoute.options)
-  // console.log('lastPage.options:', (lastPage as any).options)
-  // 经过多端测试，只有 fullPath 靠谱，其他都不靠谱
-  const { fullPath } = currRoute as { fullPath: string }
-  // console.log(fullPath)
-  // eg: /pages/login/index?redirect=%2Fpages%2Fdemo%2Fbase%2Froute-interceptor (小程序)
-  // eg: /pages/login/index?redirect=%2Fpages%2Froute-interceptor%2Findex%3Fname%3Dfeige%26age%3D30(h5)
-  return getUrlObj(fullPath)
+  try {
+    const lastPage = getLastPage()
+    const $page = (lastPage as any)?.$page
+    const fullPath = $page && $page.fullPath
+    console.log('page:', $page)
+    if (fullPath) {
+      return getUrlObj(fullPath)
+    }
+    // 如果没有 fullPath，备用方案
+    const route = lastPage.route || ''
+    const options = (lastPage as any).options || {}
+    const path = route.startsWith('/') ? route : `/${route}`
+    const queryString = Object.entries(options)
+      .map(([key, value]) => `${key}=${encodeURIComponent(String(value))}`)
+      .join('&')
+    return getUrlObj(queryString ? `${path}?${queryString}` : path)
+  } catch (error) {
+    console.error('获取当前路由失败:', error)
+    return getUrlObj('/pages/index/index')
+  }
 }
+
 
 function ensureDecodeURIComponent(url: string) {
   if (url.startsWith('%')) {
@@ -64,9 +73,13 @@ export function getUrlObj(url: string) {
  * 如果没有传 key，则表示所有的 pages，如果传递了 key, 则表示通过 key 过滤
  */
 export function getAllPages(key = 'needLogin') {
+  
   // 这里处理主包
   const mainPages = pages
-    .filter(page => !key || page[key])
+    .filter(page => {
+      const hasKey = !key || page[key]
+      return hasKey
+    })
     .map(page => ({
       ...page,
       path: `/${page.path}`,
@@ -79,7 +92,10 @@ export function getAllPages(key = 'needLogin') {
     const { root } = subPageObj
 
     subPageObj.pages
-      .filter(page => !key || page[key])
+      .filter(page => {
+        const hasKey = !key || page[key]
+        return hasKey
+      })
       .forEach((page: { path: string } & Record<string, any>) => {
         subPages.push({
           ...page,
@@ -88,7 +104,6 @@ export function getAllPages(key = 'needLogin') {
       })
   })
   const result = [...mainPages, ...subPages]
-  // console.log(`getAllPages by ${key} result: `, result)
   return result
 }
 
@@ -96,13 +111,16 @@ export function getAllPages(key = 'needLogin') {
  * 得到所有的需要登录的 pages，包括主包和分包的
  * 只得到 path 数组
  */
-export const getNeedLoginPages = (): string[] => getAllPages('needLogin').map(page => page.path)
+export const getNotLoginPages = (): string[] => {
+  const result = getAllPages('notLogin').map(page => page.path)
+  return result
+}
 
 /**
  * 得到所有的需要登录的 pages，包括主包和分包的
  * 只得到 path 数组
  */
-export const needLoginPages: string[] = getAllPages('needLogin').map(page => page.path)
+export const notLoginPages: string[] = getAllPages('notLogin').map(page => page.path)
 
 /**
  * 根据微信小程序当前环境，判断应该获取的 baseUrl

@@ -10,12 +10,16 @@ const customTabbarEnable
 /** tabbarList 里面的 path 从 pages.config.ts 得到 */
 const tabbarList = _tabBarList.map(item => ({ ...item, path: `/${item.pagePath}` }))
 function selectTabBar({ value: index }: { value: number }) {
+  console.log('selectTabBar: ', index)
   const url = tabbarList[index].path
   tabbarStore.setCurIdx(index)
+  
+  // 使用 switchTab 进行跳转，这样可以触发路由拦截器
   if (cacheTabbarEnable) {
     uni.switchTab({ url })
   }
   else {
+    // 对于无缓存模式，使用 navigateTo 保证路由拦截生效
     uni.navigateTo({ url })
   }
 }
