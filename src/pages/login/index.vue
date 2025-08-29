@@ -255,79 +255,6 @@ const handleWxLogin = async () => {
   }
 }
 
-// 获取用户信息授权
-const handleGetUserProfile = () => {
-  // #ifdef MP-WEIXIN
-  uni.getUserProfile({
-    desc: '用于完善用户资料',
-    success: (res) => {
-      console.log('✅ 获取用户信息成功:', res)
-      const userInfo = res.userInfo as any // 使用any类型避免TS类型限制
-      console.log('👤 用户昵称:', userInfo.nickName)
-      console.log('🖼️ 用户头像:', userInfo.avatarUrl)
-      console.log('🚻 用户性别:', userInfo.gender)
-      console.log('🌍 用户地区:', userInfo.country, userInfo.province, userInfo.city)
-      
-      // 可以将用户信息临时存储，等登录成功后再保存
-      uni.setStorageSync('tempUserProfile', {
-        nickName: userInfo.nickName,
-        avatarUrl: userInfo.avatarUrl,
-        gender: userInfo.gender,
-        country: userInfo.country,
-        province: userInfo.province,
-        city: userInfo.city
-      })
-      
-      uni.showToast({
-        title: '授权成功',
-        icon: 'success',
-        duration: 1000
-      })
-    },
-    fail: (err) => {
-      console.error('❌ 获取用户信息失败:', err)
-      uni.showToast({
-        title: '用户取消授权',
-        icon: 'none',
-        duration: 2000
-      })
-    }
-  })
-  // #endif
-}
-
-// 获取手机号授权
-const handleGetPhoneNumber = (e: any) => {
-  console.log('📱 手机号授权回调:', e)
-  
-  if (e.detail.errMsg === 'getPhoneNumber:ok') {
-    // 获取到加密数据，需要发送到后端解密
-    const { encryptedData, iv, cloudID } = e.detail
-    console.log('📱 获取手机号成功:', { encryptedData, iv, cloudID })
-    
-    // 临时存储手机号授权信息
-    uni.setStorageSync('tempPhoneAuth', {
-      encryptedData,
-      iv,
-      cloudID,
-      timestamp: Date.now()
-    })
-    
-    uni.showToast({
-      title: '手机号授权成功',
-      icon: 'success',
-      duration: 1000
-    })
-  } else {
-    console.error('❌ 获取手机号失败:', e.detail.errMsg)
-    uni.showToast({
-      title: '手机号授权失败',
-      icon: 'none',
-      duration: 2000
-    })
-  }
-}
-
 // 一键登录（获取用户信息 + 手机号 + 登录）
 const handleOneClickLogin = async () => {
   if (wxLoading.value) {
@@ -338,40 +265,6 @@ const handleOneClickLogin = async () => {
   
   try {
     console.log('🚀 开始一键登录流程...')
-    
-    // 1. 先获取用户基本信息
-    await new Promise<void>((resolve, reject) => {
-      // #ifdef MP-WEIXIN
-      uni.getUserProfile({
-        desc: '用于完善用户资料',
-        success: (res) => {
-          console.log('✅ 获取用户信息成功:', res)
-          const userInfo = res.userInfo as any // 使用any类型避免TS类型限制
-          
-          // 存储用户基本信息
-          uni.setStorageSync('tempUserProfile', {
-            nickName: userInfo.nickName,
-            avatarUrl: userInfo.avatarUrl,
-            gender: userInfo.gender,
-            country: userInfo.country,
-            province: userInfo.province,
-            city: userInfo.city
-          })
-          
-          resolve()
-        },
-        fail: (err) => {
-          console.error('❌ 获取用户信息失败:', err)
-          reject(new Error('用户取消授权'))
-        }
-      })
-      // #endif
-      
-      // #ifndef MP-WEIXIN
-      // 非微信小程序环境，直接通过
-      resolve()
-      // #endif
-    })
     
     // 2. 执行微信登录
     const result = await userStore.socialLogin()

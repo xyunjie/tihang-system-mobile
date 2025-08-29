@@ -1,4 +1,4 @@
-import type { IUserInfoVo } from '@/api/types/login'
+import type { ISystemUserInfoVo, IUserInfoVo } from '@/api/types/login'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import {
@@ -17,7 +17,7 @@ import type { IBindAccountForm } from '@/api/types/login'
 const userInfoState: IUserInfoVo = {
   userId: "",
   username: '',
-  avatar: '/static/images/default-avatar.png',
+  avatar: '',
   accessToken: '',
   refreshToken: '',
   expiresTime: '',
@@ -54,8 +54,6 @@ export const useUserStore = defineStore(
       uni.removeStorageSync('userInfo')
       uni.removeStorageSync('accessToken')
       uni.removeStorageSync('refreshToken')
-      // 同时清理扩展用户信息
-      clearExtendedUserInfo()
     }
 
     /**
@@ -77,28 +75,10 @@ export const useUserStore = defineStore(
      * @param showToast 是否显示成功提示
      */
     const handleLoginSuccess = (loginData: any, username?: string, showToast = true) => {
-      // 尝试获取临时存储的用户详细信息
-      const tempUserProfile = uni.getStorageSync('tempUserProfile')
-      const tempPhoneAuth = uni.getStorageSync('tempPhoneAuth')
-      
-      let finalAvatar = '/static/images/default-avatar.png'
-      let finalUsername = username || loginData.userId
-      
-      // 如果有微信用户信息，使用微信头像和昵称
-      if (tempUserProfile) {
-        if (tempUserProfile.avatarUrl) {
-          finalAvatar = tempUserProfile.avatarUrl
-        }
-        if (tempUserProfile.nickName && !username) {
-          finalUsername = tempUserProfile.nickName
-        }
-        console.log('📱 使用微信用户信息:', tempUserProfile)
-      }
-      
       const userData: IUserInfoVo = {
         userId: loginData.userId,
-        username: finalUsername,
-        avatar: finalAvatar,
+        username: username || loginData.userId, // 优先使用传入的用户名，否则使用userId
+        avatar: '',
         accessToken: loginData.accessToken,
         refreshToken: loginData.refreshToken,
         expiresTime: loginData.expiresTime,
@@ -107,39 +87,7 @@ export const useUserStore = defineStore(
       console.log('userData', userData)
       setUserInfo(userData)
       saveUserToStorage(userData, loginData.accessToken, loginData.refreshToken)
-      
-      // 保存完整的用户扩展信息
-      if (tempUserProfile || tempPhoneAuth) {
-        const extendedUserInfo = {
-          ...userData,
-          // 微信用户信息
-          ...(tempUserProfile && {
-            wxNickName: tempUserProfile.nickName,
-            wxAvatarUrl: tempUserProfile.avatarUrl,
-            wxGender: tempUserProfile.gender,
-            wxCountry: tempUserProfile.country,
-            wxProvince: tempUserProfile.province,
-            wxCity: tempUserProfile.city,
-          }),
-          // 手机号授权信息（加密）
-          ...(tempPhoneAuth && {
-            phoneAuthData: {
-              encryptedData: tempPhoneAuth.encryptedData,
-              iv: tempPhoneAuth.iv,
-              cloudID: tempPhoneAuth.cloudID,
-              timestamp: tempPhoneAuth.timestamp
-            }
-          })
-        }
-        
-        console.log('💾 保存扩展用户信息:', extendedUserInfo)
-        uni.setStorageSync('extendedUserInfo', extendedUserInfo)
-        
-        // 清理临时数据
-        uni.removeStorageSync('tempUserProfile')
-        uni.removeStorageSync('tempPhoneAuth')
-      }
-      
+      getUserInfo()
       if (showToast) {
         toast.success('登录成功')
       }
@@ -172,8 +120,7 @@ export const useUserStore = defineStore(
     const getUserInfo = async () => {
       const res = await _getUserInfo()
       const userData = res.data
-      setUserInfo(userData)
-      uni.setStorageSync('userInfo', userData)
+      uni.setStorageSync('systemUserInfo', userData)
       // TODO 这里可以增加获取用户路由的方法 根据用户的角色动态生成路由
       return res
     }
@@ -269,15 +216,6 @@ export const useUserStore = defineStore(
     const getExtendedUserInfo = () => {
       return uni.getStorageSync('extendedUserInfo') || null
     }
-    
-    /**
-     * 清理用户扩展信息
-     */
-    const clearExtendedUserInfo = () => {
-      uni.removeStorageSync('extendedUserInfo')
-      uni.removeStorageSync('tempUserProfile')
-      uni.removeStorageSync('tempPhoneAuth')
-    }
 
     return {
       userInfo,
@@ -291,7 +229,6 @@ export const useUserStore = defineStore(
       logout,
       clearUserInfo: removeUserInfo, // 为了保持一致性，添加别名
       getExtendedUserInfo, // 新增：获取扩展用户信息
-      clearExtendedUserInfo, // 新增：清理扩展用户信息
     }
   },
   {

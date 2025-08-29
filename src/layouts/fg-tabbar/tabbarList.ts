@@ -40,6 +40,14 @@ export const tabbarList: TabBar['list'] = [
     // 注意 unocss 的图标需要在 页面上引入一下，或者配置到 unocss.config.ts 的 safelist 中
     iconType: 'unocss',
   },
+  {
+    iconPath: 'static/tabbar/personal.png',
+    selectedIconPath: 'static/tabbar/personalHL.png',
+    pagePath: 'pages/profile/index',
+    text: '我的',
+    icon: 'i-carbon-user',
+    iconType: 'unocss',
+  },
   // {
   //   pagePath: 'pages/my/index',
   //   text: '我的',

@@ -1,4 +1,4 @@
-import type { ICaptcha, IUpdateInfo, IUpdatePassword, IUserInfoVo, IUserLogin, ILoginForm, IAuthSocialLoginReqVO, IBindAccountForm } from './types/login'
+import type { ICaptcha, IUpdateInfo, IUpdatePassword, IUserInfoVo, IUserLogin, ILoginForm, IAuthSocialLoginReqVO, IBindAccountForm, ISystemUserInfoVo } from './types/login'
 import { http } from '@/http/http'
 
 /**
@@ -27,7 +27,7 @@ export function login(loginForm: ILoginForm) {
  * 获取用户信息
  */
 export function getUserInfo() {
-  return http.get<IUserInfoVo>('/admin-api/system/auth/get-permission-info')
+  return http.get<ISystemUserInfoVo>('/admin-api/system/auth/get-user')
 }
 
 /**

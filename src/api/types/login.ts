@@ -24,6 +24,53 @@ export interface IUserInfoVo {
   }
 }
 
+export interface ISystemUserInfoVo {
+   /*用户编号 */
+    id: number;
+
+    /*用户账号 */
+    username: string;
+
+    /*用户昵称 */
+    nickname: string;
+
+    /*备注 */
+    remark: string;
+
+    /*部门ID */
+    deptId: number;
+
+    /*部门名称 */
+    deptName: string;
+
+    /*岗位编号数组 */
+    postIds: Record<string, unknown>[];
+
+    /*用户邮箱 */
+    email: string;
+
+    /*手机号码 */
+    mobile: string;
+
+    /*用户性别，参见 SexEnum 枚举类 */
+    sex: number;
+
+    /*用户头像 */
+    avatar: string;
+
+    /*状态，参见 CommonStatusEnum 枚举类 */
+    status: number;
+
+    /*最后登录 IP */
+    loginIp: string;
+
+    /*最后登录时间 */
+    loginDate: Record<string, unknown>;
+
+    /*创建时间 */
+    createTime: Record<string, unknown>;
+}
+
 /**
  * 登录返回的信息 - 根据API文档更新
  */

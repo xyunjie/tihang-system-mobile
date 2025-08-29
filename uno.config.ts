@@ -39,7 +39,7 @@ export default defineConfig({
       center: 'flex justify-center items-center',
     },
   ],
-  safelist: [],
+  safelist: ['i-carbon-user'],
   rules: [
     [
       'p-safe',
