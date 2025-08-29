@@ -33,14 +33,6 @@
         "iconType": "uiLib"
       },
       {
-        "iconPath": "static/tabbar/example.png",
-        "selectedIconPath": "static/tabbar/exampleHL.png",
-        "pagePath": "pages/about/about",
-        "text": "关于",
-        "icon": "i-carbon-code",
-        "iconType": "unocss"
-      },
-      {
         "iconPath": "static/tabbar/personal.png",
         "selectedIconPath": "static/tabbar/personalHL.png",
         "pagePath": "pages/profile/index",
@@ -58,22 +50,6 @@
       "style": {
         "navigationStyle": "custom",
         "navigationBarTitleText": "首页"
-      }
-    },
-    {
-      "path": "pages/about/about",
-      "type": "page",
-      "layout": "tabbar",
-      "style": {
-        "navigationBarTitleText": "关于"
-      }
-    },
-    {
-      "path": "pages/about/alova",
-      "type": "page",
-      "layout": "default",
-      "style": {
-        "navigationBarTitleText": "Alova 请求演示"
       }
     },
     {
