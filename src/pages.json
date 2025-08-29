@@ -99,6 +99,13 @@
       "notLogin": true
     },
     {
+      "path": "pages/profile/edit",
+      "type": "page",
+      "style": {
+        "navigationBarTitleText": "编辑资料"
+      }
+    },
+    {
       "path": "pages/profile/index",
       "type": "page",
       "layout": "tabbar",

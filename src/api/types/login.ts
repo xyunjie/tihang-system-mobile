@@ -7,7 +7,7 @@ export interface IUserInfoVo {
   avatar: string
   accessToken: string
   refreshToken?: string
-  expiresTime?: string
+  expiresTime?: number // 改为数字类型，存储时间戳
   // 扩展字段：微信用户信息
   wxNickName?: string
   wxAvatarUrl?: string
@@ -24,53 +24,6 @@ export interface IUserInfoVo {
   }
 }
 
-export interface ISystemUserInfoVo {
-   /*用户编号 */
-    id: number;
-
-    /*用户账号 */
-    username: string;
-
-    /*用户昵称 */
-    nickname: string;
-
-    /*备注 */
-    remark: string;
-
-    /*部门ID */
-    deptId: number;
-
-    /*部门名称 */
-    deptName: string;
-
-    /*岗位编号数组 */
-    postIds: Record<string, unknown>[];
-
-    /*用户邮箱 */
-    email: string;
-
-    /*手机号码 */
-    mobile: string;
-
-    /*用户性别，参见 SexEnum 枚举类 */
-    sex: number;
-
-    /*用户头像 */
-    avatar: string;
-
-    /*状态，参见 CommonStatusEnum 枚举类 */
-    status: number;
-
-    /*最后登录 IP */
-    loginIp: string;
-
-    /*最后登录时间 */
-    loginDate: Record<string, unknown>;
-
-    /*创建时间 */
-    createTime: Record<string, unknown>;
-}
-
 /**
  * 登录返回的信息 - 根据API文档更新
  */
@@ -78,7 +31,17 @@ export interface IUserLogin {
   userId: string
   accessToken: string
   refreshToken: string
-  expiresTime: string
+  expiresTime: number // 改为数字类型，存储时间戳
+}
+
+/**
+ * Token刷新响应
+ */
+export interface ITokenRefreshResponse {
+  userId: string
+  accessToken: string
+  refreshToken: string
+  expiresTime: number // 时间戳
 }
 
 /**
@@ -102,6 +65,7 @@ export interface ICaptcha {
   uuid: string
   image: string
 }
+
 /**
  * 上传成功的信息
  */
@@ -114,23 +78,6 @@ export interface IUploadSuccessInfo {
   fileType: string
   fileBusinessType: string
   fileSize: number
-}
-/**
- * 更新用户信息
- */
-export interface IUpdateInfo {
-  id: number
-  name: string
-  sex: string
-}
-/**
- * 更新用户信息
- */
-export interface IUpdatePassword {
-  id: number
-  oldPassword: string
-  newPassword: string
-  confirmPassword: string
 }
 
 export interface IAuthSocialLoginReqVO {

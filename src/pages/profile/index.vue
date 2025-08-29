@@ -10,10 +10,10 @@
 </route>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useUserStore } from '@/store'
-import { getUserInfo as _getUserInfo } from '@/api/login'
-import type { ISystemUserInfoVo } from '@/api/types/login'
+import { getUserInfo as _getUserInfo } from '@/api/user'
+import type { ISystemUserInfoVo } from '@/api/types/user'
 
 const userStore = useUserStore()
 
@@ -26,7 +26,6 @@ let safeAreaInsets
 let systemInfo
 
 // #ifdef MP-WEIXIN
-// 微信小程序使用新的API
 systemInfo = uni.getWindowInfo()
 safeAreaInsets = systemInfo.safeArea
   ? {
@@ -39,7 +38,6 @@ safeAreaInsets = systemInfo.safeArea
 // #endif
 
 // #ifndef MP-WEIXIN
-// 其他平台继续使用uni API
 systemInfo = uni.getSystemInfoSync()
 safeAreaInsets = systemInfo.safeAreaInsets
 // #endif
@@ -48,11 +46,27 @@ safeAreaInsets = systemInfo.safeAreaInsets
 const systemUserInfo = ref<ISystemUserInfoVo | null>(null)
 const loading = ref(false)
 
-// 扩展用户信息
-const extendedUserInfo = computed(() => {
-  const extended = uni.getStorageSync('extendedUserInfo')
-  return extended || null
-})
+// 扩展用户信息 - 不再使用
+// const extendedUserInfo = computed(() => {
+//   const extended = uni.getStorageSync('extendedUserInfo')
+//   return extended || null
+// })
+
+// 快捷操作列表
+const quickActions = [
+  { icon: '👤', label: '编辑资料', color: 'bg-blue-500', handler: editProfile },
+  { icon: '🔐', label: '账号安全', color: 'bg-green-500', handler: () => showToast('账号安全') },
+  { icon: '📋', label: '使用记录', color: 'bg-purple-500', handler: () => showToast('使用记录') },
+  { icon: '🎯', label: '帮助反馈', color: 'bg-orange-500', handler: () => showToast('帮助反馈') }
+]
+
+// 通用提示函数
+const showToast = (title: string) => {
+  uni.showToast({
+    title: `${title}功能开发中`,
+    icon: 'none'
+  })
+}
 
 // 格式化性别
 const formatSex = (sex: number) => {
@@ -63,13 +77,20 @@ const formatSex = (sex: number) => {
   }
 }
 
-// 格式化状态
-const formatStatus = (status: number) => {
-  switch (status) {
-    case 0: return '正常'
-    case 1: return '禁用'
-    default: return '未知'
+// 格式化角色列表
+const formatRoles = (roles: { id: number; name: string }[]) => {
+  if (!roles || roles.length === 0) return '暂无角色'
+  return roles.map(role => role.name).join('、')
+}
+
+// 格式化部门信息（支持层级显示）
+const formatDept = (dept: { id: number; name: string; parentId: number }) => {
+  if (!dept) return '暂无部门'
+  // 如果有父部门ID且不为0，表示是子部门
+  if (dept.parentId && dept.parentId !== 0) {
+    return `${dept.name} (子部门)`
   }
+  return dept.name
 }
 
 // 获取详细用户信息
@@ -142,158 +163,216 @@ function handleLogout() {
 
 // 编辑个人信息
 function editProfile() {
-  uni.showToast({
-    title: '功能开发中',
-    icon: 'none'
+  uni.navigateTo({
+    url: '/pages/profile/edit'
   })
 }
 
-// 查看微信扩展信息
-function showWxInfo() {
-  const wxInfo = extendedUserInfo.value
-  if (wxInfo) {
-    let content = '微信扩展信息：\n'
-    
-    if (wxInfo.wxNickName) {
-      content += `微信昵称：${wxInfo.wxNickName}\n`
-    }
-    if (wxInfo.wxGender !== undefined) {
-      const gender = wxInfo.wxGender === 1 ? '男' : wxInfo.wxGender === 2 ? '女' : '未知'
-      content += `性别：${gender}\n`
-    }
-    if (wxInfo.wxCountry) {
-      content += `地区：${wxInfo.wxCountry} ${wxInfo.wxProvince} ${wxInfo.wxCity}\n`
-    }
-    if (wxInfo.phoneAuthData) {
-      content += `手机号：已授权获取\n`
-    }
-    
-    uni.showModal({
-      title: '微信信息',
-      content: content,
-      showCancel: false
-    })
-  } else {
-    uni.showToast({
-      title: '暂无微信扩展信息',
-      icon: 'none'
-    })
+// 功能菜单列表
+const menuItems = [
+  {
+    category: '个人管理',
+    items: [
+      { icon: '👤', name: '个人资料', desc: '管理个人信息', action: editProfile },
+      { icon: '🔐', name: '账号安全', desc: '密码、登录记录', action: () => showToast('账号安全') },
+      { icon: '🔔', name: '消息通知', desc: '通知设置', action: () => showToast('消息通知') }
+    ]
+  },
+  {
+    category: '应用设置',
+    items: [
+      { icon: '🎨', name: '主题设置', desc: '界面主题切换', action: () => showToast('主题设置') },
+      { icon: '🌐', name: '语言设置', desc: '多语言切换', action: () => showToast('语言设置') },
+      { icon: '📱', name: '系统设置', desc: '应用偏好设置', action: () => showToast('系统设置') }
+    ]
+  },
+  {
+    category: '其他',
+    items: [
+      { icon: '❓', name: '帮助中心', desc: '使用帮助与FAQ', action: () => showToast('帮助中心') },
+      { icon: '📝', name: '意见反馈', desc: '问题反馈与建议', action: () => showToast('意见反馈') },
+      { icon: 'ℹ️', name: '关于我们', desc: '版本信息', action: () => showToast('关于我们') },
+      { icon: '🚪', name: '退出登录', desc: '安全退出账号', action: handleLogout, danger: true }
+    ]
   }
-}
-
-// 设置项列表
-const settingItems = [
-  { icon: '📝', name: '编辑个人信息', action: editProfile, show: true },
-  { icon: '🚪', name: '退出登录', action: handleLogout, danger: true, show: true }
 ]
 </script>
 
 <template>
-  <view class="bg-gray-50 min-h-screen" :style="{ paddingTop: `${safeAreaInsets?.top || 0}px` }">
-    <!-- 头部用户信息卡片 -->
-    <view class="mx-4 mt-5 mb-6 p-8 rounded-4 text-white overflow-hidden relative" style="background: linear-gradient(135deg, #4A90E2 0%, #2E5BBA 100%); box-shadow: 0 10rpx 30rpx rgba(74, 144, 226, 0.3);">
-      <view class="flex items-center">
-        <!-- 用户头像 -->
-        <image 
-          :src="systemUserInfo?.avatar || '/static/images/default-avatar.png'" 
-          class="w-20 h-20 rounded-full mr-1 border-2 border-white border-opacity-30"
-          mode="aspectFit"
-        />
+  <view class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen" :style="{ paddingTop: `${safeAreaInsets?.top || 0}px` }">
+    <!-- 用户信息卡片 -->
+    <view class="relative mx-4 pt-6 pb-8">
+      <view class="bg-white rounded-3xl shadow-lg p-6 relative overflow-hidden">
+        <!-- 装饰性背景 -->
+        <view class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-blue-100 to-transparent rounded-full opacity-60 -translate-y-8 translate-x-8"></view>
+        <view class="absolute bottom-0 left-0 w-20 h-20 bg-gradient-to-tr from-purple-100 to-transparent rounded-full opacity-40 -translate-x-4 translate-y-4"></view>
         
-        <!-- 用户基本信息 -->
-        <view class="flex-1">
-          <view class="text-lg font-bold mb-1">{{ systemUserInfo.username || '未登录' }}</view>
-          <view v-if="systemUserInfo" class="text-sm text-white text-opacity-80 mb-2">
-            {{ systemUserInfo.nickname  }}
+        <view class="relative z-10">
+          <!-- 用户头像和基本信息 -->
+          <view class="flex items-center mb-6">
+            <view class="relative">
+              <image 
+                :src="systemUserInfo.avatar || '/static/images/default-avatar.png'" 
+                class="w-16 h-16 rounded-2xl border-2 border-white shadow-md"
+                mode="aspectFill"
+              />
+              <view class="absolute -bottom-1 -right-1 w-5 h-5 bg-green-400 rounded-full border-2 border-white"></view>
+            </view>
+            
+            <view class="flex-1 ml-4">
+              <view class="text-gray-800 text-lg font-bold mb-1">{{ systemUserInfo.username || '未登录' }}</view>
+              <view v-if="systemUserInfo" class="text-gray-500 text-sm">
+                {{ systemUserInfo.nickname || '暂无昵称' }}
+              </view>
+              <view v-if="systemUserInfo" class="text-xs text-gray-400 mt-1">
+                {{ formatDept(systemUserInfo.dept) }}
+              </view>
+            </view>
+            
+            <!-- 刷新按钮 -->
+            <view 
+              class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center active:bg-gray-200 transition-colors" 
+              @click="fetchUserInfo"
+            >
+              <text class="text-gray-600 text-base" :class="{ 'animate-spin': loading }">🔄</text>
+            </view>
           </view>
-        </view>
-        
-        <!-- 刷新按钮 -->
-        <view class="p-3 cursor-pointer" @click="fetchUserInfo">
-          <text class="text-lg text-white text-opacity-80 transition-transform" :class="{ 'animate-spin': loading }">🔄</text>
+          
+          <!-- 账号状态标签 -->
+          <view class="flex gap-2">
+            <view class="px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">
+              正常状态
+            </view>
+            <view v-if="systemUserInfo?.roles && systemUserInfo.roles.length > 0" class="px-3 py-1 bg-purple-100 text-purple-700 text-xs rounded-full font-medium">
+              {{ systemUserInfo.roles.length }}个角色
+            </view>
+          </view>
         </view>
       </view>
     </view>
 
-    <!-- 详细信息区域 -->
-    <view v-if="systemUserInfo" class="mx-4 mb-6 bg-white rounded-4 overflow-hidden">
-      <view class="bg-gray-50 px-6 py-4 text-base font-bold text-gray-800 border-b border-gray-100">📋 详细信息</view>
+    <!-- 快捷操作 -->
+    <view class="mx-4 mb-6">
+      <view class="grid grid-cols-4 gap-3">
+        <view 
+          v-for="(action, index) in quickActions" 
+          :key="index"
+          class="bg-white rounded-2xl p-4 text-center shadow-sm active:scale-95 transition-all"
+          @click="action.handler"
+        >
+          <view class="w-10 h-10 rounded-xl mx-auto mb-2 flex items-center justify-center text-white" :class="action.color">
+            <text class="text-lg">{{ action.icon }}</text>
+          </view>
+          <view class="text-gray-700 text-xs font-medium">{{ action.label }}</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 个人信息详情 -->
+    <view class="mx-4 mb-6 bg-white rounded-2xl shadow-sm overflow-hidden" v-if="systemUserInfo">
+      <view class="px-4 py-3 border-b border-gray-100">
+        <view class="text-gray-800 text-base font-semibold">📋 个人信息</view>
+      </view>
       
       <view class="p-4">
-        <view class="flex justify-between items-center py-3 border-b border-gray-50">
-          <view class="text-gray-600 text-sm min-w-24">用户账号</view>
-          <view class="text-gray-800 text-sm text-right flex-1">{{ systemUserInfo.username }}</view>
-        </view>
-        
-        <view class="flex justify-between items-center py-3 border-b border-gray-50">
-          <view class="text-gray-600 text-sm min-w-24">用户昵称</view>
-          <view class="text-gray-800 text-sm text-right flex-1">{{ systemUserInfo.nickname || '未设置' }}</view>
-        </view>
-        
-        <view class="flex justify-between items-center py-3 border-b border-gray-50">
-          <view class="text-gray-600 text-sm min-w-24">性别</view>
-          <view class="text-gray-800 text-sm text-right flex-1">{{ formatSex(systemUserInfo.sex) }}</view>
-        </view>
-        
-        <view class="flex justify-between items-center py-3 border-b border-gray-50">
-          <view class="text-gray-600 text-sm min-w-24">手机号</view>
-          <view class="text-gray-800 text-sm text-right flex-1">{{ systemUserInfo.mobile || '未设置' }}</view>
-        </view>
-        
-        <view class="flex justify-between items-center py-3 border-b border-gray-50">
-          <view class="text-gray-600 text-sm min-w-24">邮箱</view>
-          <view class="text-gray-800 text-sm text-right flex-1 break-all">{{ systemUserInfo.email || '未设置' }}</view>
-        </view>
-        
-        <view class="flex justify-between items-center py-3 border-b border-gray-50">
-          <view class="text-gray-600 text-sm min-w-24">部门</view>
-          <view class="text-gray-800 text-sm text-right flex-1">{{ systemUserInfo.deptName || '未分配' }}</view>
-        </view>
-        
-        <view class="flex justify-between items-center py-3 border-b border-gray-50">
-          <view class="text-gray-600 text-sm min-w-24">状态</view>
-          <view class="text-sm text-right flex-1" :class="systemUserInfo.status === 0 ? 'text-green-500' : 'text-red-500'">
-            {{ formatStatus(systemUserInfo.status) }}
+        <view class="space-y-3">
+          <view class="flex items-center justify-between py-2">
+            <view class="text-gray-600 text-sm">用户编号</view>
+            <view class="text-gray-800 text-sm font-medium">{{ systemUserInfo.id }}</view>
+          </view>
+          
+          <view class="flex items-center justify-between py-2">
+            <view class="text-gray-600 text-sm">用户账号</view>
+            <view class="text-gray-800 text-sm font-medium">{{ systemUserInfo.username }}</view>
+          </view>
+          
+          <view class="flex items-center justify-between py-2">
+            <view class="text-gray-600 text-sm">用户昵称</view>
+            <view class="text-gray-800 text-sm font-medium">{{ systemUserInfo.nickname || '未设置' }}</view>
+          </view>
+          
+          <view class="flex items-center justify-between py-2">
+            <view class="text-gray-600 text-sm">性别</view>
+            <view class="text-gray-800 text-sm font-medium">{{ formatSex(systemUserInfo.sex) }}</view>
+          </view>
+          
+          <view class="flex items-center justify-between py-2" v-if="systemUserInfo.mobile">
+            <view class="text-gray-600 text-sm">手机号</view>
+            <view class="text-gray-800 text-sm font-medium">{{ systemUserInfo.mobile }}</view>
+          </view>
+          
+          <view class="flex items-center justify-between py-2" v-if="systemUserInfo.email">
+            <view class="text-gray-600 text-sm">邮箱</view>
+            <view class="text-gray-800 text-sm font-medium break-all">{{ systemUserInfo.email }}</view>
+          </view>
+          
+          <view class="flex items-center justify-between py-2">
+            <view class="text-gray-600 text-sm">所属部门</view>
+            <view class="text-gray-800 text-sm font-medium">{{ formatDept(systemUserInfo.dept) }}</view>
+          </view>
+          
+          <view class="flex items-start justify-between py-2" v-if="systemUserInfo.roles && systemUserInfo.roles.length > 0">
+            <view class="text-gray-600 text-sm pt-1">用户角色</view>
+            <view class="text-gray-800 text-sm font-medium text-right flex-1 ml-4">
+              <view v-if="systemUserInfo.roles.length === 1" class="inline-block">
+                {{ systemUserInfo.roles[0].name }}
+              </view>
+              <view v-else class="space-y-1">
+                <view 
+                  v-for="(role, index) in systemUserInfo.roles" 
+                  :key="role.id" 
+                  class="inline-block px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded-md mr-1 mb-1"
+                >
+                  {{ role.name }}
+                </view>
+              </view>
+            </view>
+          </view>
+          
+          <view class="flex items-center justify-between py-2" v-if="systemUserInfo.loginIp">
+            <view class="text-gray-600 text-sm">最后登录IP</view>
+            <view class="text-gray-800 text-sm font-medium">{{ systemUserInfo.loginIp }}</view>
           </view>
         </view>
-        
-        <view class="flex justify-between items-center py-3" v-if="systemUserInfo.loginIp">
-          <view class="text-gray-600 text-sm min-w-24">最后登录IP</view>
-          <view class="text-gray-800 text-sm text-right flex-1">{{ systemUserInfo.loginIp }}</view>
-        </view>
       </view>
     </view>
 
-    <!-- 功能设置区域 -->
-    <view class="mx-4 mb-6 bg-white rounded-4 overflow-hidden">
-      <view class="bg-gray-50 px-6 py-4 text-base font-bold text-gray-800 border-b border-gray-100">⚙️ 功能设置</view>
+    <!-- 功能菜单 -->
+    <view v-for="(category, categoryIndex) in menuItems" :key="categoryIndex" class="mx-4 mb-4 bg-white rounded-2xl shadow-sm overflow-hidden">
+      <view class="px-4 py-3 border-b border-gray-100">
+        <view class="text-gray-800 text-base font-semibold">{{ category.category }}</view>
+      </view>
       
-      <view>
+      <view class="p-2">
         <view 
-          v-for="(item, index) in settingItems" 
+          v-for="(item, index) in category.items" 
           :key="index"
-          v-show="item.show !== false"
-          class="flex items-center px-6 py-4 bg-white border-b border-gray-50 transition-colors active:bg-gray-50" 
-          :class="{ 'text-red-500': item.danger }"
+          class="flex items-center px-3 py-3 mx-1 my-1 rounded-xl transition-colors active:bg-gray-50" 
           @click="item.action"
         >
-          <view class="text-lg mr-4 w-8 text-center">{{ item.icon }}</view>
-          <view class="flex-1 text-base" :class="item.danger ? 'text-red-500' : 'text-gray-800'">{{ item.name }}</view>
-          <view class="text-gray-400 text-sm">></view>
+          <view class="text-lg mr-3">{{ item.icon }}</view>
+          <view class="flex-1">
+            <view class="text-gray-800 text-sm font-medium" :class="{ 'text-red-500': item.danger }">{{ item.name }}</view>
+            <view class="text-gray-500 text-xs mt-1" v-if="item.desc">{{ item.desc }}</view>
+          </view>
+          <view class="text-gray-400 text-sm">›</view>
         </view>
       </view>
-    </view>
-
-    <!-- 加载状态 -->
-    <view v-if="loading && !systemUserInfo" class="flex justify-center items-center py-20">
-      <view class="text-gray-600 text-base">📋 正在获取用户信息...</view>
     </view>
 
     <!-- 未登录状态 -->
     <view v-if="!userStore.userInfo.accessToken" class="flex flex-col items-center justify-center py-20">
-      <view class="text-5xl mb-4">🔐</view>
-      <view class="text-gray-600 text-base mb-8">请先登录</view>
-      <button class="bg-blue-500 text-white border-none rounded-3xl px-8 py-3 text-base active:opacity-80" @click="gotoLogin">前往登录</button>
+      <view class="w-20 h-20 bg-blue-100 rounded-3xl flex items-center justify-center mb-6">
+        <text class="text-3xl">🔐</text>
+      </view>
+      <view class="text-gray-600 text-lg font-medium mb-2">请先登录</view>
+      <view class="text-gray-400 text-sm mb-8">登录后即可查看个人信息</view>
+      <button 
+        class="bg-blue-500 text-white border-none rounded-2xl px-8 py-3 text-base font-medium active:bg-blue-600 transition-colors" 
+        @click="gotoLogin"
+      >
+        立即登录
+      </button>
     </view>
   </view>
 </template>

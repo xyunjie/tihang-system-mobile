@@ -1,18 +1,21 @@
-import type { ISystemUserInfoVo, IUserInfoVo } from '@/api/types/login'
+import type { IUserInfoVo } from '@/api/types/login'
+import type { ISystemUserInfoVo } from '@/api/types/user'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import {
-  getUserInfo as _getUserInfo,
   login as _login,
   logout as _logout,
   wxLogin as _wxLogin,
   socialLogin as _socialLogin,
   bindAccount as _bindAccount,
+  refreshToken as _refreshToken,
   getWxCode,
 } from '@/api/login'
+import { getUserInfo as _getUserInfo } from '@/api/user'
 import { toast } from '@/utils/toast'
 import { generateUUID } from '@/utils/uuid'
 import type { IBindAccountForm } from '@/api/types/login'
+
 // 初始化状态
 const userInfoState: IUserInfoVo = {
   userId: "",
@@ -20,7 +23,7 @@ const userInfoState: IUserInfoVo = {
   avatar: '',
   accessToken: '',
   refreshToken: '',
-  expiresTime: '',
+  expiresTime: 0, // 改为数字类型
 }
 
 export const useUserStore = defineStore(
@@ -54,6 +57,10 @@ export const useUserStore = defineStore(
       uni.removeStorageSync('userInfo')
       uni.removeStorageSync('accessToken')
       uni.removeStorageSync('refreshToken')
+      uni.removeStorageSync('expiresTime')
+      uni.removeStorageSync('systemUserInfo')
+      uni.removeStorageSync('extendedUserInfo')
+      console.log('清理用户信息完成')
     }
 
     /**
@@ -61,11 +68,127 @@ export const useUserStore = defineStore(
      * @param userData 用户信息
      * @param accessToken 访问令牌
      * @param refreshToken 刷新令牌
+     * @param expiresTime 过期时间戳
      */
-    const saveUserToStorage = (userData: IUserInfoVo, accessToken: string, refreshToken: string) => {
-      uni.setStorageSync('userInfo', userData)
+    const saveUserToStorage = (userData: IUserInfoVo, accessToken: string, refreshToken: string, expiresTime?: number) => {
+      const finalExpiresTime = expiresTime || userData.expiresTime || 0
+      const updatedUserData = {
+        ...userData,
+        accessToken,
+        refreshToken,
+        expiresTime: finalExpiresTime
+      }
+      
+      uni.setStorageSync('userInfo', updatedUserData)
       uni.setStorageSync('accessToken', accessToken)
       uni.setStorageSync('refreshToken', refreshToken)
+      uni.setStorageSync('expiresTime', finalExpiresTime)
+      
+      console.log('保存用户信息到本地:', {
+        userId: userData.userId,
+        expiresTime: finalExpiresTime,
+        expiresDate: new Date(finalExpiresTime)
+      })
+    }
+
+    /**
+     * 检查Token是否过期
+     * @param buffer 缓冲时间（毫秒），默认提前5分钟
+     */
+    const isTokenExpired = (buffer: number = 5 * 60 * 1000): boolean => {
+      const expiresTime = userInfo.value.expiresTime || uni.getStorageSync('expiresTime') || 0
+      if (!expiresTime) return true
+      
+      const now = Date.now()
+      const isExpired = now >= (expiresTime - buffer)
+      
+      console.log('Token过期检查:', {
+        now: new Date(now),
+        expiresTime: new Date(expiresTime),
+        buffer: buffer / 1000 / 60 + '分钟',
+        isExpired
+      })
+      
+      return isExpired
+    }
+
+    /**
+     * 刷新AccessToken
+     */
+    const refreshAccessToken = async (): Promise<boolean> => {
+      try {
+        const currentRefreshToken = userInfo.value.refreshToken || uni.getStorageSync('refreshToken')
+        
+        if (!currentRefreshToken) {
+          console.error('没有RefreshToken，无法刷新')
+          return false
+        }
+        
+        console.log('开始刷新AccessToken...')
+        const res = await _refreshToken(currentRefreshToken)
+        
+        if (res.code === 0) {
+          const newTokenData = res.data
+          
+          // 更新用户信息
+          const updatedUserInfo: IUserInfoVo = {
+            ...userInfo.value,
+            accessToken: newTokenData.accessToken,
+            refreshToken: newTokenData.refreshToken,
+            expiresTime: newTokenData.expiresTime
+          }
+          
+          setUserInfo(updatedUserInfo)
+          saveUserToStorage(
+            updatedUserInfo, 
+            newTokenData.accessToken, 
+            newTokenData.refreshToken, 
+            newTokenData.expiresTime
+          )
+          
+          console.log('AccessToken刷新成功', {
+            newExpiresTime: new Date(newTokenData.expiresTime)
+          })
+          
+          return true
+        } else {
+          console.error('Token刷新失败:', res.msg)
+          return false
+        }
+      } catch (error) {
+        console.error('Token刷新异常:', error)
+        return false
+      }
+    }
+
+    /**
+     * 检查并刷新Token（如果需要）
+     * @returns Promise<boolean> 返回true表示Token有效，false表示需要重新登录
+     */
+    const ensureTokenValid = async (): Promise<boolean> => {
+      // 检查是否有用户信息
+      if (!userInfo.value.accessToken && !uni.getStorageSync('accessToken')) {
+        console.log('没有accessToken，需要登录')
+        return false
+      }
+      
+      // 检查Token是否过期
+      if (!isTokenExpired()) {
+        console.log('Token仍然有效')
+        return true
+      }
+      
+      console.log('Token即将过期，尝试刷新...')
+      const refreshSuccess = await refreshAccessToken()
+      
+      if (!refreshSuccess) {
+        console.log('Token刷新失败，需要重新登录')
+        // 清理本地数据
+        removeUserInfo()
+        return false
+      }
+      
+      return true
     }
 
     /**
@@ -84,9 +207,13 @@ export const useUserStore = defineStore(
         expiresTime: loginData.expiresTime,
       }
       
-      console.log('userData', userData)
+      console.log('登录成功数据:', {
+        userId: userData.userId,
+        expiresTime: new Date(loginData.expiresTime)
+      })
+      
       setUserInfo(userData)
-      saveUserToStorage(userData, loginData.accessToken, loginData.refreshToken)
+      saveUserToStorage(userData, loginData.accessToken, loginData.refreshToken, loginData.expiresTime)
       getUserInfo()
       if (showToast) {
         toast.success('登录成功')
@@ -229,6 +356,10 @@ export const useUserStore = defineStore(
       logout,
       clearUserInfo: removeUserInfo, // 为了保持一致性，添加别名
       getExtendedUserInfo, // 新增：获取扩展用户信息
+      // Token管理方法
+      isTokenExpired,
+      refreshAccessToken,
+      ensureTokenValid,
     }
   },
   {

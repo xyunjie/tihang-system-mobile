@@ -12,10 +12,14 @@ export type CustomRequestOptions = UniApp.RequestOptions & {
 // 请求基准地址
 const baseUrl = getEnvBaseUrl()
 
+
+
 // 拦截器配置
 const httpInterceptor = {
   // 拦截前触发
   invoke(options: CustomRequestOptions) {
+    console.log('🚀 HTTP拦截器开始处理请求:', options.url)
+    
     // 接口请求支持通过 query 参数配置 queryString
     if (options.query) {
       const queryStr = stringifyQuery(options.query)
@@ -51,12 +55,33 @@ const httpInterceptor = {
       platform, // 可选，与 uniapp 定义的平台一致，告诉后台来源
       ...options.header,
     }
-    // 3. 添加 token 请求头标识
+    
+    // 3. 简化token处理逻辑（同步）
     const userStore = useUserStore()
-    const { accessToken } = userStore.userInfo
-    if (accessToken) {
-      options.header.Authorization = `Bearer ${accessToken}`
+    const { accessToken, refreshToken } = userStore.userInfo
+    const storedRefreshToken = uni.getStorageSync('refreshToken')
+    const storedAccessToken = uni.getStorageSync('accessToken')
+    
+    // 获取有效的token
+    const currentRefreshToken = refreshToken || storedRefreshToken
+    const currentAccessToken = accessToken || storedAccessToken
+    
+    console.log('🔍 HTTP拦截器 - Token状态:', {
+      hasRefreshToken: !!currentRefreshToken,
+      hasAccessToken: !!currentAccessToken,
+      url: options.url
+    })
+    
+    // 如果有accessToken，直接添加到请求头
+    if (currentAccessToken) {
+      options.header.Authorization = `Bearer ${currentAccessToken}`
     }
+    
+    console.log('✅ HTTP拦截器处理完成，准备发送请求:', {
+      url: options.url,
+      method: options.method,
+      hasAuth: !!options.header.Authorization
+    })
   },
 }
 
@@ -66,5 +91,8 @@ export const requestInterceptor = {
     uni.addInterceptor('request', httpInterceptor)
     // 拦截 uploadFile 文件上传
     uni.addInterceptor('uploadFile', httpInterceptor)
+    
+    // 注意：uni-app不支持响应拦截器，所以401处理在http.ts中处理
+    console.log('请求拦截器已注册，支持自动Token刷新')
   },
 }

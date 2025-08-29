@@ -1,4 +1,4 @@
-import type { ICaptcha, IUpdateInfo, IUpdatePassword, IUserInfoVo, IUserLogin, ILoginForm, IAuthSocialLoginReqVO, IBindAccountForm, ISystemUserInfoVo } from './types/login'
+import type { ICaptcha, IUserInfoVo, IUserLogin, ILoginForm, IAuthSocialLoginReqVO, IBindAccountForm, ITokenRefreshResponse } from './types/login'
 import { http } from '@/http/http'
 
 /**
@@ -24,10 +24,15 @@ export function login(loginForm: ILoginForm) {
 }
 
 /**
- * 获取用户信息
+ * 刷新Token
+ * @param refreshToken 刷新令牌
  */
-export function getUserInfo() {
-  return http.get<ISystemUserInfoVo>('/admin-api/system/auth/get-user')
+export function refreshToken(refreshToken: string) {
+  return http.post<ITokenRefreshResponse>('/admin-api/system/auth/refresh-token', {}, {
+    params: {
+      refreshToken
+    }
+  })
 }
 
 /**
@@ -35,20 +40,6 @@ export function getUserInfo() {
  */
 export function logout() {
   return http.post<void>('/admin-api/system/auth/logout')
-}
-
-/**
- * 修改用户信息
- */
-export function updateInfo(data: IUpdateInfo) {
-  return http.post('/user/updateInfo', data)
-}
-
-/**
- * 修改用户密码
- */
-export function updateUserPassword(data: IUpdatePassword) {
-  return http.post('/user/updatePassword', data)
 }
 
 /**
@@ -64,10 +55,6 @@ export function getWxCode() {
     })
   })
 }
-
-/**
- * 微信登录参数
- */
 
 /**
  * 微信登录
