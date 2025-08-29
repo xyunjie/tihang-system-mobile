@@ -3,51 +3,52 @@ import { useUserStore } from '@/store'
 
 export function http<T>(options: CustomRequestOptions) {
   // 1. 返回 Promise 对象
-  return new Promise<IResData<T>>(async (resolve, reject) => {
+  return new Promise<IResData<T>>((resolve, reject) => {
     // 在发送请求前检查token
     const userStore = useUserStore()
     const { refreshToken } = userStore.userInfo
     const storedRefreshToken = uni.getStorageSync('refreshToken')
     const currentRefreshToken = refreshToken || storedRefreshToken
-    
+
     // 如果有refreshToken，检查并刷新token
-    if (currentRefreshToken) {
+    if (currentRefreshToken && !options.url.includes('/admin-api/system/auth/refresh-token')) {
       try {
-        const isValid = await userStore.ensureTokenValid()
+        const isValid = userStore.ensureTokenValid()
         if (!isValid) {
           console.log('❌ Token无效，跳转到登录页')
           uni.reLaunch({
-            url: '/pages/login/index'
+            url: '/pages/login/index',
           })
           reject(new Error('登录过期，请重新登录'))
           return
         }
-        
+
         // 更新请求头中的token
         const currentAccessToken = userStore.userInfo.accessToken || uni.getStorageSync('accessToken')
         if (currentAccessToken) {
           options.header = {
             ...options.header,
-            Authorization: `Bearer ${currentAccessToken}`
+            Authorization: `Bearer ${currentAccessToken}`,
           }
         }
-      } catch (error) {
+      }
+      catch (error) {
         console.log('❌ Token刷新失败:', error)
         reject(error)
         return
       }
     }
-    
+
     console.log('🌐 发送请求:', {
       url: options.url,
       method: options.method,
       data: options.data,
       header: options.header,
-      timeout: options.timeout
+      timeout: options.timeout,
     })
-    
+
     const startTime = Date.now()
-    
+
     uni.request({
       ...options,
       dataType: 'json',
@@ -60,11 +61,11 @@ export function http<T>(options: CustomRequestOptions) {
         console.log('📨 收到响应:', {
           url: options.url,
           statusCode: res.statusCode,
-          duration: duration + 'ms',
+          duration: `${duration}ms`,
           dataType: typeof res.data,
-          dataPreview: JSON.stringify(res.data).slice(0, 200)
+          dataPreview: JSON.stringify(res.data).slice(0, 200),
         })
-        
+
         // 状态码 2xx，参考 axios 的设计
         if (res.statusCode >= 200 && res.statusCode < 300) {
           // 2.1 提取核心数据 res.data
@@ -91,19 +92,20 @@ export function http<T>(options: CustomRequestOptions) {
         const duration = Date.now() - startTime
         console.log('❌ 网络错误:', {
           url: options.url,
-          duration: duration + 'ms',
+          duration: `${duration}ms`,
           error: err,
           errMsg: err.errMsg,
-          statusCode: (err as any).statusCode
+          statusCode: (err as any).statusCode,
         })
-        
+
         // 检查是否是超时
         if (err.errMsg && err.errMsg.includes('timeout')) {
           uni.showToast({
             icon: 'none',
             title: '请求超时，请检查网络',
           })
-        } else {
+        }
+        else {
           uni.showToast({
             icon: 'none',
             title: '网络错误，换个网络试试',

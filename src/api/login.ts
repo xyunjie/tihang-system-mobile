@@ -1,4 +1,4 @@
-import type { ICaptcha, IUserInfoVo, IUserLogin, ILoginForm, IAuthSocialLoginReqVO, IBindAccountForm, ITokenRefreshResponse } from './types/login'
+import type { IAuthSocialLoginReqVO, IBindAccountForm, ICaptcha, ILoginForm, ITokenRefreshResponse, IUserLogin } from './types/login'
 import { http } from '@/http/http'
 
 /**
@@ -14,13 +14,7 @@ export function getCode() {
  * @param loginForm 登录表单
  */
 export function login(loginForm: ILoginForm) {
-  const headers: Record<string, any> = {
-    'tenant-id': 1, // 默认租户ID
-  }
-  
-  return http.post<IUserLogin>('/admin-api/system/auth/login', loginForm, {
-    headers
-  })
+  return http.post<IUserLogin>('/admin-api/system/auth/login', loginForm)
 }
 
 /**
@@ -30,8 +24,8 @@ export function login(loginForm: ILoginForm) {
 export function refreshToken(refreshToken: string) {
   return http.post<ITokenRefreshResponse>('/admin-api/system/auth/refresh-token', {}, {
     params: {
-      refreshToken
-    }
+      refreshToken,
+    },
   })
 }
 
