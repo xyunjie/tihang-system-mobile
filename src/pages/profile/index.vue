@@ -168,6 +168,103 @@ function editProfile() {
   })
 }
 
+// 数据管理功能
+function gotoDataManagement() {
+  uni.showActionSheet({
+    itemList: ['清理缓存数据', '查看存储信息'],
+    success: (res) => {
+      switch (res.tapIndex) {
+        case 0:
+          // 清理缓存
+          clearCacheData()
+          break
+        case 1:
+          // 查看存储信息
+          showStorageInfo()
+          break
+      }
+    }
+  })
+}
+
+// 清理缓存数据
+function clearCacheData() {
+  uni.showModal({
+    title: '清理缓存',
+    content: '确定要清理所有本地缓存数据吗？清理后需要重新登录。',
+    showCancel: true,
+    confirmText: '确定清理',
+    cancelText: '取消',
+    success: (res) => {
+      if (res.confirm) {
+        try {
+          const keysToKeep = ['theme_id'] // 保留主题设置
+          const storage = uni.getStorageInfoSync()
+          
+          storage.keys.forEach(key => {
+            if (!keysToKeep.includes(key)) {
+              uni.removeStorageSync(key)
+            }
+          })
+          
+          uni.showToast({
+            title: '缓存清理成功',
+            icon: 'success',
+            duration: 1500
+          })
+          
+          setTimeout(() => {
+            uni.redirectTo({
+              url: '/pages/login/index'
+            })
+          }, 1500)
+        } catch (error) {
+          console.error('清理缓存失败:', error)
+          uni.showToast({
+            title: '清理失败',
+            icon: 'error'
+          })
+        }
+      }
+    }
+  })
+}
+
+// 查看存储信息
+function showStorageInfo() {
+  try {
+    const storageInfo = uni.getStorageInfoSync()
+    const sizeKB = (storageInfo.currentSize || 0)
+    const limitKB = (storageInfo.limitSize || 0)
+    
+    let content = `存储空间：${sizeKB}KB`
+    if (limitKB > 0) {
+      content += ` / ${limitKB}KB`
+    }
+    content += `\n存储项数：${storageInfo.keys.length}个`
+    
+    uni.showModal({
+      title: '存储信息',
+      content: content,
+      showCancel: false,
+      confirmText: '知道了'
+    })
+  } catch (error) {
+    console.error('获取存储信息失败:', error)
+    uni.showToast({
+      title: '获取失败',
+      icon: 'error'
+    })
+  }
+}
+
+// 跳转到关于我们页面
+function gotoAboutStudio() {
+  uni.navigateTo({
+    url: '/pages/about/studio'
+  })
+}
+
 // 功能菜单列表
 const menuItems = [
   {
@@ -181,9 +278,8 @@ const menuItems = [
   {
     category: '应用设置',
     items: [
-      { icon: '🎨', name: '主题设置', desc: '界面主题切换', action: () => showToast('主题设置') },
-      { icon: '🌐', name: '语言设置', desc: '多语言切换', action: () => showToast('语言设置') },
-      { icon: '📱', name: '系统设置', desc: '应用偏好设置', action: () => showToast('系统设置') }
+      { icon: '🔔', name: '消息推送', desc: '推送通知设置管理', action: () => showToast('消息推送') },
+      { icon: '💾', name: '数据管理', desc: '缓存清理与数据备份', action: gotoDataManagement }
     ]
   },
   {
@@ -191,7 +287,7 @@ const menuItems = [
     items: [
       { icon: '❓', name: '帮助中心', desc: '使用帮助与FAQ', action: () => showToast('帮助中心') },
       { icon: '📝', name: '意见反馈', desc: '问题反馈与建议', action: () => showToast('意见反馈') },
-      { icon: 'ℹ️', name: '关于我们', desc: '版本信息', action: () => showToast('关于我们') },
+      { icon: 'ℹ️', name: '关于我们', desc: '工作室介绍与版本信息', action: gotoAboutStudio },
       { icon: '🚪', name: '退出登录', desc: '安全退出账号', action: handleLogout, danger: true }
     ]
   }

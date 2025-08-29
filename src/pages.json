@@ -77,6 +77,13 @@
       }
     },
     {
+      "path": "pages/about/studio",
+      "type": "page",
+      "style": {
+        "navigationBarTitleText": "关于我们"
+      }
+    },
+    {
       "path": "pages/bind/index",
       "type": "page",
       "layout": "default",
