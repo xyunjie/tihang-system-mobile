@@ -84,7 +84,9 @@
       "layout": "default",
       "style": {
         "navigationStyle": "default",
-        "navigationBarTitleText": "登录中心"
+        "navigationBarTitleText": "登录中心",
+        "enablePullDownRefresh": false,
+        "disableScroll": true
       },
       "notLogin": true
     }

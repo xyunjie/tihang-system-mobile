@@ -3,9 +3,11 @@
 {
     "layout": "default",
     "style": {
-    // 'custom' 表示开启自定义导航栏，默认 'default'
-    "navigationStyle": "default",
-    "navigationBarTitleText": "登录中心"
+      // 'custom' 表示开启自定义导航栏，默认 'default'
+      "navigationStyle": "default",
+      "navigationBarTitleText": "登录中心",
+      "enablePullDownRefresh": false,
+      "disableScroll": true
     },
     "notLogin": true
 }
@@ -38,6 +40,11 @@ const loginMode = ref<'normal' | 'wechat'>('wechat') // 登录模式
 
 // 在页面加载时设置防返回拦截
 onLoad(() => {
+  // #ifdef MP-WEIXIN
+  if(wx.hideHomeButton){
+      wx.hideHomeButton();
+  }
+  // #endif
   console.log('🔒 登录页加载，设置防返回拦截')
   const query = currRoute().query
   redirectUrl.value = query.redirect || '/pages/index/index'
@@ -248,6 +255,168 @@ const handleWxLogin = async () => {
   }
 }
 
+// 获取用户信息授权
+const handleGetUserProfile = () => {
+  // #ifdef MP-WEIXIN
+  uni.getUserProfile({
+    desc: '用于完善用户资料',
+    success: (res) => {
+      console.log('✅ 获取用户信息成功:', res)
+      const userInfo = res.userInfo as any // 使用any类型避免TS类型限制
+      console.log('👤 用户昵称:', userInfo.nickName)
+      console.log('🖼️ 用户头像:', userInfo.avatarUrl)
+      console.log('🚻 用户性别:', userInfo.gender)
+      console.log('🌍 用户地区:', userInfo.country, userInfo.province, userInfo.city)
+      
+      // 可以将用户信息临时存储，等登录成功后再保存
+      uni.setStorageSync('tempUserProfile', {
+        nickName: userInfo.nickName,
+        avatarUrl: userInfo.avatarUrl,
+        gender: userInfo.gender,
+        country: userInfo.country,
+        province: userInfo.province,
+        city: userInfo.city
+      })
+      
+      uni.showToast({
+        title: '授权成功',
+        icon: 'success',
+        duration: 1000
+      })
+    },
+    fail: (err) => {
+      console.error('❌ 获取用户信息失败:', err)
+      uni.showToast({
+        title: '用户取消授权',
+        icon: 'none',
+        duration: 2000
+      })
+    }
+  })
+  // #endif
+}
+
+// 获取手机号授权
+const handleGetPhoneNumber = (e: any) => {
+  console.log('📱 手机号授权回调:', e)
+  
+  if (e.detail.errMsg === 'getPhoneNumber:ok') {
+    // 获取到加密数据，需要发送到后端解密
+    const { encryptedData, iv, cloudID } = e.detail
+    console.log('📱 获取手机号成功:', { encryptedData, iv, cloudID })
+    
+    // 临时存储手机号授权信息
+    uni.setStorageSync('tempPhoneAuth', {
+      encryptedData,
+      iv,
+      cloudID,
+      timestamp: Date.now()
+    })
+    
+    uni.showToast({
+      title: '手机号授权成功',
+      icon: 'success',
+      duration: 1000
+    })
+  } else {
+    console.error('❌ 获取手机号失败:', e.detail.errMsg)
+    uni.showToast({
+      title: '手机号授权失败',
+      icon: 'none',
+      duration: 2000
+    })
+  }
+}
+
+// 一键登录（获取用户信息 + 手机号 + 登录）
+const handleOneClickLogin = async () => {
+  if (wxLoading.value) {
+    return
+  }
+  
+  wxLoading.value = true
+  
+  try {
+    console.log('🚀 开始一键登录流程...')
+    
+    // 1. 先获取用户基本信息
+    await new Promise<void>((resolve, reject) => {
+      // #ifdef MP-WEIXIN
+      uni.getUserProfile({
+        desc: '用于完善用户资料',
+        success: (res) => {
+          console.log('✅ 获取用户信息成功:', res)
+          const userInfo = res.userInfo as any // 使用any类型避免TS类型限制
+          
+          // 存储用户基本信息
+          uni.setStorageSync('tempUserProfile', {
+            nickName: userInfo.nickName,
+            avatarUrl: userInfo.avatarUrl,
+            gender: userInfo.gender,
+            country: userInfo.country,
+            province: userInfo.province,
+            city: userInfo.city
+          })
+          
+          resolve()
+        },
+        fail: (err) => {
+          console.error('❌ 获取用户信息失败:', err)
+          reject(new Error('用户取消授权'))
+        }
+      })
+      // #endif
+      
+      // #ifndef MP-WEIXIN
+      // 非微信小程序环境，直接通过
+      resolve()
+      // #endif
+    })
+    
+    // 2. 执行微信登录
+    const result = await userStore.socialLogin()
+    
+    if (result) {
+      // 标记为已登录
+      isLoggedIn = true
+      
+      console.log('✅ 一键登录成功，准备跳转到:', redirectUrl)
+      
+      // 显示成功提示
+      uni.showToast({
+        title: '登录成功',
+        icon: 'success',
+        duration: 1500
+      })
+      
+      // 延迟跳转
+      setTimeout(() => {
+        redirectToTarget()
+      }, 1500)
+    } else {
+      // result 为 null 表示需要绑定账号，已经跳转到绑定页面
+      console.log('🔗 需要绑定账号，已跳转到绑定页面')
+    }
+  } catch (error: any) {
+    console.error('❌ 一键登录失败:', error)
+    
+    let errorMessage = '登录失败'
+    if (error.message) {
+      errorMessage = error.message
+    } else if (typeof error === 'string') {
+      errorMessage = error
+    }
+    
+    uni.showToast({
+      title: errorMessage,
+      icon: 'none',
+      duration: 2000
+    })
+  } finally {
+    wxLoading.value = false
+  }
+}
+
 // 切换登录模式（优化版，防止频闪）
 const switchLoginMode = (mode: 'normal' | 'wechat') => {
   if (loginMode.value === mode) {
@@ -379,17 +548,21 @@ const switchLoginMode = (mode: 'normal' | 'wechat') => {
           }"
         >
           <view style="font-size: 80rpx; margin-bottom: 16rpx;">🔸</view>
-          <view class="text-gray-600" style="font-size: 32rpx; margin-bottom: 24rpx;">使用微信账号快速登录</view>
-          <wd-button 
-            type="success" 
-            size="large" 
-            block
-            :loading="wxLoading"
-            :disabled="wxLoading"
-            @click="handleWxLogin"
-          >
-            {{ wxLoading ? '微信登录中...' : '🔸 微信一键登录' }}
-          </wd-button>
+          <view class="text-gray-600" style="font-size: 32rpx; margin-bottom: 32rpx;">使用微信账号快速登录</view>
+          
+          <!-- 一键登录按钮（推荐） -->
+          <view style="margin-bottom: 20rpx;">
+            <wd-button 
+              type="success" 
+              size="large" 
+              block
+              :loading="wxLoading"
+              :disabled="wxLoading"
+              @click="handleOneClickLogin"
+            >
+              {{ wxLoading ? '登录中...' : '🚀 微信一键登录' }}
+            </wd-button>
+          </view>
         </view>
       </view>
     </view>

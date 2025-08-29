@@ -51,6 +51,12 @@ onLoad(() => {
   console.log("userInfo", userStore.userInfo)
   if (!userStore.userInfo.accessToken) {
     gotoLogin()
+  } else {
+    // 如果已登录，检查并显示扩展用户信息
+    const extendedInfo = userStore.getExtendedUserInfo()
+    if (extendedInfo) {
+      console.log('📱 扩展用户信息:', extendedInfo)
+    }
   }
 })
 
@@ -92,6 +98,44 @@ function logout() {
     }
   })
 }
+
+// 获取扩展用户信息
+const extendedUserInfo = computed(() => {
+  return userStore.getExtendedUserInfo()
+})
+
+// 查看详细信息
+function showDetailedInfo() {
+  const info = userStore.getExtendedUserInfo()
+  if (info) {
+    let content = '用户详细信息：\n'
+    
+    if (info.wxNickName) {
+      content += `微信昵称：${info.wxNickName}\n`
+    }
+    if (info.wxGender !== undefined) {
+      const gender = info.wxGender === 1 ? '男' : info.wxGender === 2 ? '女' : '未知'
+      content += `性别：${gender}\n`
+    }
+    if (info.wxCountry) {
+      content += `地区：${info.wxCountry} ${info.wxProvince} ${info.wxCity}\n`
+    }
+    if (info.phoneAuthData) {
+      content += `手机号：已授权获取\n`
+    }
+    
+    uni.showModal({
+      title: '用户信息',
+      content: content,
+      showCancel: false
+    })
+  } else {
+    uni.showToast({
+      title: '暂无扩展信息',
+      icon: 'none'
+    })
+  }
+}
 </script>
 
 <template>
@@ -99,9 +143,29 @@ function logout() {
     <!-- 用户信息区域 -->
     <view v-if="userStore.userInfo.username" class="user-info mb-6">
       <view class="user-welcome">
-        <text class="welcome-text">👤 欢迎，{{ userStore.userInfo.username }}!</text>
-        <view class="logout-btn" @click="logout">
-          <text class="logout-text">🚪 退出登录</text>
+        <view class="user-details">
+          <!-- 用户头像 -->
+          <image 
+            :src="userStore.userInfo.avatar" 
+            class="user-avatar"
+            mode="aspectFill"
+          />
+          <view class="user-text">
+            <text class="welcome-text">👤 {{ userStore.userInfo.username }}</text>
+            <!-- 扩展信息提示 -->
+            <view v-if="extendedUserInfo" class="extended-info">
+              <text class="info-tag" v-if="extendedUserInfo.wxNickName">🔸 微信用户</text>
+              <text class="info-tag" v-if="extendedUserInfo.phoneAuthData">📱 已授权手机号</text>
+            </view>
+          </view>
+        </view>
+        <view class="user-actions">
+          <view v-if="extendedUserInfo" class="detail-btn" @click="showDetailedInfo">
+            <text class="detail-text">📋 详情</text>
+          </view>
+          <view class="logout-btn" @click="logout">
+            <text class="logout-text">🚪 退出</text>
+          </view>
         </view>
       </view>
     </view>
@@ -166,26 +230,82 @@ function logout() {
     justify-content: space-between;
     align-items: center;
     
-    .welcome-text {
-      color: white;
-      font-size: 32rpx;
-      font-weight: bold;
-    }
-    
-    .logout-btn {
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 20rpx;
-      padding: 12rpx 24rpx;
-      border: 1rpx solid rgba(255, 255, 255, 0.3);
+    .user-details {
+      display: flex;
+      align-items: center;
+      flex: 1;
       
-      .logout-text {
-        color: white;
-        font-size: 24rpx;
+      .user-avatar {
+        width: 80rpx;
+        height: 80rpx;
+        border-radius: 50%;
+        margin-right: 20rpx;
+        border: 3rpx solid rgba(255, 255, 255, 0.3);
+      }
+      
+      .user-text {
+        flex: 1;
+        
+        .welcome-text {
+          color: white;
+          font-size: 32rpx;
+          font-weight: bold;
+          display: block;
+          margin-bottom: 8rpx;
+        }
+        
+        .extended-info {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8rpx;
+          
+          .info-tag {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 20rpx;
+            padding: 4rpx 8rpx;
+            border-radius: 8rpx;
+            border: 1rpx solid rgba(255, 255, 255, 0.2);
+          }
+        }
       }
     }
     
-    .logout-btn:active {
-      background: rgba(255, 255, 255, 0.3);
+    .user-actions {
+      display: flex;
+      gap: 12rpx;
+      
+      .detail-btn {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 20rpx;
+        padding: 12rpx 20rpx;
+        border: 1rpx solid rgba(255, 255, 255, 0.3);
+        
+        .detail-text {
+          color: white;
+          font-size: 24rpx;
+        }
+      }
+      
+      .detail-btn:active {
+        background: rgba(255, 255, 255, 0.3);
+      }
+      
+      .logout-btn {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 20rpx;
+        padding: 12rpx 20rpx;
+        border: 1rpx solid rgba(255, 255, 255, 0.3);
+        
+        .logout-text {
+          color: white;
+          font-size: 24rpx;
+        }
+      }
+      
+      .logout-btn:active {
+        background: rgba(255, 255, 255, 0.3);
+      }
     }
   }
 }

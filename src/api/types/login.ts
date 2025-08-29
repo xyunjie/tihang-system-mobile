@@ -8,6 +8,20 @@ export interface IUserInfoVo {
   accessToken: string
   refreshToken?: string
   expiresTime?: string
+  // 扩展字段：微信用户信息
+  wxNickName?: string
+  wxAvatarUrl?: string
+  wxGender?: number // 0:未知、1:男、2:女
+  wxCountry?: string
+  wxProvince?: string
+  wxCity?: string
+  // 扩展字段：手机号授权信息
+  phoneAuthData?: {
+    encryptedData: string
+    iv: string
+    cloudID?: string
+    timestamp: number
+  }
 }
 
 /**
