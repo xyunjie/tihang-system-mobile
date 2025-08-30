@@ -48,8 +48,8 @@
       "type": "home",
       "layout": "tabbar",
       "style": {
-        "navigationStyle": "custom",
-        "navigationBarTitleText": "首页"
+        "navigationStyle": "default",
+        "navigationBarTitleText": "梯航小助手"
       }
     },
     {
@@ -93,8 +93,8 @@
       "type": "page",
       "layout": "tabbar",
       "style": {
-        "navigationStyle": "custom",
-        "navigationBarTitleText": "我的"
+        "navigationStyle": "default",
+        "navigationBarTitleText": "个人中心"
       }
     },
     {
@@ -116,6 +116,43 @@
           "style": {
             "navigationBarTitleText": "分包页面"
           }
+        },
+        {
+          "path": "message/detail",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "消息详情"
+          }
+        },
+        {
+          "path": "message/index",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "消息提醒"
+          }
+        },
+        {
+          "path": "notification/detail",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "通知详情"
+          }
+        },
+        {
+          "path": "notification/index",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "通知公告"
+          }
+        },
+        {
+          "path": "recruitment/index",
+          "type": "page",
+          "style": {
+            "navigationStyle": "default",
+            "navigationBarTitleText": "纳新登记"
+          },
+          "notLogin": true
         }
       ]
     }

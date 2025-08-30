@@ -337,6 +337,23 @@ function switchLoginMode(mode: 'normal' | 'wechat') {
     showPassword.value = false
   }
 }
+
+// 跳转到纳新登记页面
+function goToRecruitment() {
+  uni.navigateTo({
+    url: '/pages-sub/recruitment/index',
+    success: () => {
+      console.log('✅ 跳转到纳新登记页面成功')
+    },
+    fail: (err) => {
+      console.error('❌ 跳转到纳新登记页面失败:', err)
+      uni.showToast({
+        title: '页面跳转失败',
+        icon: 'none',
+      })
+    },
+  })
+}
 </script>
 
 <template>
@@ -460,6 +477,22 @@ function switchLoginMode(mode: 'normal' | 'wechat') {
             </wd-button>
           </view>
         </view>
+      </view>
+
+      <!-- 纳新登记入口 -->
+      <view class="recruitment-entry" style="margin-top: 30rpx; padding-top: 30rpx; border-top: 1rpx solid #e5e5e5; text-align: center;">
+        <view class="text-gray-600" style="font-size: 24rpx; margin-bottom: 20rpx;">
+          ✨ 纳新登记无需登录
+        </view>
+        <wd-button
+          type="warning"
+          size="medium"
+          plain
+          custom-style="height: 80rpx; border-radius: 12rpx; font-size: 28rpx; width: 60%;"
+          @click="goToRecruitment"
+        >
+          🎓 去纳新登记
+        </wd-button>
       </view>
     </view>
   </view>

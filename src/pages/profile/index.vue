@@ -3,8 +3,8 @@
 {
   "layout": "tabbar",
   "style": {
-    "navigationStyle": "custom",
-    "navigationBarTitleText": "我的"
+    "navigationStyle": "default",
+    "navigationBarTitleText": "个人中心"
   }
 }
 </route>
@@ -310,7 +310,7 @@ const menuItems = [
 </script>
 
 <template>
-  <view class="min-h-screen from-blue-50 to-indigo-100 bg-gradient-to-br" :style="{ paddingTop: `${safeAreaInsets?.top || 0}px` }">
+  <view class="min-h-screen from-blue-50 to-indigo-100 bg-gradient-to-br">
     <!-- 用户信息卡片 -->
     <view class="relative mx-4 pb-8 pt-6">
       <view class="relative overflow-hidden rounded-3xl bg-white p-6 shadow-lg">

@@ -22,10 +22,8 @@ export function login(loginForm: ILoginForm) {
  * @param refreshToken 刷新令牌
  */
 export function refreshToken(refreshToken: string) {
-  return http.post<ITokenRefreshResponse>('/admin-api/system/auth/refresh-token', {}, {
-    params: {
-      refreshToken,
-    },
+  return http.post<ITokenRefreshResponse>('/admin-api/system/auth/refresh-token', {
+    refreshToken,
   })
 }
 
