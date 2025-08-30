@@ -103,7 +103,16 @@
       "style": {
         "navigationBarTitleText": "账号安全"
       }
-    }
+    },
+    {
+      "path": "pages/recruitment/index",
+      "type": "page",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "纳新登记"
+      },
+      "notLogin": true
+    },
   ],
   "subPackages": [
     {
@@ -144,15 +153,6 @@
           "style": {
             "navigationBarTitleText": "通知公告"
           }
-        },
-        {
-          "path": "recruitment/index",
-          "type": "page",
-          "style": {
-            "navigationStyle": "default",
-            "navigationBarTitleText": "纳新登记"
-          },
-          "notLogin": true
         }
       ]
     }

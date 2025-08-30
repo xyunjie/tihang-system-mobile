@@ -12,16 +12,19 @@
 <script setup lang="ts">
 import type { UserRecruitmentConfigRespVO, UserRecruitmentSaveReqVO } from '@/api/types/recruitment'
 import { onLoad, onShow } from '@dcloudio/uni-app'
-import { onMounted, ref } from 'vue'
+import { ref } from 'vue'
+import { useMessage } from 'wot-design-uni'
 import { createUserRecruitment, getUserRecruitmentConfig } from '@/api/recruitment'
+import { uploadFile } from '@/api/user'
+import KspCropper from '@/components/ksp-cropper.vue'
 import { showToast } from '@/utils/toast'
+
+// 初始化消息框
+const message = useMessage()
 
 // 页面状态
 const loading = ref(true)
 const submitting = ref(false)
-const showTemplateMessage = ref(false)
-const showNoRecruitment = ref(false)
-const devMode = ref(import.meta.env.DEV) // 开发模式标识
 
 // 纳新配置
 const recruitmentConfig = ref<UserRecruitmentConfigRespVO | null>(null)
@@ -55,7 +58,8 @@ const formData = ref<UserRecruitmentSaveReqVO>(
 )
 
 // 照片上传
-const photoList = ref<any[]>([])
+const showCropper = ref(false)
+const cropperImageUrl = ref('')
 
 // 选择器选项
 const gradeOptions = ref([
@@ -192,77 +196,47 @@ async function loadRecruitmentConfig() {
   try {
     loading.value = true
 
-    // 临时mock数据，用于开发调试
-    const mockData = {
-      code: 0,
-      data: {
-        id: 1,
-        name: '2024年春季纳新',
-        startTime: '2024-03-01 09:00:00',
-        endTime: '2024-03-31 18:00:00',
-        grade: 1,
-        groupLink: 'https://qm.qq.com/cgi-bin/qm/qr?k=123456',
-        status: 0, // 0-开始报名
-        createTime: '2024-03-01 09:00:00',
-      },
-      msg: '获取成功',
-    }
+    // 获取真实纳新配置
+    const response = await getUserRecruitmentConfig()
 
-    // 首先尝试真实API
-    try {
-      const response = await getUserRecruitmentConfig()
-      console.log('纳新配置响应:', response)
-
-      if (response.code === 1002032101) {
-        // 没有纳新计划
-        console.log('⚠️ 暂无正在进行的纳新计划，开发环境将使用mock数据')
-        if (import.meta.env.DEV) {
-          // 开发环境：使用mock数据继续开发
-          recruitmentConfig.value = mockData.data
-          formData.value.settingId = mockData.data.id
-          showTemplateMessage.value = true
-          showToast({
-            message: '开发模式：使用模拟纳新数据',
-            icon: 'none',
-          })
-        }
-        else {
-          // 生产环境：显示无纳新计划
-          showNoRecruitment.value = true
-        }
-        return
-      }
-      if (response.code !== 0) {
-        throw new Error(response.msg || '获取纳新配置失败')
-      }
-
-      // 使用真实数据
-      recruitmentConfig.value = response.data
-      formData.value.settingId = response.data.id
-
-      // 检查纳新状态
-      if (response.data.status === 0) {
-        showTemplateMessage.value = true
-      }
-      else {
-        showNoRecruitment.value = true
-      }
-    }
-    catch (apiError) {
-      console.warn('API调用失败，使用mock数据:', apiError)
-
-      // 使用mock数据继续开发
-      recruitmentConfig.value = mockData.data
-      formData.value.settingId = mockData.data.id
-
-      // 显示模板消息
-      showTemplateMessage.value = true
-
-      showToast({
-        message: 'API暂不可用，使用模拟数据',
-        icon: 'none',
+    if (response.code === 1002032101) {
+      // 没有纳新计划
+      message.alert({
+        msg: '当前暂无正在进行的纳新计划，请关注官方通知。',
+        title: '暂无纳新计划',
+        closeOnClickModal: false,
+        showCancelButton: true,
+      }).then(() => {
+        console.log('暂无纳新计划,用户点击确定')
+        // 回到上一层
+        uni.navigateBack()
+      }).catch(() => {
+        console.log('暂无纳新计划,用户点击取消')
       })
+      return
     }
+    if (response.code !== 0) {
+      // 没有纳新计划
+      message.alert({
+        msg: '获取纳新计划失败，请联系管理员解决！',
+        title: '请求失败',
+        closeOnClickModal: false,
+        showCancelButton: false,
+      }).then(() => {
+        console.log('请求失败,用户点击确定')
+        // 回到上一层
+        uni.navigateBack()
+      }).catch(() => {
+        console.log('请求失败,用户点击取消')
+      })
+      return
+    }
+    // 使用真实数据
+    recruitmentConfig.value = response.data
+    formData.value.settingId = response.data.id
+
+    // 显示纳新须知
+    showRecruitmentNotice()
   }
   catch (error) {
     console.error('获取纳新配置失败:', error)
@@ -270,8 +244,6 @@ async function loadRecruitmentConfig() {
       message: '网络错误，请稍后重试',
       icon: 'error',
     })
-    // 暂时允许继续显示表单，用于调试
-    // showNoRecruitment.value = true
   }
   finally {
     loading.value = false
@@ -288,69 +260,40 @@ onShow(() => {
   loadRecruitmentConfig()
 })
 
+// 显示纳新须知
+function showRecruitmentNotice() {
+  message.confirm({
+    title: '纳新须知',
+    msg: `您的信息仅用于工作室报名申请，不会发生泄露！
+请保证所填写的信息真实有效，请按照要求正确填写！
+如有疑问请联系纳新群管理员！\n
+    
+本次纳新时间为：${formatTime(recruitmentConfig.value!.startTime)} - ${formatTime(recruitmentConfig.value!.endTime)}`,
+    confirmButtonText: '我知道了',
+    cancelButtonText: '加入纳新群',
+    closeOnClickModal: false,
+  }).then(() => {
+    // 用户点击了"我知道了"
+    console.log('用户点击了"我知道了"')
+  }).catch(() => {
+    // 用户点击了"加入纳新群"
+    if (recruitmentConfig.value?.groupLink) {
+      console.log('用户点击了"加入纳新群"')
+      // 复制群链接到剪贴板
+      uni.setClipboardData({
+        data: recruitmentConfig.value.groupLink,
+        success: () => {
+          showToast('群链接已复制到剪贴板')
+        },
+      })
+    }
+  })
+}
+
 // 时间格式化
 function formatTime(timeStr: string) {
   const date = new Date(timeStr)
   return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`
-}
-
-// 模板消息确认
-function onConfirmTemplate() {
-  showTemplateMessage.value = false
-}
-
-// 加入纳新群
-function onJoinGroup() {
-  if (recruitmentConfig.value?.groupLink) {
-    // 复制群链接到剪贴板
-    uni.setClipboardData({
-      data: recruitmentConfig.value.groupLink,
-      success: () => {
-        showToast('群链接已复制到剪贴板')
-      },
-    })
-  }
-  showTemplateMessage.value = false
-}
-
-// 无纳新计划确认
-function onNoRecruitmentConfirm() {
-  uni.navigateBack()
-}
-
-// 开发模式继续
-function onDevModeContinue() {
-  console.log('🔧 开发模式：强制显示纳新表单')
-
-  // 使用mock数据
-  const mockData = {
-    id: 1,
-    name: '开发模式-模拟纳新',
-    startTime: '2024-03-01 09:00:00',
-    endTime: '2024-03-31 18:00:00',
-    grade: 1,
-    groupLink: 'https://qm.qq.com/cgi-bin/qm/qr?k=dev-mock',
-    status: 0,
-    createTime: '2024-03-01 09:00:00',
-  }
-
-  recruitmentConfig.value = mockData
-  formData.value.settingId = mockData.id
-  showNoRecruitment.value = false
-  showTemplateMessage.value = false // 不显示须知弹窗，直接显示表单
-
-  showToast({
-    message: '开发模式：已加载模拟数据',
-    icon: 'success',
-  })
-
-  // 输出调试信息
-  console.log('🐛 开发模式状态:', {
-    loading: loading.value,
-    showNoRecruitment: showNoRecruitment.value,
-    showTemplateMessage: showTemplateMessage.value,
-    recruitmentConfig: !!recruitmentConfig.value,
-  })
 }
 
 // 年级选择
@@ -368,42 +311,44 @@ function onPoliticalChange(value: any) {
   formData.value.politicalOutlook = value.value
 }
 
-// 文件上传前处理
-function beforeUpload(file: any) {
-  // 检查文件类型
-  const isImage = file.type.startsWith('image/')
-  if (!isImage) {
-    showToast('请选择图片文件')
-    return false
-  }
-
-  // 检查文件大小 (5MB)
-  const isLt5M = file.size / 1024 / 1024 < 5
-  if (!isLt5M) {
-    showToast('图片大小不能超过5MB')
-    return false
-  }
-
-  return true
+// 选择证件照
+function onSelectPhoto() {
+  uni.chooseImage({
+    count: 1,
+    sizeType: ['original'],
+    sourceType: ['album', 'camera'],
+    success: (res) => {
+      const tempFilePath = res.tempFilePaths[0]
+      cropperImageUrl.value = tempFilePath
+      showCropper.value = true
+    },
+    fail: (err) => {
+      console.error('选择图片失败:', err)
+      showToast('选择图片失败，请重试')
+    },
+  })
 }
 
-// 文件上传成功
-function onUploadSuccess(response: any) {
-  console.log('上传成功响应:', response)
-  if (response && response.url) {
-    formData.value.imageUrl = response.url
-    showToast('照片上传成功')
-  }
-  else {
-    console.error('上传响应格式异常:', response)
-    showToast('照片上传失败，响应格式异常')
-  }
+// 裁剪完成
+function onCropperOk(res: any) {
+  showCropper.value = false
+  const tempFilePath = res.path
+
+  // 上传裁剪后的图片
+  uploadFile(tempFilePath)
+    .then((url) => {
+      formData.value.imageUrl = url
+      showToast('照片上传成功')
+    })
+    .catch((error) => {
+      console.error('上传失败:', error)
+      showToast('照片上传失败，请重试')
+    })
 }
 
-// 文件上传失败
-function onUploadError(error: any) {
-  console.error('照片上传失败:', error)
-  showToast('照片上传失败，请重试')
+// 取消裁剪
+function onCropperCancel() {
+  showCropper.value = false
 }
 
 // 提交申请
@@ -462,116 +407,29 @@ async function onSubmit() {
     submitting.value = false
   }
 }
-
-// 调试信息显示
-function showDebugInfo() {
-  const debugInfo = {
-    loading: loading.value,
-    submitting: submitting.value,
-    showTemplateMessage: showTemplateMessage.value,
-    showNoRecruitment: showNoRecruitment.value,
-    recruitmentConfig: recruitmentConfig.value,
-    formDataValid: !!formData.value.name,
-    devMode: devMode.value,
-    env: import.meta.env.DEV ? 'development' : 'production',
-    apiResponse: 'check console',
-  }
-
-  console.log('🐛 调试信息:', debugInfo)
-
-  uni.showModal({
-    title: '调试信息',
-    content: JSON.stringify(debugInfo, null, 2),
-    showCancel: false,
-  })
-}
-
-// 强制显示表单（开发调试用）
-function forceShowForm() {
-  console.log('🚀 强制显示表单')
-
-  // 设置模拟数据
-  if (!recruitmentConfig.value) {
-    recruitmentConfig.value = {
-      id: 999,
-      name: '强制显示模式',
-      startTime: '2024-01-01 09:00:00',
-      endTime: '2024-12-31 18:00:00',
-      grade: 1,
-      groupLink: '',
-      status: 0,
-      createTime: '2024-01-01 09:00:00',
-    }
-    formData.value.settingId = 999
-  }
-
-  // 关闭所有弹窗
-  loading.value = false
-  showNoRecruitment.value = false
-  showTemplateMessage.value = false
-
-  showToast({
-    message: '强制显示模式已启用',
-    icon: 'success',
-  })
-}
 </script>
 
 <template>
-  <view class="recruitment-page">
-    <!-- 模板消息弹窗 -->
-    <wd-message-box
-      v-model="showTemplateMessage"
-      type="warning"
-      title="纳新登记须知"
-      :close-on-click-modal="false"
-      :show-cancel-button="true"
-      confirm-button-text="我知道了"
-      cancel-button-text="加入纳新群"
-      @confirm="onConfirmTemplate"
-      @cancel="onJoinGroup"
-    >
-      <view class="template-message">
-        <span class="message-text">
-          您的信息仅用于工作室报名申请，不会发生泄露！<br>
-          请保证所填写的信息真实有效，请按照要求正确填写！<br>
-          如有疑问请联系纳新群管理员！
-        </span>
-        <span v-if="recruitmentConfig" class="time-text">
-          本次纳新时间为：{{ formatTime(recruitmentConfig.startTime) }} - {{ formatTime(recruitmentConfig.endTime) }}
-        </span>
-      </view>
-    </wd-message-box>
+  <view class="min-h-screen bg-gray-100">
+    <!-- 消息框组件 -->
+    <wd-message-box />
 
-    <!-- 无纳新计划提醒弹窗 -->
-    <wd-message-box
-      v-model="showNoRecruitment"
-      type="error"
-      title="暂无纳新计划"
-      :close-on-click-modal="false"
-      :show-cancel-button="devMode"
-      confirm-button-text="确定"
-      cancel-button-text="开发模式继续"
-      @confirm="onNoRecruitmentConfirm"
-      @cancel="onDevModeContinue"
-    >
-      <span>当前暂无正在进行的纳新计划，请关注官方通知。</span>
-      <view v-if="devMode" class="mt-2 text-xs text-orange-600">
-        💡 开发模式：可以点击"开发模式继续"查看页面效果
-      </view>
-    </wd-message-box>
+    <!-- 图片裁剪组件 -->
+    <ksp-cropper
+      v-if="showCropper"
+      :url="cropperImageUrl"
+      :width="300"
+      :height="400"
+      mode="fixed"
+      @ok="onCropperOk"
+      @cancel="onCropperCancel"
+    />
 
     <!-- 主要表单内容 -->
-    <view v-if="!loading && (recruitmentConfig || devMode)" class="form-container">
-      <!-- 开发模式提示 -->
-      <view v-if="devMode && !recruitmentConfig" class="mb-4 rounded-lg bg-orange-50 p-3">
-        <view class="flex items-center text-sm text-orange-600">
-          🐛 当前为开发模式，使用模拟数据
-        </view>
-      </view>
+    <view v-if="!loading && recruitmentConfig" class="p-4">
       <wd-form ref="formRef" :model="formData" :rules="rules">
         <!-- 姓名 -->
-        <wd-cell-group title="基本信息" border>
+        <wd-cell-group title="基本信息">
           <wd-input
             v-model="formData.name"
             label="姓名"
@@ -594,22 +452,27 @@ function forceShowForm() {
 
           <!-- 证件照 -->
           <wd-cell title="证件照" required>
-            <view class="upload-container">
-              <wd-upload
-                v-model="photoList"
-                :limit="1"
-                accept="image"
-                :before-upload="beforeUpload"
-                @success="onUploadSuccess"
-                @error="onUploadError"
+            <view class="flex flex-col items-center">
+              <view
+                class="h-33.25 w-25 flex flex-col items-center justify-center overflow-hidden border border-gray-400 rounded border-dashed bg-gray-50"
+                @click="onSelectPhoto"
               >
-                <wd-button type="primary" size="small">
-                  选择照片
-                </wd-button>
-              </wd-upload>
-              <view v-if="formData.imageUrl" class="mt-2 text-xs text-green-600">
-                📷 照片已上传
+                <image
+                  v-if="formData.imageUrl"
+                  :src="formData.imageUrl"
+                  class="h-full w-full object-cover"
+                  mode="aspectFill"
+                />
+                <view v-else class="h-full w-full flex flex-col items-center justify-center">
+                  <wd-icon name="camera" size="24px" color="#999" />
+                  <text class="mt-1 text-xs text-gray-500">
+                    点击上传
+                  </text>
+                </view>
               </view>
+              <text class="mt-2 text-xs text-gray-500">
+                一寸证件照
+              </text>
             </view>
           </wd-cell>
 
@@ -651,7 +514,7 @@ function forceShowForm() {
         </wd-cell-group>
 
         <!-- 学院专业信息 -->
-        <wd-cell-group title="学院专业信息" border>
+        <wd-cell-group title="学院专业信息">
           <!-- 学院 -->
           <wd-input
             v-model="formData.schoolDept"
@@ -690,7 +553,7 @@ function forceShowForm() {
         </wd-cell-group>
 
         <!-- 个人信息 -->
-        <wd-cell-group title="个人详细信息" border>
+        <wd-cell-group title="个人详细信息">
           <!-- 出生日期 -->
           <wd-cell title="出生日期" required>
             <wd-datetime-picker
@@ -737,7 +600,7 @@ function forceShowForm() {
         </wd-cell-group>
 
         <!-- 个人能力信息 -->
-        <wd-cell-group title="个人能力与意向" border>
+        <wd-cell-group title="个人能力与意向">
           <!-- 个人介绍 -->
           <wd-textarea
             v-model="formData.userIntroduce"
@@ -784,10 +647,11 @@ function forceShowForm() {
         </wd-cell-group>
 
         <!-- 提交按钮 -->
-        <view class="submit-container">
+        <view class="mb-8 mt-8 px-4">
           <wd-button
             type="primary"
             size="large"
+            block
             :loading="submitting"
             @click="onSubmit"
           >
@@ -797,7 +661,7 @@ function forceShowForm() {
       </wd-form>
     </view>
 
-    <!-- 调试信息 -->
+    <!-- 加载状态 -->
     <view v-if="loading" class="fixed inset-0 flex items-center justify-center bg-white">
       <view class="text-center">
         <wd-loading />
@@ -806,54 +670,5 @@ function forceShowForm() {
         </view>
       </view>
     </view>
-
-    <!-- 开发调试面板 -->
-    <view v-if="!loading" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
-      <view class="rounded-full bg-blue-500 px-3 py-2 text-xs text-white shadow-lg" @click="showDebugInfo">
-        🐛 调试
-      </view>
-      <view v-if="devMode" class="rounded-full bg-green-500 px-3 py-2 text-xs text-white shadow-lg" @click="forceShowForm">
-        📝 强制显示
-      </view>
-    </view>
   </view>
 </template>
-
-<style lang="scss" scoped>
-.recruitment-page {
-  min-height: 100vh;
-  background-color: #f5f5f5;
-}
-
-.template-message {
-  padding: 16px 0;
-
-  .message-text {
-    display: block;
-    line-height: 1.6;
-    margin-bottom: 16px;
-    color: #666;
-  }
-
-  .time-text {
-    display: block;
-    font-weight: bold;
-    color: #e74c3c;
-  }
-}
-
-.form-container {
-  padding: 16px;
-}
-
-.upload-container {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.submit-container {
-  margin-top: 32px;
-  margin-bottom: 32px;
-}
-</style>

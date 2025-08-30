@@ -341,7 +341,7 @@ function switchLoginMode(mode: 'normal' | 'wechat') {
 // 跳转到纳新登记页面
 function goToRecruitment() {
   uni.navigateTo({
-    url: '/pages-sub/recruitment/index',
+    url: '/pages/recruitment/index',
     success: () => {
       console.log('✅ 跳转到纳新登记页面成功')
     },
