@@ -1,93 +1,251 @@
-<p align="center">
-  <a href="https://github.com/unibest-tech/unibest">
-    <img width="160" src="./src/static/logo.svg">
-  </a>
-</p>
-
-<h1 align="center">
-  <a href="https://github.com/unibest-tech/unibest" target="_blank">unibest - 最好的 uniapp 开发框架</a>
-</h1>
-
-<div align="center">
-旧仓库 codercup 进不去了，star 也拿不回来，这里也展示一下那个地址的 star.
-
-[![GitHub Repo stars](https://img.shields.io/github/stars/codercup/unibest?style=flat&logo=github)](https://github.com/codercup/unibest)
-[![GitHub forks](https://img.shields.io/github/forks/codercup/unibest?style=flat&logo=github)](https://github.com/codercup/unibest)
-
-</div>
+# Tihang System Mobile
 
 <div align="center">
 
-[![GitHub Repo stars](https://img.shields.io/github/stars/feige996/unibest?style=flat&logo=github)](https://github.com/feige996/unibest)
-[![GitHub forks](https://img.shields.io/github/forks/feige996/unibest?style=flat&logo=github)](https://github.com/feige996/unibest)
-[![star](https://gitee.com/feige996/unibest/badge/star.svg?theme=dark)](https://gitee.com/feige996/unibest/stargazers)
-[![fork](https://gitee.com/feige996/unibest/badge/fork.svg?theme=dark)](https://gitee.com/feige996/unibest/members)
-![node version](https://img.shields.io/badge/node-%3E%3D18-green)
-![pnpm version](https://img.shields.io/badge/pnpm-%3E%3D7.30-green)
-![GitHub package.json version (subfolder of monorepo)](https://img.shields.io/github/package-json/v/feige996/unibest)
-![GitHub License](https://img.shields.io/github/license/feige996/unibest)
+[![Node Version](https://img.shields.io/badge/node-%3E%3D18-green)](https://nodejs.org/)
+[![PNPM Version](https://img.shields.io/badge/pnpm-%3E%3D7.30-green)](https://pnpm.io/)
+[![Vue Version](https://img.shields.io/badge/vue-3.4+-blue)](https://vuejs.org/)
+[![TypeScript](https://img.shields.io/badge/typescript-5.0+-blue)](https://www.typescriptlang.org/)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 </div>
 
-`unibest` —— 最好的 `uniapp` 开发模板，由 `uniapp` + `Vue3` + `Ts` + `Vite5` + `UnoCss` + `wot-ui` + `z-paging` 构成，使用了最新的前端技术栈，无需依靠 `HBuilderX`，通过命令行方式运行 `web`、`小程序` 和 `App`（编辑器推荐 `VSCode`，可选 `webstorm`）。
+**Tihang System Mobile** 是一个基于 [unibest](https://github.com/feige996/unibest) 模板构建的企业级移动端系统，采用 uni-app 框架和现代化前端技术栈，提供完整的移动办公解决方案。系统涵盖用户管理、工作流审批、考勤管理、消息通知等核心功能模块。
 
-`unibest` 内置了 `约定式路由`、`layout布局`、`请求封装`、`请求拦截`、`登录拦截`、`UnoCSS`、`i18n多语言` 等基础功能，提供了 `代码提示`、`自动格式化`、`统一配置`、`代码片段` 等辅助功能，让你编写 `uniapp` 拥有 `best` 体验 （ `unibest 的由来`）。
+> 本项目基于优秀的开源项目 [unibest](https://github.com/feige996/unibest) 构建，感谢原作者 [@feige996](https://github.com/feige996) 提供的优质模板。unibest 是最好的 uniapp 开发框架，为本项目提供了坚实的技术基础。
 
-![](https://raw.githubusercontent.com/andreasbm/readme/master/screenshots/lines/rainbow.png)
+## ✨ 核心特性
 
-<p align="center">
-  <a href="https://unibest.tech/" target="_blank">📖 文档地址(new)</a>
-  <span style="margin:0 10px;">|</span>
-  <a href="https://feige996.github.io/hello-unibest/" target="_blank">📱 DEMO 地址</a>
-</p>
+- 🚀 **现代技术栈** - Vue3 + TypeScript + Vite5 + UnoCSS
+- 📱 **跨平台支持** - 支持 H5、小程序、App 多端部署
+- 🎨 **企业级 UI** - 基于 wot-design-uni，简洁专业的设计风格
+- 🔐 **安全认证** - JWT Token + 自动刷新机制
+- 🏗️ **模块化架构** - 清晰的分层结构，高内聚低耦合
+- 📊 **状态管理** - Pinia 响应式状态管理
+- 🌐 **网络请求** - 基于 Alova 的请求封装与拦截
+- 🛡️ **权限控制** - 路由守卫 + 页面级权限验证
 
----
+## 📋 功能模块
 
-注意旧的地址 [codercup](https://github.com/codercup/unibest) 我进不去了，使用新的 [feige996](https://github.com/feige996/unibest)。PR和 issue 也请使用新地址，否则无法合并。
+### 核心业务
+- **用户管理** - 用户登录、注册、资料管理、权限控制
+- **工作台** - 个人工作台、统计数据、快捷操作
+- **工作流** - 业务流程审批、待办事项、审批历史
+- **考勤管理** - 签到打卡、考勤记录、统计报表
+- **消息通知** - 系统通知、消息推送、公告管理
+- **纳新登记** - 新员工登记、信息收集、审核流程
+
+### 辅助功能
+- **帮助中心** - 使用指南、常见问题、意见反馈
+- **账号安全** - 密码修改、安全设置、登录记录
+- **个人资料** - 基本信息编辑、头像上传、联系方式
+
+## 🏗️ 技术架构
+
+### 技术栈
+- **前端框架**: uni-app + Vue3 (Composition API)
+- **开发语言**: TypeScript
+- **构建工具**: Vite5
+- **状态管理**: Pinia
+- **UI 组件**: wot-design-uni + z-paging
+- **样式方案**: UnoCSS 原子化 CSS
+- **HTTP 客户端**: Alova + 自封装请求层
+- **代码规范**: ESLint + Prettier
+
+### 架构设计
+```
+src/
+├── api/              # API 接口定义
+├── components/       # 通用组件
+├── hooks/           # 组合式函数
+├── http/            # 请求封装与拦截器
+├── layouts/         # 页面布局
+├── pages/           # 主包页面
+├── pages-sub/       # 分包页面
+├── router/          # 路由拦截
+├── service/         # 业务服务层
+├── store/           # 状态管理
+├── style/           # 全局样式
+└── utils/           # 工具函数
+```
 
 ## 平台兼容性
 
-| H5  | IOS | 安卓 | 微信小程序 | 字节小程序 | 快手小程序 | 支付宝小程序 | 钉钉小程序 | 百度小程序 |
-| --- | --- | ---- | ---------- | ---------- | ---------- | ------------ | ---------- | ---------- |
-| √   | √   | √    | √          | √          | √          | √            | √          | √          |
+| H5  | iOS | Android | 微信小程序 | 支付宝小程序 | 字节小程序 | 快手小程序 | 百度小程序 |
+| --- | --- | ------- | ---------- | ------------ | ---------- | ---------- | ---------- |
+| ✅   | ✅   | ✅       | ✅          | ✅            | ✅          | ✅          | ✅          |
 
-注意每种 `UI框架` 支持的平台有所不同，详情请看各 `UI框架` 的官网，也可以看 `unibest` 文档。
+## ⚙️ 环境要求
 
-## ⚙️ 环境
+- **Node.js**: >=18.0.0
+- **PNPM**: >=7.30.0
+- **Vue Official**: >=2.1.10
+- **TypeScript**: >=5.0.0
 
-- node>=18
-- pnpm>=7.30
-- Vue Official>=2.1.10
-- TypeScript>=5.0
+## 📦 安装依赖
 
-## &#x1F4C2; 快速开始
+推荐使用 PNPM 包管理器：
 
-执行 `pnpm create unibest` 创建项目
-执行 `pnpm i` 安装依赖
-执行 `pnpm dev` 运行 `H5`
-执行 `pnpm dev:mp` 运行 `微信小程序`
+```bash
+# 安装 PNPM（如果尚未安装）
+npm install -g pnpm@10.10.0
 
-## 📦 运行（支持热更新）
+# 验证安装
+pnpm --version
 
-- web平台： `pnpm dev:h5`, 然后打开 [http://localhost:9000/](http://localhost:9000/)。
-- weixin平台：`pnpm dev:mp` 然后打开微信开发者工具，导入本地文件夹，选择本项目的`dist/dev/mp-weixin` 文件。
-- APP平台：`pnpm dev:app`, 然后打开 `HBuilderX`，导入刚刚生成的`dist/dev/app` 文件夹，选择运行到模拟器(开发时优先使用)，或者运行的安卓/ios基座。
+# 安装项目依赖
+pnpm install
+```
 
-## 🔗 发布
+## 🚀 快速开始
 
-- web平台： `pnpm build:h5`，打包后的文件在 `dist/build/h5`，可以放到web服务器，如nginx运行。如果最终不是放在根目录，可以在 `manifest.config.ts` 文件的 `h5.router.base` 属性进行修改。
-- weixin平台：`pnpm build:mp`, 打包后的文件在 `dist/build/mp-weixin`，然后通过微信开发者工具导入，并点击右上角的“上传”按钮进行上传。
-- APP平台：`pnpm build:app`, 然后打开 `HBuilderX`，导入刚刚生成的`dist/build/app` 文件夹，选择发行 - APP云打包。
+```bash
+# 克隆项目
+git clone https://github.com/your-repo/tihang-system-mobile.git
+cd tihang-system-mobile
 
-## 📄 License
+# 安装依赖
+pnpm install
 
-[MIT](https://opensource.org/license/mit/)
+# 启动 H5 开发服务器
+pnpm dev
 
-Copyright (c) 2025 菲鸽
+# 启动微信小程序开发
+pnpm dev:mp
+```
 
-## 捐赠
+## 💻 开发调试
 
-<p align='center'>
-<img alt="special sponsor appwrite" src="https://oss.laf.run/ukw0y1-site/pay/wepay.png" height="330" style="display:inline-block; height:330px;">
-<img alt="special sponsor appwrite" src="https://oss.laf.run/ukw0y1-site/pay/alipay.jpg" height="330" style="display:inline-block; height:330px; margin-left:10px;">
-</p>
+### H5 平台开发
+```bash
+pnpm dev:h5
+# 访问 http://localhost:9000
+```
+
+### 微信小程序开发
+```bash
+pnpm dev:mp
+# 在微信开发者工具中导入 dist/dev/mp-weixin 目录
+```
+
+### App 平台开发
+```bash
+pnpm dev:app
+# 使用 HBuilderX 导入 dist/dev/app 目录
+```
+
+### 其他平台
+```bash
+pnpm dev:mp-alipay     # 支付宝小程序
+pnpm dev:mp-toutiao    # 字节跳动小程序
+pnpm dev:mp-baidu      # 百度小程序
+pnpm dev:mp-qq         # QQ 小程序
+```
+
+## 📦 项目构建
+
+### H5 构建
+```bash
+pnpm build:h5
+# 构建产物：dist/build/h5/
+# 部署到 Nginx 等 Web 服务器
+```
+
+### 小程序构建
+```bash
+pnpm build:mp          # 微信小程序
+pnpm build:mp-alipay   # 支付宝小程序
+pnpm build:mp-toutiao  # 字节跳动小程序
+# 构建产物：dist/build/mp-**/
+# 使用对应平台开发者工具上传发布
+```
+
+### App 构建
+```bash
+pnpm build:app
+# 构建产物：dist/build/app/
+# 使用 HBuilderX 进行云打包
+```
+
+## 🔧 开发规范
+
+### 代码风格
+```bash
+# 代码检查
+pnpm lint
+
+# 自动修复
+pnpm lint:fix
+
+# 类型检查
+pnpm type-check
+```
+
+### Git 提交规范
+```bash
+feat: 新功能
+fix: 修复问题
+docs: 文档更新
+style: 代码格式调整
+refactor: 代码重构
+test: 测试相关
+chore: 构建配置等
+```
+
+## 📚 项目文档
+
+- [快速开始指南](docs/quick-start.md)
+- [核心架构设计](docs/architecture.md)
+- [API 接口文档](docs/api.md)
+- [组件使用说明](docs/components.md)
+- [部署配置指南](docs/deployment.md)
+
+## 🙏 致谢
+
+本项目基于以下优秀开源项目构建：
+
+- **[unibest](https://github.com/feige996/unibest)** - 最好的 uniapp 开发框架
+  - 作者：[@feige996](https://github.com/feige996)
+  - 协议：MIT License
+  - 文档：[unibest.tech](https://unibest.tech/)
+
+感谢 unibest 团队提供的优质模板和完善的开发体验，为移动端开发提供了强大的技术支撑。
+
+## 🤝 贡献指南
+
+1. Fork 本仓库
+2. 创建特性分支：`git checkout -b feature/your-feature`
+3. 提交更改：`git commit -m 'feat: add some feature'`
+4. 推送分支：`git push origin feature/your-feature`
+5. 提交 Pull Request
+
+## 🐛 问题反馈
+
+如果您在使用过程中遇到问题，请通过以下方式反馈：
+
+- [GitHub Issues](https://github.com/your-repo/tihang-system-mobile/issues)
+- [项目文档](https://your-docs-site.com)
+- 邮箱：2292240763@qq.com
+
+## 👥 团队成员
+
+- **开发者**: accepted (xyj)
+- **邮箱**: 2292240763@qq.com
+- **GitHub**: [xyunjie](https://github.com/xyunjie)
+- **Gitee**: [xyunjie](https://gitee.com/xyunjie)
+
+## 📄 开源协议
+
+本项目基于 [MIT](https://opensource.org/license/mit/) 协议开源
+
+Copyright (c) 2025 accepted
+
+---
+
+<div align="center">
+
+**如果这个项目对您有帮助，请给我们一个 ⭐**
+
+[⬆️ 返回顶部](#tihang-system-mobile)
+
+</div>
