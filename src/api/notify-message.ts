@@ -20,9 +20,13 @@ export function getMyNotifyMessagePage(params: NotifyMessagePageReqVO) {
  * @returns Promise<NotifyMessageRespVO> 消息提醒详情
  */
 export function getNotifyMessageById(id: number) {
-  const headers: Record<string, any> = {
-    'tenant-id': 1, // 默认租户ID
-  }
+  return http.get<NotifyMessageRespVO>(`/admin-api/system/notify-message/my-get?id=${id}`)
+}
 
-  return http.get<NotifyMessageRespVO>(`/admin-api/system/notify-message/get?id=${id}`, undefined, headers)
+/**
+ * 获取未读站内信数量
+ * @returns Promise<number> 未读消息数量
+ */
+export function getUnreadCount() {
+  return http.get<number>('/admin-api/system/notify-message/get-unread-count')
 }

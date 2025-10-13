@@ -154,6 +154,27 @@
           }
         },
         {
+          "path": "attendance/index",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "考勤管理"
+          }
+        },
+        {
+          "path": "attendance/manual-list",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "手动考勤"
+          }
+        },
+        {
+          "path": "attendance/photo-upload",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "考勤照片上传"
+          }
+        },
+        {
           "path": "demo/index",
           "type": "page",
           "layout": "default",

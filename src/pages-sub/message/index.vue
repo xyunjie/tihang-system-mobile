@@ -8,7 +8,7 @@
 
 <script lang="ts" setup>
 import type { NotifyMessagePageReqVO, NotifyMessageRespVO } from '@/api/types/notify-message'
-import { getMyNotifyMessagePage } from '@/api/notify-message'
+import { getMyNotifyMessagePage, getUnreadCount } from '@/api/notify-message'
 import { formatRelativeTime } from '@/utils'
 
 defineOptions({
@@ -30,8 +30,25 @@ const baseParams = reactive({})
 
 // 页面加载
 onLoad(() => {
-  // z-paging会自动触发首次加载
 })
+
+onShow(() => {
+  loadUnreadCount()
+})
+
+// 加载未读消息数量
+async function loadUnreadCount() {
+  try {
+    const response = await getUnreadCount()
+
+    if (response.code === 0 && typeof response.data === 'number') {
+      unreadCount.value = response.data
+    }
+  }
+  catch (error) {
+    console.error('获取未读消息数量失败:', error)
+  }
+}
 
 // 加载消息提醒列表
 async function queryList(pageNo: number, pageSize: number) {
@@ -58,11 +75,10 @@ async function queryList(pageNo: number, pageSize: number) {
       const { list } = response.data
       total.value = response.data.total
 
-      // 统计未读消息数量
-      updateUnreadCount(list)
-
       if (firstLoad.value) {
         firstLoad.value = false
+        // 首次加载后更新未读数量
+        await loadUnreadCount()
       }
 
       // 完成分页加载，z-paging会自动判断是否还有更多数据
@@ -103,12 +119,6 @@ function navigateToDetail(message: NotifyMessageRespVO) {
   uni.navigateTo({
     url: `/pages-sub/message/detail?id=${message.id}`,
   })
-}
-
-// 统计未读消息数量
-function updateUnreadCount(list?: NotifyMessageRespVO[]) {
-  const currentList = list || messageList.value
-  unreadCount.value = currentList.filter(msg => !msg.readStatus).length
 }
 
 // 格式化消息时间
@@ -199,8 +209,11 @@ function getPlainTextContent(htmlContent: string): string {
                 @click="switchFilterTab('unread')"
               >
                 未读
-                <view v-if="unreadCount > 0" class="absolute min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-xs text-white -right-1 -top-1">
-                  {{ unreadCount > 99 ? '99+' : unreadCount }}
+
+                <view v-if="unreadCount > 0" class="absolute h-5 w-5 flex items-center justify-center rounded-full bg-red-500 text-xs text-white -right-1 -top-1">
+                  <span class="px-1.5 py-0.5 text-white font-medium">
+                    {{ unreadCount > 99 ? '99+' : unreadCount }}
+                  </span>
                 </view>
               </view>
               <view

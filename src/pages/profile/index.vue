@@ -74,7 +74,7 @@ function gotoSecurity() {
 // 跳转到考勤管理页面
 function gotoAttendance() {
   uni.navigateTo({
-    url: '/pages-sub/profile/attendance',
+    url: '/pages-sub/attendance/index',
   })
 }
 

@@ -49,3 +49,31 @@ export interface ResetFaceResult {
   /** 响应消息 */
   msg: string
 }
+
+/**
+ * 手动考勤记录响应VO
+ */
+export interface AttendanceManualRespVO {
+  /** 考勤归档记录ID */
+  id: number
+  /** 用户ID */
+  userId: number
+  /** 用户昵称 */
+  nickname: string
+  /** 考勤归档状态 */
+  status: number
+  /** 转换映射 */
+  transMap?: Record<string, any>
+}
+
+/**
+ * 手动考勤请求VO
+ */
+export interface AttendanceManualReqVO {
+  /** 考勤记录ID */
+  id: number
+  /** 考勤人ID */
+  userId: number
+  /** 考勤人状态 1-正常 6-缺勤 */
+  status: number
+}

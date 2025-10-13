@@ -1,4 +1,4 @@
-import type { ResetFaceResult, TodayAttendanceRecordRespVO } from './types/attendance'
+import type { AttendanceManualReqVO, AttendanceManualRespVO, ResetFaceResult, TodayAttendanceRecordRespVO } from './types/attendance'
 import { http } from '@/http/http'
 import { useUserStore } from '@/store'
 
@@ -53,4 +53,21 @@ export function resetFace(file: string): Promise<ResetFaceResult> {
       },
     })
   })
+}
+
+/**
+ * 获取手动考勤列表
+ * @returns Promise<AttendanceManualRespVO[]> 手动考勤列表
+ */
+export function getManualAttendanceList() {
+  return http.get<AttendanceManualRespVO[]>('/admin-api/system/attendance-record/get-manual-list')
+}
+
+/**
+ * 添加手动考勤
+ * @param data 手动考勤请求数据
+ * @returns Promise<number> 考勤记录ID
+ */
+export function addManualAttendance(data: AttendanceManualReqVO) {
+  return http.post<number>('/admin-api/system/attendance-record/manual-attendance', data)
 }

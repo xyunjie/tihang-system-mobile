@@ -23,7 +23,7 @@ import type { NotifyMessageRespVO } from '@/api/types/notify-message'
 import { getArticlePage } from '@/api/article'
 import { getTodayAttendanceRecord } from '@/api/attendance'
 import { getNoticePage } from '@/api/notice'
-import { getMyNotifyMessagePage } from '@/api/notify-message'
+import { getMyNotifyMessagePage, getUnreadCount } from '@/api/notify-message'
 import { formatDateOnly, formatRelativeTime, formatStandardDateTime, formatTimeOnly, parseDateTime } from '@/utils'
 
 defineOptions({
@@ -49,6 +49,7 @@ const notificationLoading = ref(false)
 // 消息提醒
 const messageList = ref<NotifyMessageRespVO[]>([])
 const messageLoading = ref(false)
+const unreadCount = ref(0)
 
 // 文章列表
 const articleList = ref<ArticleSearchRespVO[]>([])
@@ -69,8 +70,6 @@ onLoad(() => {
   loadTodayAttendance()
   // 加载通知公告数据
   loadNotificationList()
-  // 加载消息提醒数据
-  loadMessageList()
   // 加载文章列表数据
   loadArticleList()
 
@@ -79,10 +78,17 @@ onLoad(() => {
     loadTodayAttendance(),
     loadNotificationList(),
     loadMessageList(),
+    loadUnreadCount(),
     loadArticleList(),
   ]).finally(() => {
     pageLoading.value = false
   })
+})
+
+onShow(() => {
+  loadUnreadCount()
+  // 加载消息提醒数据
+  loadMessageList()
 })
 
 // 下拉刷新处理
@@ -99,6 +105,7 @@ async function handlePullDownRefresh() {
       loadTodayAttendance(),
       loadNotificationList(),
       loadMessageList(),
+      loadUnreadCount(),
       loadArticleList(),
     ])
 
@@ -433,6 +440,20 @@ async function loadMessageList() {
   }
 }
 
+// 加载未读消息数量
+async function loadUnreadCount() {
+  try {
+    const response = await getUnreadCount()
+
+    if (response.code === 0 && typeof response.data === 'number') {
+      unreadCount.value = response.data
+    }
+  }
+  catch (error) {
+    console.error('获取未读消息数量失败:', error)
+  }
+}
+
 // 格式化消息时间
 function formatMessageTime(createTime: string | number): string {
   if (!createTime)
@@ -472,11 +493,6 @@ function navigateTo(route: string) {
 // 格式化时间显示
 function formatTimeDisplay(time: string) {
   return time === '--:--' ? '未打卡' : time
-}
-
-// 获取消息未读数量
-function getUnreadMessageCount() {
-  return messageList.value.filter(msg => !msg.readStatus).length
 }
 
 // 加载文章列表数据
@@ -750,8 +766,8 @@ function formatCount(count: number) {
               消息提醒
             </view>
             <view class="flex items-center">
-              <view v-if="getUnreadMessageCount() > 0" class="mr-2 rounded-full bg-red-500 px-2 py-1 text-xs text-white">
-                {{ getUnreadMessageCount() }}
+              <view v-if="unreadCount > 0" class="mr-2 h-5 w-5 flex items-center justify-center rounded-full bg-red-500 text-xs text-white font-medium">
+                {{ unreadCount > 99 ? '99+' : unreadCount }}
               </view>
               <view class="text-sm text-blue-500" @click="navigateTo('/pages-sub/message/index')">
                 查看全部 ›
