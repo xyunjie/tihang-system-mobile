@@ -1,0 +1,290 @@
+{
+  "globalStyle": {
+    "navigationStyle": "default",
+    "navigationBarTitleText": "unibest",
+    "navigationBarBackgroundColor": "#f8f8f8",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#FFFFFF"
+  },
+  "easycom": {
+    "autoscan": true,
+    "custom": {
+      "^fg-(.*)": "@/components/fg-$1/fg-$1.vue",
+      "^wd-(.*)": "wot-design-uni/components/wd-$1/wd-$1.vue",
+      "^(?!z-paging-refresh|z-paging-load-more)z-paging(.*)": "z-paging/components/z-paging$1/z-paging$1.vue"
+    }
+  },
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#018d71",
+    "backgroundColor": "#F8F8F8",
+    "borderStyle": "black",
+    "height": "50px",
+    "fontSize": "10px",
+    "iconWidth": "24px",
+    "spacing": "3px",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "icon": "i-carbon-home",
+        "iconType": "unocss"
+      },
+      {
+        "pagePath": "pages/workspace/index",
+        "text": "工作台",
+        "icon": "i-carbon-workspace",
+        "iconType": "unocss"
+      },
+      {
+        "pagePath": "pages/profile/index",
+        "text": "我的",
+        "icon": "i-carbon-user",
+        "iconType": "unocss"
+      }
+    ]
+  },
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "type": "home",
+      "layout": "tabbar",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "梯航小助手",
+        "enablePullDownRefresh": true,
+        "refresherEnabled": true,
+        "refresherThreshold": 80,
+        "refresherDefaultStyle": "black",
+        "refresherBackground": "#f5f5f5",
+        "backgroundTextStyle": "dark"
+      }
+    },
+    {
+      "path": "pages/about/studio",
+      "type": "page",
+      "style": {
+        "navigationBarTitleText": "关于我们"
+      }
+    },
+    {
+      "path": "pages/bind/index",
+      "type": "page",
+      "layout": "default",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "绑定账号"
+      },
+      "notLogin": true
+    },
+    {
+      "path": "pages/login/index",
+      "type": "page",
+      "layout": "default",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "登录中心",
+        "enablePullDownRefresh": false,
+        "disableScroll": true
+      },
+      "notLogin": true
+    },
+    {
+      "path": "pages/login/scan_login",
+      "type": "page",
+      "layout": "default",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "扫码登录授权",
+        "enablePullDownRefresh": false,
+        "disableScroll": true
+      }
+    },
+    {
+      "path": "pages/profile/index",
+      "type": "page",
+      "layout": "tabbar",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "个人中心",
+        "enablePullDownRefresh": true,
+        "refresherEnabled": true,
+        "refresherThreshold": 80,
+        "refresherDefaultStyle": "black",
+        "refresherBackground": "#f5f5f5",
+        "backgroundTextStyle": "dark"
+      }
+    },
+    {
+      "path": "pages/recruitment/index",
+      "type": "page",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "纳新登记"
+      },
+      "notLogin": true
+    },
+    {
+      "path": "pages/workspace/index",
+      "type": "page",
+      "layout": "tabbar",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "工作台",
+        "enablePullDownRefresh": true
+      }
+    }
+  ],
+  "subPackages": [
+    {
+      "root": "pages-sub",
+      "pages": [
+        {
+          "path": "article/detail",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "文章详情"
+          }
+        },
+        {
+          "path": "article/index",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "文章列表"
+          }
+        },
+        {
+          "path": "demo/index",
+          "type": "page",
+          "layout": "default",
+          "style": {
+            "navigationBarTitleText": "分包页面"
+          }
+        },
+        {
+          "path": "help/detail",
+          "type": "page",
+          "layout": "default",
+          "style": {
+            "navigationStyle": "default",
+            "navigationBarTitleText": "问题详情"
+          }
+        },
+        {
+          "path": "help/index",
+          "type": "page",
+          "layout": "tabbar",
+          "style": {
+            "navigationStyle": "default",
+            "navigationBarTitleText": "帮助中心"
+          }
+        },
+        {
+          "path": "message/detail",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "消息详情"
+          }
+        },
+        {
+          "path": "message/index",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "消息提醒"
+          }
+        },
+        {
+          "path": "notification/detail",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "通知详情"
+          }
+        },
+        {
+          "path": "notification/index",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "通知公告"
+          }
+        },
+        {
+          "path": "profile/attendance",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "考勤配置"
+          }
+        },
+        {
+          "path": "profile/edit",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "编辑资料"
+          }
+        },
+        {
+          "path": "profile/security",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "账号安全"
+          }
+        },
+        {
+          "path": "bpm/approval/index",
+          "type": "page",
+          "layout": "default",
+          "style": {
+            "navigationBarTitleText": "流程详情"
+          }
+        },
+        {
+          "path": "bpm/business-process/index",
+          "type": "page",
+          "layout": "default",
+          "style": {
+            "navigationBarTitleText": "业务申请"
+          }
+        },
+        {
+          "path": "bpm/copy/index",
+          "type": "page",
+          "layout": "default",
+          "style": {
+            "navigationBarTitleText": "抄送列表"
+          }
+        },
+        {
+          "path": "bpm/custom-form/index",
+          "type": "page",
+          "layout": "default",
+          "style": {
+            "navigationBarTitleText": "自定义表单"
+          }
+        },
+        {
+          "path": "bpm/done/index",
+          "type": "page",
+          "layout": "default",
+          "style": {
+            "navigationBarTitleText": "已办任务"
+          }
+        },
+        {
+          "path": "bpm/my-approval/index",
+          "type": "page",
+          "layout": "default",
+          "style": {
+            "navigationBarTitleText": "我的审批"
+          }
+        },
+        {
+          "path": "bpm/todo/index",
+          "type": "page",
+          "layout": "default",
+          "style": {
+            "navigationBarTitleText": "待办任务"
+          }
+        }
+      ]
+    }
+  ]
+}
