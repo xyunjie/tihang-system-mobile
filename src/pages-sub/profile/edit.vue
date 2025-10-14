@@ -11,8 +11,8 @@
 import type { ISystemUserInfoVo, IUserProfileUpdateReqVO } from '@/api/types/user'
 import { ref } from 'vue'
 import { getUserInfo, updateUserProfile, uploadFile } from '@/api/user'
-import KspCropper from '@/components/ksp-cropper.vue'
 import { useUserStore } from '@/store'
+import { compressImage } from '@/utils'
 
 defineOptions({
   name: 'ProfileEdit',
@@ -34,8 +34,7 @@ const formData = ref<IUserProfileUpdateReqVO>({
 
 // 图片裁剪相关
 const showCropper = ref(false)
-const cropImageSrc = ref('')
-const avatarSource = ref<'wechat' | 'album' | 'camera' | ''>('') // 头像来源
+const selectedImagePath = ref('')
 
 // 头像上传状态
 const avatarUploading = ref(false)
@@ -84,114 +83,94 @@ function clearMobileInput() {
   })
 }
 
-// 统一的头像选择处理
+// 微信头像选择处理
 function onChooseAvatar(e: any) {
   console.log('🎯 微信头像选择:', e)
   if (e.detail.avatarUrl) {
-    // 标记来源为微信头像
-    avatarSource.value = 'wechat'
-    // 微信头像选择后也弹出裁切组件
-    cropImageSrc.value = e.detail.avatarUrl
+    // 显示裁剪组件
+    selectedImagePath.value = e.detail.avatarUrl
     showCropper.value = true
   }
 }
 
-// 统一处理头像选择结果
-async function handleAvatarSelected(imagePath: string, source?: 'wechat' | 'album' | 'camera') {
-  try {
-    avatarUploading.value = true
-
-    // 根据来源显示不同的上传提示
-    const sourceText = {
-      wechat: '微信头像',
-      album: '相册图片',
-      camera: '拍照图片',
-    }[source || ''] || '头像'
-
-    // 显示上传提示
-    uni.showLoading({
-      title: `正在上传${sourceText}...`,
-      mask: true,
-    })
-
-    // 上传图片到服务器
-    const serverImageUrl = await uploadFile(imagePath, 'avatar')
-
-    // 设置服务器返回的图片URL
-    formData.value.avatar = serverImageUrl
-
-    uni.hideLoading()
-    console.log('✅ 头像上传成功:', serverImageUrl, '来源:', source)
-    uni.showToast({
-      title: `${sourceText}上传成功`,
-      icon: 'success',
-    })
-
-    // 清空来源标记
-    avatarSource.value = ''
-  }
-  catch (error: any) {
-    uni.hideLoading()
-    console.error('❌ 头像上传失败:', error)
-
-    let errorMessage = '上传失败，请重试'
-    if (error.message) {
-      if (error.message.includes('网络')) {
-        errorMessage = '网络连接失败，请检查网络'
-      }
-      else if (error.message.includes('格式')) {
-        errorMessage = '图片格式不支持'
-      }
-      else if (error.message.includes('大小')) {
-        errorMessage = '图片文件过大'
-      }
-      else {
-        errorMessage = error.message
-      }
-    }
-
-    uni.showToast({
-      title: errorMessage,
-      icon: 'none',
-      duration: 3000,
-    })
-  }
-  finally {
-    avatarUploading.value = false
-  }
-}
-
-// 裁剪确认回调
-async function onCropConfirm(result: any) {
-  console.log('✂️ 裁剪结果:', result)
-  console.log('🎯 头像来源:', avatarSource.value)
-
-  // 根据来源显示不同的提示信息
-  const sourceText = {
-    wechat: '微信头像',
-    album: '相册图片',
-    camera: '拍照图片',
-  }[avatarSource.value] || '图片'
-
-  console.log(`📤 正在上传${sourceText}...`)
-
-  // 关闭裁剪组件
+/**
+ * 裁剪确认 - 按照 wd-img-cropper 组件格式处理
+ */
+async function onCropConfirm(event: any) {
   showCropper.value = false
 
-  // ksp-cropper 返回的数据格式为 { path: string, base64?: string }
-  const localImagePath = result.path
+  // wd-img-cropper 返回的数据格式为 { tempFilePath }
+  if (event && event.tempFilePath) {
+    try {
+      avatarUploading.value = true
 
-  // 使用统一的头像处理逻辑，传递来源信息
-  await handleAvatarSelected(localImagePath, avatarSource.value || undefined)
+      // 显示压缩提示
+      uni.showLoading({
+        title: '压缩处理中...',
+        mask: true,
+      })
+
+      // 压缩图片到500KB以内
+      const compressedPath = await compressImage(event.tempFilePath, 500 * 1024, 0.8)
+
+      // 更新加载提示
+      uni.showLoading({
+        title: '正在上传头像...',
+        mask: true,
+      })
+
+      // 上传图片到服务器
+      const serverImageUrl = await uploadFile(compressedPath, 'avatar')
+
+      // 设置服务器返回的图片URL
+      formData.value.avatar = serverImageUrl
+
+      uni.hideLoading()
+      uni.showToast({
+        title: '头像上传成功',
+        icon: 'success',
+      })
+    }
+    catch (error: any) {
+      uni.hideLoading()
+
+      let errorMessage = '上传失败,请重试'
+      if (error.message) {
+        if (error.message.includes('网络')) {
+          errorMessage = '网络连接失败,请检查网络'
+        }
+        else if (error.message.includes('格式')) {
+          errorMessage = '图片格式不支持'
+        }
+        else if (error.message.includes('大小')) {
+          errorMessage = '图片文件过大'
+        }
+        else if (error.message.includes('压缩') || error.message.includes('处理')) {
+          errorMessage = '图片处理失败,请重试'
+        }
+        else {
+          errorMessage = error.message
+        }
+      }
+
+      uni.showToast({
+        title: errorMessage,
+        icon: 'none',
+        duration: 3000,
+      })
+    }
+    finally {
+      avatarUploading.value = false
+    }
+  }
 }
 
-// 裁剪取消回调
+/**
+ * 裁剪取消
+ */
 function onCropCancel() {
   showCropper.value = false
-  console.log('👋 用户取消裁剪，来源:', avatarSource.value)
-
-  // 清空来源标记
-  avatarSource.value = ''
+  selectedImagePath.value = ''
 }
 
 // 提交表单
@@ -283,7 +262,8 @@ onLoad(() => {
 </script>
 
 <template>
-  <view class="min-h-screen bg-gray-50">
+  <!-- 主页面容器 -->
+  <view v-show="!showCropper" class="min-h-screen bg-gray-50">
     <!-- 加载状态 -->
     <view v-if="loading" class="flex items-center justify-center py-20">
       <view class="text-sm text-gray-500">
@@ -464,18 +444,16 @@ onLoad(() => {
         {{ submitting ? '保存中...' : '保存修改' }}
       </button>
     </view>
-
-    <!-- 图片裁剪组件 -->
-    <KspCropper
-      v-if="showCropper"
-      :url="cropImageSrc"
-      mode="ratio"
-      :width="300"
-      :height="300"
-      @ok="onCropConfirm"
-      @cancel="onCropCancel"
-    />
   </view>
+
+  <!-- 图片裁剪组件 - 独立于主容器外，确保在最顶层 -->
+  <wd-img-cropper
+    v-model="showCropper"
+    :img-src="selectedImagePath"
+    aspect-ratio="64:64"
+    @confirm="onCropConfirm"
+    @cancel="onCropCancel"
+  />
 </template>
 
 <style lang="scss" scoped>

@@ -12,6 +12,7 @@ import { computed, ref } from 'vue'
 import { resetFace as resetFaceApi } from '@/api/attendance'
 import { getUserExtra } from '@/api/user'
 import { useUserStore } from '@/store'
+import { compressImage } from '@/utils'
 
 // 页面状态
 const attendancePhotoUrl = ref<string>('')
@@ -176,61 +177,6 @@ function selectPhoto() {
 }
 
 /**
- * 压缩图片到指定大小
- * @param filePath 图片路径
- * @param maxSize 最大大小（字节）
- * @param quality 初始质量（0-1）
- */
-function compressImage(filePath: string, maxSize: number = 2 * 1024 * 1024, quality: number = 0.8): Promise<string> {
-  return new Promise((resolve, reject) => {
-    // 先检查原始文件大小
-    uni.getFileInfo({
-      filePath,
-      success: (fileInfo) => {
-        if (fileInfo.size <= maxSize) {
-          // 如果已经小于目标大小，直接返回
-          resolve(filePath)
-          return
-        }
-
-        // 需要压缩
-        let currentQuality = quality
-
-        function tryCompress() {
-          uni.compressImage({
-            src: filePath,
-            quality: Math.round(currentQuality * 100),
-            success: (compressRes) => {
-              // 检查压缩后的文件大小
-              uni.getFileInfo({
-                filePath: compressRes.tempFilePath,
-                success: (compressedFileInfo) => {
-                  if (compressedFileInfo.size <= maxSize || currentQuality <= 0.1) {
-                    // 达到目标大小或质量已经很低，返回结果
-                    console.log(`图片压缩成功：${fileInfo.size} -> ${compressedFileInfo.size} bytes, 质量: ${currentQuality}`)
-                    resolve(compressRes.tempFilePath)
-                  }
-                  else {
-                    // 还是太大，降低质量再次压缩
-                    currentQuality -= 0.1
-                    tryCompress()
-                  }
-                },
-                fail: () => reject(new Error('获取压缩后文件信息失败')),
-              })
-            },
-            fail: () => reject(new Error('图片压缩失败')),
-          })
-        }
-
-        tryCompress()
-      },
-      fail: () => reject(new Error('获取文件信息失败')),
-    })
-  })
-}
-
-/**
  * 预览照片
  */
 function previewPhoto() {
@@ -246,7 +192,6 @@ function previewPhoto() {
  * 裁剪确认 - 按照官方文档格式处理
  */
 async function onCropConfirm(event: any) {
-  console.log('裁剪结果:', event)
   showCropper.value = false
 
   // wd-img-cropper 返回的数据格式为 { tempFilePath }
@@ -264,10 +209,6 @@ async function onCropConfirm(event: any) {
       attendancePhotoUrl.value = compressedPath
 
       uni.hideLoading()
-      uni.showToast({
-        title: '照片已处理，请点击更新',
-        icon: 'none',
-      })
     }
     catch (error) {
       uni.hideLoading()

@@ -229,13 +229,6 @@
           }
         },
         {
-          "path": "profile/attendance",
-          "type": "page",
-          "style": {
-            "navigationBarTitleText": "考勤配置"
-          }
-        },
-        {
           "path": "profile/edit",
           "type": "page",
           "style": {

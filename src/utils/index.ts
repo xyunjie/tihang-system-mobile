@@ -488,3 +488,76 @@ export function formatStandardDateTime(dateTimeStr: string | number): string {
 
   return `${year}-${month}-${day} ${hour}:${minute}`
 }
+
+/**
+ * 压缩图片到指定大小
+ * 自适应压缩机制：如果图片大小超过目标大小，会逐步降低质量直到达标或质量低于10%
+ * @param filePath 图片路径
+ * @param maxSize 最大大小（字节），默认 500KB
+ * @param quality 初始质量（0-1），默认 0.8
+ * @returns Promise<string> 压缩后的图片路径
+ * @example
+ * // 压缩到 500KB
+ * const compressedPath = await compressImage(filePath)
+ *
+ * // 压缩到 1MB
+ * const compressedPath = await compressImage(filePath, 1024 * 1024)
+ *
+ * // 压缩到 2MB，初始质量 90%
+ * const compressedPath = await compressImage(filePath, 2 * 1024 * 1024, 0.9)
+ */
+export function compressImage(
+  filePath: string,
+  maxSize: number = 500 * 1024,
+  quality: number = 0.8,
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    // 先检查原始文件大小
+    uni.getFileInfo({
+      filePath,
+      success: (fileInfo) => {
+        if (fileInfo.size <= maxSize) {
+          // 如果已经小于目标大小，直接返回
+          console.log(`图片无需压缩: ${fileInfo.size} bytes`)
+          resolve(filePath)
+          return
+        }
+
+        // 需要压缩
+        let currentQuality = quality
+
+        function tryCompress() {
+          uni.compressImage({
+            src: filePath,
+            quality: Math.round(currentQuality * 100),
+            success: (compressRes) => {
+              // 检查压缩后的文件大小
+              uni.getFileInfo({
+                filePath: compressRes.tempFilePath,
+                success: (compressedFileInfo) => {
+                  if (compressedFileInfo.size <= maxSize || currentQuality <= 0.1) {
+                    // 达到目标大小或质量已经很低，返回结果
+                    console.log(
+                      `图片压缩成功: ${fileInfo.size} -> ${compressedFileInfo.size} bytes, 质量: ${currentQuality}`,
+                    )
+                    resolve(compressRes.tempFilePath)
+                  }
+                  else {
+                    // 还是太大，降低质量再次压缩
+                    currentQuality -= 0.1
+                    tryCompress()
+                  }
+                },
+                fail: () => reject(new Error('获取压缩后文件信息失败')),
+              })
+            },
+            fail: () => reject(new Error('图片压缩失败')),
+          })
+        }
+
+        tryCompress()
+      },
+      fail: () => reject(new Error('获取文件信息失败')),
+    })
+  })
+}
