@@ -1,4 +1,4 @@
-import type { ISystemUserInfoVo, IUserProfileLoginLogRespVO, IUserProfileUpdatePasswordReqVO, IUserProfileUpdateReqVO, UserExtraRespVO, UserExtraResult, UserSimpleRespVO } from '@/api/types/user'
+import type { GetDeptTreeUsersParams, GetDeptTreeUsersRes, GetUserProfileParams, ISystemUserInfoVo, IUserProfileLoginLogRespVO, IUserProfileUpdatePasswordReqVO, IUserProfileUpdateReqVO, UserExtraRespVO, UserExtraResult, UserSimpleRespVO } from '@/api/types/user'
 import { http } from '@/http/http'
 import { useUserStore } from '@/store'
 
@@ -112,4 +112,21 @@ export async function getSimpleUserList(): Promise<UserSimpleRespVO[]> {
  */
 export function getUserExtra(id: number) {
   return http.get<UserExtraRespVO>('/admin-api/system/user-extra/get', { id })
+}
+
+/**
+ * 部门树用户
+ * @param id 部门ID
+ */
+export function getDeptTreeUsers(id: number, params?: GetDeptTreeUsersParams) {
+  return http.get<GetDeptTreeUsersRes['data']>('/admin-api/system/user/dept-tree-users', { id, ...(params || {}) })
+}
+
+/**
+ * 获得登录用户信息（按ID）
+ * @param id 用户ID
+ * @param params 预留扩展参数
+ */
+export function getUserProfile(id: number, params?: GetUserProfileParams) {
+  return http.get<ISystemUserInfoVo>('/admin-api/system/user/profile/get', { id, ...(params || {}) })
 }

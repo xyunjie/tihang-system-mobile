@@ -37,6 +37,12 @@
         "iconType": "unocss"
       },
       {
+        "pagePath": "pages/contact/index",
+        "text": "通讯录",
+        "icon": "i-carbon-user-multiple",
+        "iconType": "unocss"
+      },
+      {
         "pagePath": "pages/profile/index",
         "text": "我的",
         "icon": "i-carbon-user",
@@ -76,6 +82,19 @@
         "navigationBarTitleText": "绑定账号"
       },
       "notLogin": true
+    },
+    {
+      "path": "pages/contact/index",
+      "type": "page",
+      "layout": "tabbar",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "通讯录",
+        "enablePullDownRefresh": true,
+        "refresherEnabled": true,
+        "refresherThreshold": 80,
+        "backgroundTextStyle": "dark"
+      }
     },
     {
       "path": "pages/login/index",
@@ -172,6 +191,16 @@
           "type": "page",
           "style": {
             "navigationBarTitleText": "考勤照片上传"
+          }
+        },
+        {
+          "path": "contact/profile",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "个人主页",
+            "navigationStyle": "default",
+            "enablePullDownRefresh": true,
+            "backgroundTextStyle": "dark"
           }
         },
         {

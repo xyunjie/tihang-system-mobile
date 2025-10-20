@@ -61,6 +61,9 @@ export interface ISystemUserInfoVo {
     /* 岗位名称 */
     name: string
   }[]
+
+  /* 学院班级 */
+  schoolDeptName?: string
 }
 
 /**
@@ -187,5 +190,92 @@ export interface UserExtraResult {
 export interface CommonResultListUserSimpleRespVO {
   code: number
   data: UserSimpleRespVO[]
+  msg: string
+}
+
+// 部门树用户请求参数
+export interface GetDeptTreeUsersParams {
+  // 预留扩展参数，例如关键字筛选等
+  keyword?: string
+}
+
+// 部门树用户响应结构
+export interface GetDeptTreeUsersRes {
+  code: number
+  data: {
+    dept: {
+      id: number
+      name: string
+      parentId: number
+      sort: number
+      leaderUserId: number
+      leaderName: string
+      phone: string
+      email: string
+      status: number
+      createTime: Record<string, unknown>
+      transMap: Record<string, unknown>
+    }
+    children: {
+      id: number
+      name: string
+      parentId: number
+      sort: number
+      leaderUserId: number
+      leaderName: string
+      phone: string
+      email: string
+      status: number
+      createTime: Record<string, unknown>
+      transMap: Record<string, unknown>
+    }[]
+    users: {
+      id: number
+      username: string
+      nickname: string
+      remark: string
+      deptId: number
+      deptName: string
+      schoolDeptName: string
+      roleIds: Record<string, unknown>[]
+      roles: Record<string, unknown>[]
+      ojUid: number
+      ojInfo: {
+        uid: number
+        priv: number
+      }
+      gitId: number
+      gitInfo: {
+        id: number
+        isAdmin: boolean
+        prohibitLogin: boolean
+      }
+      postIds: Record<string, unknown>[]
+      email: string
+      mobile: string
+      sex: number
+      avatar: string
+      status: number
+      loginIp: string
+      loginDate: Record<string, unknown>
+      createTime: Record<string, unknown>
+    }[]
+    transMap: Record<string, unknown>
+  }
+  msg: string
+}
+
+// 获取用户个人信息请求参数（预留扩展）
+export interface GetUserProfileParams {
+  // 目前无需额外参数，占位以便未来扩展
+}
+
+// 获取用户个人信息响应结构
+export interface GetUserProfileRes {
+  /* 状态码 */
+  code: number
+  /* 返回数据 */
+  data: ISystemUserInfoVo
+  /* 返回消息 */
   msg: string
 }

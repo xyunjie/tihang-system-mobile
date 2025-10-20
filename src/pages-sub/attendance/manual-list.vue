@@ -65,12 +65,12 @@ async function queryList(pageNo: number, pageSize: number) {
 
 // 处理考勤操作
 async function handleAttendance(item: AttendanceManualRespVO, status: number) {
-  // 防止重复点击
-  if (processingIds.value.has(item.id)) {
+  // 防止重复点击（以 userId 为唯一标识）
+  if (processingIds.value.has(item.userId)) {
     return
   }
 
-  processingIds.value.add(item.id)
+  processingIds.value.add(item.userId)
 
   try {
     const statusText = status === 1 ? '正常' : '缺勤'
@@ -89,10 +89,11 @@ async function handleAttendance(item: AttendanceManualRespVO, status: number) {
       })
 
       // 更新列表中的状态
-      const index = manualList.value.findIndex(i => i.id === item.id)
-      if (index !== -1) {
-        manualList.value[index].status = status
+      const i = manualList.value.findIndex(i => i.id === item.id)
+      if (i !== -1) {
+        manualList.value[i].status = status
       }
+      item.id = response.data
     }
     else {
       uni.showToast({
@@ -111,7 +112,7 @@ async function handleAttendance(item: AttendanceManualRespVO, status: number) {
     })
   }
   finally {
-    processingIds.value.delete(item.id)
+    processingIds.value.delete(item.userId)
   }
 }
 
@@ -148,8 +149,8 @@ function getStatusColor(status: number | null): string {
 }
 
 // 判断按钮是否正在处理
-function isProcessing(id: number): boolean {
-  return processingIds.value.has(id)
+function isProcessing(userId: number): boolean {
+  return processingIds.value.has(userId)
 }
 
 // 判断是否显示正常按钮
@@ -191,8 +192,8 @@ function shouldShowAbsentButton(status: number | null): boolean {
       <!-- 列表内容 -->
       <view v-else class="p-4">
         <view
-          v-for="item in manualList"
-          :key="item.id"
+          v-for="(item, index) in manualList"
+          :key="index"
           class="mb-4 overflow-hidden rounded-2xl bg-white shadow-sm"
         >
           <view class="p-4">
@@ -212,8 +213,8 @@ function shouldShowAbsentButton(status: number | null): boolean {
                   v-if="shouldShowNormalButton(item.status)"
                   type="success"
                   size="small"
-                  :disabled="isProcessing(item.id)"
-                  :loading="isProcessing(item.id)"
+                  :disabled="isProcessing(item.userId)"
+                  :loading="isProcessing(item.userId)"
                   @click="handleAttendance(item, 1)"
                 >
                   正常
@@ -222,8 +223,8 @@ function shouldShowAbsentButton(status: number | null): boolean {
                   v-if="shouldShowAbsentButton(item.status)"
                   type="error"
                   size="small"
-                  :disabled="isProcessing(item.id)"
-                  :loading="isProcessing(item.id)"
+                  :disabled="isProcessing(item.userId)"
+                  :loading="isProcessing(item.userId)"
                   @click="handleAttendance(item, 6)"
                 >
                   缺勤

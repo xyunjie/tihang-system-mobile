@@ -78,7 +78,8 @@ function redirectToTarget() {
   const tabPages = {
     '/pages/index/index': 0,
     '/pages/workspace/index': 1,
-    '/pages/profile/index': 2,
+    '/pages/contact/index': 2,
+    '/pages/profile/index': 3,
   }
 
   // 检查是否为Tab页面
@@ -115,6 +116,7 @@ function getPageName(path: string): string {
   const nameMap = {
     '/pages/index/index': '首页',
     '/pages/workspace/index': '工作台',
+    '/pages/contact/index': '通讯录',
     '/pages/profile/index': '个人中心',
   }
   return nameMap[path] || '页面'
