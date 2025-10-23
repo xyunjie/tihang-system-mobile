@@ -9,7 +9,7 @@
 <script lang="ts" setup>
 import type { ArticleDetailRespVO } from '@/api/types/article'
 import { getArticleDetail } from '@/api/article'
-import HtmlRenderer from '@/components/HtmlRenderer.vue'
+import mpHtml from '@/components/mp-html/mp-html.vue'
 import { formatStandardDateTime } from '@/utils'
 
 defineOptions({
@@ -22,6 +22,12 @@ const article = ref<ArticleDetailRespVO | null>(null)
 const loading = ref(true)
 const isLoved = ref(false)
 const isStarred = ref(false)
+
+const tagStyle = {
+  table: 'border-collapse: collapse; width: 100%; border: 1px solid #d1d5db;',
+  th: 'border: 1px solid #d1d5db; padding: 6px; background-color: #f9fafb; text-align: left; box-sizing: border-box;',
+  td: 'border: 1px solid #d1d5db; padding: 6px; text-align: left; box-sizing: border-box;'
+}
 
 // 页面加载
 onLoad((options) => {
@@ -89,24 +95,6 @@ function formatCount(count: number): string {
     return `${(count / 1000).toFixed(1)}k`
   }
   return count.toString()
-}
-
-// 处理图片点击 - 打开预览
-function handleImageTap(urls: string[], index: number) {
-  if (!urls || urls.length === 0) {
-    return
-  }
-
-  uni.previewImage({
-    urls, // 所有图片列表
-    current: index, // 当前显示图片的索引
-    fail() {
-      uni.showToast({
-        title: '图片预览失败',
-        icon: 'none',
-      })
-    },
-  })
 }
 </script>
 
@@ -189,15 +177,9 @@ function handleImageTap(urls: string[], index: number) {
 
       <!-- 文章正文 -->
       <view class="mb-4 overflow-hidden rounded-2xl bg-white shadow-sm">
-        <view v-if="article.content" class="p-4">
-          <!-- 使用 HtmlRenderer 组件渲染 HTML 内容，支持数学公式和代码高亮 -->
-          <HtmlRenderer
-            :content="article.content"
-            :enable-math="true"
-            :enable-code-highlight="true"
-            content-class="html-content"
-            @image-tap="handleImageTap"
-          />
+        <view v-if="article.content" class="p-4 content-body">
+          <!-- 使用 mp-html 渲染 HTML 内容 -->
+          <HtmlContent :content="article.content" />
         </view>
         <view v-else class="p-4 text-center text-gray-500">
           暂无文章内容
@@ -219,5 +201,28 @@ function handleImageTap(urls: string[], index: number) {
 </template>
 
 <style lang="scss" scoped>
-/* 使用UnoCSS原子类样式 */
+/* 小程序端不支持 img 标签选择器，使用类选择器并通过 :deep 作用于子组件 */
+.content-body :deep(._img) {
+  max-width: 100%;
+  border-radius: 8px;
+}
+
+.content-body :deep(._pre) {
+  white-space: pre;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 10px;
+  border-radius: 8px;
+  background: #f7fafc;
+}
+
+.content-body :deep(._code) {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 13px;
+  background: rgba(0, 0, 0, 0.04);
+  padding: 0 4px;
+  border-radius: 4px;
+}
 </style>

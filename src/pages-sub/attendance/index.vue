@@ -30,6 +30,14 @@ const functionList = [
     color: 'text-green-600 bg-green-50',
     route: '/pages-sub/attendance/manual-list',
   },
+  {
+    id: 3,
+    title: '课程表管理',
+    description: '设置每周课程安排',
+    icon: 'calendar',
+    color: 'text-purple-600 bg-purple-50',
+    route: '/pages-sub/attendance/timetable',
+  },
 ]
 
 // 跳转到指定功能
@@ -60,7 +68,7 @@ function navigateToFunction(route: string) {
         <view class="p-4">
           <view class="flex items-center">
             <view class="mr-4 h-12 w-12 flex flex-shrink-0 items-center justify-center rounded-full" :class="item.color">
-              <wd-icon :name="item.icon" size="20rpx" />
+              <wd-icon :name="item.icon" />
             </view>
             <view class="min-w-0 flex-1">
               <view class="mb-1 text-base text-gray-800 font-semibold">

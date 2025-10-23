@@ -1,4 +1,4 @@
-import type { AttendanceManualReqVO, AttendanceManualRespVO, ResetFaceResult, TodayAttendanceRecordRespVO } from './types/attendance'
+import type { AttendanceManualReqVO, AttendanceManualRespVO, EduScheduleRespVO, EduScheduleSaveReqVO, ResetFaceResult, TodayAttendanceRecordRespVO } from './types/attendance'
 import { http } from '@/http/http'
 import { useUserStore } from '@/store'
 
@@ -70,4 +70,22 @@ export function getManualAttendanceList() {
  */
 export function addManualAttendance(data: AttendanceManualReqVO) {
   return http.post<number>('/admin-api/system/attendance-record/manual-attendance', data)
+}
+
+/**
+ * 获取个人课程安排
+ */
+export function getEduSchedule() {
+  return http.get<EduScheduleRespVO[]>('/admin-api/system/edu-schedule/get', {}, {
+    'tenant-id': 1,
+  })
+}
+
+/**
+ * 创建个人课程安排
+ */
+export function createEduSchedule(data: EduScheduleSaveReqVO) {
+  return http.post<number>('/admin-api/system/edu-schedule/create', data, {
+    'tenant-id': 1,
+  })
 }

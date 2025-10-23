@@ -226,7 +226,19 @@ export function parseDateTime(dateTimeStr: string | number): Date | null {
     }
 
     // 处理其他常见格式
-    // 尝试直接解析
+    // 优先规范化 iOS 不支持的 "YYYY-MM-DD HH:mm:ss" 格式
+    const hyphenDateTime = /^(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/
+    const hyphenMatch = cleanDateStr.match(hyphenDateTime)
+    if (hyphenMatch) {
+      const [, year, month, day, hour, minute, second] = hyphenMatch
+      const normalized = `${year}/${month}/${day} ${hour}:${minute}:${second || '00'}`
+      const iosDate = new Date(normalized)
+      if (!Number.isNaN(iosDate.getTime())) {
+        return iosDate
+      }
+    }
+
+    // 再尝试直接解析
     const date = new Date(cleanDateStr)
 
     // 验证日期是否有效

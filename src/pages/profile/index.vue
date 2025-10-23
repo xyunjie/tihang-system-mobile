@@ -78,12 +78,19 @@ function gotoAttendance() {
   })
 }
 
+// 新增：跳转到 OJ 信息页面
+function gotoOJInfo() {
+  uni.navigateTo({
+    url: '/pages-sub/oj/index',
+  })
+}
+
 // 快捷操作列表
 const quickActions = [
   { icon: 'user', label: '编辑资料', color: 'bg-blue-500', handler: editProfile },
   { icon: 'lock-on', label: '账号安全', color: 'bg-green-500', handler: gotoSecurity },
   { icon: 'time', label: '考勤管理', color: 'bg-purple-500', handler: gotoAttendance },
-  { icon: 'help', label: '帮助反馈', color: 'bg-orange-500', handler: () => showToast('帮助反馈') },
+  { icon: 'code', label: 'OJ信息', color: 'bg-orange-500', handler: gotoOJInfo },
 ]
 
 // 格式化性别

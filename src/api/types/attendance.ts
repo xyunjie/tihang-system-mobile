@@ -77,3 +77,31 @@ export interface AttendanceManualReqVO {
   /** 考勤人状态 1-正常 6-缺勤 */
   status: number
 }
+
+export interface EduScheduleSaveReqVO {
+  /** 学期周数（如：[1,2,3]） */
+  week: number[]
+  /** 星期几（1=周一，7=周日） */
+  weekday: number
+  /** 节次（从1开始） */
+  section: number
+  /** 备注 */
+  remark?: string
+}
+
+export interface EduScheduleRespVO {
+  /** 主键ID */
+  id: number
+  /** 用户ID */
+  userId: number
+  /** 学期ID */
+  termId: number
+  /** 第几周（单周） */
+  week: number
+  /** 星期几（1=周一，7=周日） */
+  weekday: number
+  /** 节次（从1开始） */
+  section: number
+  /** 备注 */
+  remark?: string
+}

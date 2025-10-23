@@ -194,6 +194,16 @@
           }
         },
         {
+          "path": "attendance/timetable",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "课程表管理",
+            "navigationStyle": "default",
+            "enablePullDownRefresh": false,
+            "backgroundTextStyle": "dark"
+          }
+        },
+        {
           "path": "contact/profile",
           "type": "page",
           "style": {
@@ -255,6 +265,15 @@
           "type": "page",
           "style": {
             "navigationBarTitleText": "通知公告"
+          }
+        },
+        {
+          "path": "oj/index",
+          "type": "page",
+          "layout": "default",
+          "style": {
+            "navigationStyle": "default",
+            "navigationBarTitleText": "在线评测系统信息"
           }
         },
         {
@@ -325,6 +344,77 @@
           "layout": "default",
           "style": {
             "navigationBarTitleText": "待办任务"
+          }
+        },
+        {
+          "path": "oj/contest/detail",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "比赛详情"
+          }
+        },
+        {
+          "path": "oj/contest/homework",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "作业列表"
+          }
+        },
+        {
+          "path": "oj/contest/list",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "比赛列表"
+          }
+        },
+        {
+          "path": "oj/contest/rank",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "比赛排行榜"
+          }
+        },
+        {
+          "path": "oj/contest/record",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "提交记录"
+          }
+        },
+        {
+          "path": "oj/problem/detail",
+          "type": "page",
+          "layout": "default",
+          "style": {
+            "navigationBarTitleText": "题目详情"
+          }
+        },
+        {
+          "path": "oj/record/detail",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "评测详情"
+          }
+        },
+        {
+          "path": "oj/record/list",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "评测记录"
+          }
+        },
+        {
+          "path": "oj/training/detail",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "训练详情"
+          }
+        },
+        {
+          "path": "oj/training/list",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "训练列表"
           }
         }
       ]
