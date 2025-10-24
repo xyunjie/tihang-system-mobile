@@ -36,7 +36,11 @@ const loginForm = reactive<ILoginForm>({
 const isLoading = ref(false)
 const showPassword = ref(false)
 const wxLoading = ref(false) // 微信登录加载状态
-const loginMode = ref<'normal' | 'wechat'>('wechat') // 登录模式
+let defaultMode: 'normal' | 'wechat' = 'normal'
+// #ifdef MP-WEIXIN
+defaultMode = 'wechat'
+// #endif
+const loginMode = ref<'normal' | 'wechat'>(defaultMode) // 登录模式
 
 // 在页面加载时设置防返回拦截
 onLoad(() => {
@@ -307,6 +311,7 @@ async function handleOneClickLogin() {
       </view>
 
       <!-- 登录模式切换 -->
+      <!-- #ifdef MP-WEIXIN -->
       <view v-if="!userStore.userInfo.username" style="margin-bottom: 30rpx;">
         <wd-tabs
           v-model="loginMode"
@@ -321,6 +326,7 @@ async function handleOneClickLogin() {
           <wd-tab name="normal" title="🔐 账号登录" />
         </wd-tabs>
       </view>
+      <!-- #endif -->
 
       <!-- 统一登录内容容器（使用绝对定位避免频闪） -->
       <view class="login-content mb-4" style="position: relative; height: 400rpx; overflow: hidden;">
@@ -380,6 +386,7 @@ async function handleOneClickLogin() {
         </view>
 
         <!-- 微信登录 -->
+        <!-- #ifdef MP-WEIXIN -->
         <view
           class="wechat-login text-center"
           style="position: absolute; top: 0; left: 0; width: 100%; transition: transform 0.3s ease, opacity 0.3s ease;"
@@ -410,6 +417,7 @@ async function handleOneClickLogin() {
             </wd-button>
           </view>
         </view>
+        <!-- #endif -->
       </view>
 
       <!-- 纳新登记入口 -->
