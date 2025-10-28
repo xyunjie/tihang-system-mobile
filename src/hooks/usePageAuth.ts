@@ -5,9 +5,15 @@ import { notLoginPages as _notLoginPages, getNotLoginPages } from '@/utils'
 const loginRoute = import.meta.env.VITE_LOGIN_URL
 const isDev = import.meta.env.DEV
 
-function isLogined() {
+function getTokens() {
   const userStore = useUserStore()
-  return !!userStore.userInfo.username
+  const accessToken = userStore.userInfo.accessToken || uni.getStorageSync('accessToken')
+  const refreshToken = userStore.userInfo.refreshToken || uni.getStorageSync('refreshToken')
+  return { accessToken, refreshToken }
+}
+
+function tryAutoLogin() {
+  return false
 }
 
 // 检查当前页面是否需要登录（白名单模式）
@@ -42,10 +48,17 @@ export function usePageAuth() {
         return true
       }
 
-      const hasLogin = isLogined()
+      const { accessToken, refreshToken } = getTokens()
 
-      if (hasLogin) {
+      if (accessToken) {
         return true
+      }
+
+      if (refreshToken) {
+        const ok = tryAutoLogin()
+        if (ok) {
+          return true
+        }
       }
 
       // 构建重定向URL

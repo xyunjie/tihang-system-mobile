@@ -3,9 +3,15 @@ import { notLoginPages as _notLoginPages, getLastPage, getNotLoginPages } from '
 
 const loginRoute = import.meta.env.VITE_LOGIN_URL
 
-function isLogined() {
+function getTokens() {
   const userStore = useUserStore()
-  return !!userStore.userInfo.accessToken
+  const accessToken = userStore.userInfo.accessToken || uni.getStorageSync('accessToken')
+  const refreshToken = userStore.userInfo.refreshToken || uni.getStorageSync('refreshToken')
+  return { accessToken, refreshToken }
+}
+
+function tryAutoLogin() {
+  return false
 }
 
 const isDev = import.meta.env.DEV
@@ -38,10 +44,17 @@ const navigateToInterceptor = {
       return true
     }
 
-    const hasLogin = isLogined()
+    const { accessToken, refreshToken } = getTokens()
 
-    if (hasLogin) {
+    if (accessToken) {
       return true
+    }
+
+    if (refreshToken) {
+      const ok = tryAutoLogin()
+      if (ok) {
+        return true
+      }
     }
 
     const redirectRoute = `${loginRoute}?redirect=${encodeURIComponent(url)}`

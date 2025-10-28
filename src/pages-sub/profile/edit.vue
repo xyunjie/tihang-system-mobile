@@ -93,6 +93,32 @@ function onChooseAvatar(e: any) {
   }
 }
 
+// H5 头像选择处理
+function onPickAvatarH5() {
+  if (avatarUploading.value)
+    return
+  uni.chooseImage({
+    count: 1,
+    sizeType: ['compressed'],
+    sourceType: ['album', 'camera'],
+    success: (res) => {
+      const path = (res.tempFilePaths && res.tempFilePaths[0]) || (res.tempFiles && res.tempFiles[0]?.path)
+      if (path) {
+        selectedImagePath.value = path
+        showCropper.value = true
+      }
+      // 若未选择图片则静默不提示
+    },
+    fail: (error) => {
+      const msg = (error && (error.errMsg || error.message))?.toLowerCase() || ''
+      // 用户取消选择时不弹提示
+      if (msg.includes('cancel') || msg.includes('abort'))
+        return
+      uni.showToast({ title: '选择图片失败', icon: 'none' })
+    },
+  })
+}
+
 /**
  * 裁剪确认 - 按照 wd-img-cropper 组件格式处理
  */
@@ -320,6 +346,19 @@ onLoad(() => {
             选择头像
           </button>
           <!-- #endif -->
+
+          <!-- #ifndef MP-WEIXIN -->
+          <button
+            class="w-full border border-blue-500 rounded-xl bg-blue-50 py-3 text-sm text-blue-600 transition-colors active:bg-blue-100"
+            :disabled="avatarUploading"
+            @tap="onPickAvatarH5"
+          >
+            <text class="mr-2">
+              📷
+            </text>
+            选择头像
+          </button>
+          <!-- #endif -->
         </view>
 
         <view class="mt-3 text-center text-xs text-gray-500">
@@ -433,8 +472,12 @@ onLoad(() => {
       </view>
     </view>
 
+    <!-- #ifdef H5 -->
+    <view style="height: 96px" />
+    <!-- #endif -->
+
     <!-- 底部操作栏 -->
-    <view class="fixed bottom-0 left-0 right-0 border-t border-gray-100 bg-white p-4 pb-safe">
+    <view class="pb-safe-h5 fixed bottom-0 left-0 right-0 border-t border-gray-100 bg-white p-4 pb-safe">
       <button
         class="w-full rounded-xl py-3 text-base font-medium transition-colors"
         :class="submitting ? 'bg-gray-300 text-gray-500' : 'bg-blue-500 text-white active:bg-blue-600'"
@@ -499,4 +542,12 @@ onLoad(() => {
   opacity: 0.8;
   margin-top: 2px;
 }
+
+/* #ifdef H5 */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe-h5 {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+  }
+}
+/* #endif */
 </style>

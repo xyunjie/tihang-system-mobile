@@ -9,10 +9,15 @@ import 'abortcontroller-polyfill/dist/abortcontroller-polyfill-only'
 const isDev = import.meta.env.DEV
 const loginRoute = import.meta.env.VITE_LOGIN_URL
 
-// 检查是否已登录
-function isLogined() {
+function getTokens() {
   const userStore = useUserStore()
-  return !!userStore.userInfo.accessToken
+  const accessToken = userStore.userInfo.accessToken || uni.getStorageSync('accessToken')
+  const refreshToken = userStore.userInfo.refreshToken || uni.getStorageSync('refreshToken')
+  return { accessToken, refreshToken }
+}
+
+function tryAutoLogin() {
+  return false
 }
 
 // 首次启动登录校验
@@ -45,11 +50,17 @@ function checkInitialAuth() {
         return
       }
 
-      // 检查登录状态
-      const hasLogin = isLogined()
+      const { accessToken, refreshToken } = getTokens()
 
-      if (hasLogin) {
+      if (accessToken) {
         return
+      }
+
+      if (refreshToken) {
+        const ok = tryAutoLogin()
+        if (ok) {
+          return
+        }
       }
 
       // 需要跳转到登录页

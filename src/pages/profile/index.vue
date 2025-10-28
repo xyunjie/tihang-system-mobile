@@ -303,9 +303,16 @@ const menuItems = [
           <view class="mx-auto mb-2 h-10 w-10 flex items-center justify-center rounded-xl text-white" :class="action.color">
             <wd-icon :name="action.icon" size="20px" color="white" />
           </view>
-          <view class="text-xs text-gray-700 font-medium">
+          <!-- #ifdef H5 -->
+          <view class="whitespace-nowrap text-[11px] text-gray-700 font-medium">
             {{ action.label }}
           </view>
+          <!-- #endif -->
+          <!-- #ifndef H5 -->
+          <view class="whitespace-nowrap text-xs text-gray-700 font-medium">
+            {{ action.label }}
+          </view>
+          <!-- #endif -->
         </view>
       </view>
     </view>
