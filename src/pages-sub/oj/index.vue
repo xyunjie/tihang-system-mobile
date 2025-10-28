@@ -13,10 +13,20 @@
 import { onLoad } from '@dcloudio/uni-app'
 import { computed, reactive, ref } from 'vue'
 import { getHydroOjCount } from '@/pages-sub/api/oj'
+import { useAppStore } from '@/store/app'
 
 defineOptions({
   name: 'OJInfo',
 })
+
+const appStore = useAppStore()
+
+// 深色模式计算属性
+const cardClass = computed(() => appStore.theme === 'dark' ? 'bg-gray-800' : 'bg-white')
+const titleClass = computed(() => appStore.theme === 'dark' ? 'text-gray-100' : 'text-gray-900')
+const textClass = computed(() => appStore.theme === 'dark' ? 'text-gray-300' : 'text-gray-500')
+const infoClass = computed(() => appStore.theme === 'dark' ? 'bg-blue-900/30 text-blue-300' : 'bg-blue-50 text-blue-700')
+const infoIconClass = computed(() => appStore.theme === 'dark' ? 'text-blue-400' : 'text-blue-600')
 
 // 加载状态（首屏骨架）
 const loading = ref(true)
@@ -82,7 +92,7 @@ onLoad(async () => {
 </script>
 
 <template>
-  <view class="min-h-screen bg-gray-50 p-4">
+  <view class="min-h-screen p-4">
     <!-- 首屏骨架加载 -->
     <view v-if="loading" class="p-2">
       <wd-skeleton theme="paragraph" />
@@ -94,20 +104,21 @@ onLoad(async () => {
         <view
           v-for="item in statsList"
           :key="item.key"
-          class="rounded-2xl bg-white px-3 py-4 text-center shadow-sm"
+          :class="cardClass"
+          class="rounded-2xl px-3 py-4 text-center shadow-sm"
         >
-          <view class="text-12px text-gray-500">
+          <view :class="textClass" class="text-12px">
             {{ item.label }}
           </view>
-          <view class="mt-1 text-lg font-semibold">
+          <view :class="titleClass" class="mt-1 text-lg font-semibold">
             {{ item.value || 0 }}
           </view>
         </view>
       </view>
 
       <!-- 数据同步提示 -->
-      <view class="mb-4 flex items-center rounded-xl bg-blue-50 px-3 py-2 text-12px text-blue-700">
-        <text class="i-carbon-information mr-1 text-blue-600" />
+      <view :class="infoClass" class="mb-4 flex items-center rounded-xl px-3 py-2 text-12px">
+        <text :class="infoIconClass" class="i-carbon-information mr-1" />
         数据同步存在延迟
       </view>
 
@@ -116,14 +127,15 @@ onLoad(async () => {
         <view
           v-for="action in actions"
           :key="action.key"
-          class="flex items-center justify-between rounded-2xl bg-white p-4 shadow-sm active:scale-98"
+          :class="cardClass"
+          class="flex items-center justify-between rounded-2xl p-4 shadow-sm active:scale-98"
           @tap="handleAction(action.key)"
         >
           <view class="min-w-0 flex-1">
-            <view class="truncate text-base font-semibold leading-tight">
+            <view :class="titleClass" class="truncate text-base font-semibold leading-tight">
               {{ action.title }}
             </view>
-            <view class="mt-1 text-12px text-gray-500">
+            <view :class="textClass" class="mt-1 text-12px">
               {{ action.description }}
             </view>
           </view>

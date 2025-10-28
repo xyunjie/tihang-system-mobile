@@ -10,6 +10,8 @@
 <script setup lang="ts">
 import type { AttendanceManualRespVO } from '@/api/types/attendance'
 import { addManualAttendance, getManualAttendanceList } from '@/api/attendance'
+import { computed, ref } from 'vue'
+import { useAppStore } from '@/store/app'
 
 defineOptions({
   name: 'ManualAttendanceList',
@@ -134,17 +136,36 @@ function getStatusText(status: number | null): string {
 
 // 获取状态颜色
 function getStatusColor(status: number | null): string {
-  if (status === null || status === 0) {
-    return 'text-gray-700 bg-gray-100'
+  const appStore = useAppStore()
+  const isDark = appStore.theme === 'dark'
+  const mapLight: Record<string, string> = {
+    default: 'text-gray-700 bg-gray-100',
+    normal: 'text-green-700 bg-green-100',
+    late: 'text-yellow-700 bg-yellow-100',
+    early: 'text-orange-700 bg-orange-100',
+    lack: 'text-red-700 bg-red-100',
+    leave: 'text-blue-700 bg-blue-100',
+    absent: 'text-red-700 bg-red-100',
   }
+  const mapDark: Record<string, string> = {
+    default: 'text-gray-300 bg-gray-800',
+    normal: 'text-green-400 bg-green-900/30',
+    late: 'text-yellow-400 bg-yellow-900/30',
+    early: 'text-orange-400 bg-orange-900/30',
+    lack: 'text-red-400 bg-red-900/30',
+    leave: 'text-blue-400 bg-blue-900/30',
+    absent: 'text-red-400 bg-red-900/30',
+  }
+  const m = isDark ? mapDark : mapLight
+  if (status === null || status === 0) return m.default
   switch (status) {
-    case 1: return 'text-green-700 bg-green-100'
-    case 2: return 'text-yellow-700 bg-yellow-100'
-    case 3: return 'text-orange-700 bg-orange-100'
-    case 4: return 'text-red-700 bg-red-100'
-    case 5: return 'text-blue-700 bg-blue-100'
-    case 6: return 'text-red-700 bg-red-100'
-    default: return 'text-gray-700 bg-gray-100'
+    case 1: return m.normal
+    case 2: return m.late
+    case 3: return m.early
+    case 4: return m.lack
+    case 5: return m.leave
+    case 6: return m.absent
+    default: return m.default
   }
 }
 
@@ -162,12 +183,18 @@ function shouldShowNormalButton(status: number | null): boolean {
 function shouldShowAbsentButton(status: number | null): boolean {
   return status === null || status !== 6
 }
+// 深色模式样式
+const appStore = useAppStore()
+const isDark = computed(() => appStore.theme === 'dark')
+const cardClass = computed(() => (isDark.value ? 'bg-gray-800' : 'bg-white'))
+const titleClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-gray-800'))
 </script>
 
 <template>
-  <view class="min-h-screen bg-gray-50">
+  <view class="min-h-screen">
     <!-- 使用z-paging虚拟列表 -->
     <z-paging
+      style="top: 0px"
       ref="pagingRef"
       v-model="manualList"
       :refresher-enabled="true"
@@ -194,12 +221,13 @@ function shouldShowAbsentButton(status: number | null): boolean {
         <view
           v-for="(item, index) in manualList"
           :key="index"
-          class="mb-4 overflow-hidden rounded-2xl bg-white shadow-sm"
+          class="mb-4 overflow-hidden rounded-2xl shadow-sm"
+          :class="cardClass"
         >
           <view class="p-4">
             <view class="flex items-center justify-between">
               <view class="flex flex-1 items-center gap-2">
-                <view class="text-base text-gray-800 font-semibold">
+                <view class="text-base font-semibold" :class="titleClass">
                   {{ item.nickname }}
                 </view>
                 <view class="rounded-full px-2 py-1 text-xs font-medium" :class="getStatusColor(item.status)">

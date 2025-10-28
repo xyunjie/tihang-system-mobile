@@ -2,6 +2,7 @@ import type { IUserInfoVo } from '@/api/types/login'
 import type { CustomRequestOptions } from '@/http/interceptor'
 import { refreshToken as refreshTokenApi } from '@/api/login'
 import { useUserStore } from '@/store'
+import { currRoute } from '@/utils'
 
 // 请求队列接口
 interface PendingRequest {
@@ -83,9 +84,7 @@ async function refreshToken(): Promise<IUserInfoVo> {
     catch (error) {
       // 刷新失败，清理用户信息并跳转到登录页
       userStore.clearUserInfo()
-      uni.reLaunch({
-        url: '/pages/login/index',
-      })
+      goLoginOnce()
       throw error
     }
     finally {
@@ -164,15 +163,21 @@ function executeRequest<T>(
         // 排除刷新token接口本身
         if (options.url.includes('/admin-api/system/auth/refresh-token')) {
           useUserStore().clearUserInfo()
-          uni.reLaunch({
-            url: '/pages/login/index',
-          })
+          goLoginOnce()
           reject(new Error('认证失败，请重新登录'))
+          return
         }
-        console.log(isRefreshingToken)
         const userStore = useUserStore()
         const hasRefreshToken = userStore.userInfo.refreshToken || uni.getStorageSync('refreshToken')
         if (!hasRefreshToken) {
+          // 无刷新令牌，直接清理并跳转登录
+          userStore.clearUserInfo()
+          uni.showToast({
+            icon: 'none',
+            title: data.msg || '账号未登录',
+          })
+          goLoginOnce()
+          reject(new Error(data.msg || '账号未登录'))
           return
         }
         if (isRefreshingToken) {
@@ -306,3 +311,18 @@ http.Get = httpGet
 http.Post = httpPost
 http.Put = httpPut
 http.Delete = httpDelete
+// 跳转登录页（带去重与当前页判断）
+function goLoginOnce() {
+  try {
+    const { path } = currRoute()
+    if (path === '/pages/login/index') {
+      return
+    }
+  }
+  catch (_) {
+    // 忽略路由获取异常，继续跳转
+  }
+  uni.redirectTo({
+    url: '/pages/login/index',
+  })
+}

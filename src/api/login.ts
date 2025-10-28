@@ -1,4 +1,4 @@
-import type { IAuthSendScanMessageReqVO, IAuthSocialLoginReqVO, IBindAccountForm, ICaptcha, ILoginForm, ITokenRefreshResponse, IUserLogin } from './types/login'
+import type { AuthResetPasswordByEmailReqVO, IAuthSendScanMessageReqVO, IAuthSocialLoginReqVO, IBindAccountForm, ICaptcha, ILoginForm, ISocialAuthRedirectReqVO, ITokenRefreshResponse, IUserLogin } from './types/login'
 import { http } from '@/http/http'
 
 /**
@@ -83,4 +83,36 @@ export function bindAccount(data: IBindAccountForm) {
  */
 export function sendScanMessage(data: IAuthSendScanMessageReqVO) {
   return http.post<boolean>('/admin-api/system/auth/send-scan-message', data)
+}
+
+/**
+ * 获取社交授权跳转链接
+ * @param params 社交授权跳转参数
+ * @returns Promise 包含跳转链接
+ */
+export function getSocialAuthRedirect(params: ISocialAuthRedirectReqVO) {
+  return http.get<string>('/admin-api/system/auth/social-auth-redirect', params)
+}
+
+/**
+ * 发送邮箱验证码（找回密码）
+ * @param data { username, email }
+ */
+export function sendEmailCode(data: { username: string; email: string }) {
+  // 根据 OpenAPI 要求附带 tenant-id 头；Authorization 将由拦截器按需添加
+  const headers: Record<string, any> = {
+    'tenant-id': 1,
+  }
+  return http.post<boolean>('/admin-api/system/auth/send-email-code', data, undefined, headers)
+}
+
+/**
+ * 通过邮箱验证码重置密码
+ * @param data { username, email, code, password }
+ */
+export function resetPasswordByEmail(data: AuthResetPasswordByEmailReqVO) {
+  const headers: Record<string, any> = {
+    'tenant-id': 1,
+  }
+  return http.post<boolean>('/admin-api/system/auth/reset-password-by-email', data, undefined, headers)
 }

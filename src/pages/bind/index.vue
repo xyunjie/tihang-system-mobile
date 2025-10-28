@@ -12,7 +12,7 @@
 
 <script setup lang="ts">
 import type { IBindAccountForm } from '@/api/types/login'
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useUserStore } from '@/store'
 import { currRoute } from '@/utils'
 // 获取当前完整路径
@@ -34,6 +34,9 @@ const bindForm = reactive<IBindAccountForm & {
 
 // 表单验证和UI状态
 const isLoading = ref(false)
+
+// 是否包含社交授权参数
+const hasSocialAuth = computed(() => !!bindForm.type && !!bindForm.code && !!bindForm.state)
 
 // 表单验证
 function validateForm() {
@@ -146,10 +149,18 @@ async function handleBind() {
   }
 }
 
-// 返回登录页
-function goBack() {
-  uni.navigateBack({
-    delta: 1,
+// 系统返回时，统一跳转到登录页
+onBackPress(() => {
+  uni.redirectTo({
+    url: '/pages/login/index',
+  })
+  return true // 拦截默认返回行为
+})
+
+// 找回密码：跳转到找回密码页面
+function gotoForgotPassword() {
+  uni.navigateTo({
+    url: '/pages/login/forgot',
   })
 }
 
@@ -168,10 +179,27 @@ onLoad(() => {
       <!-- 头部 -->
       <view class="text-center" style="margin-bottom: 50rpx;">
         <view class="text-gray-800 font-bold" style="font-size: 46rpx; margin-bottom: 10rpx; line-height: 1.2;">
-          🔗 绑定账号
+          绑定账号
         </view>
         <view class="text-gray-600" style="font-size: 24rpx; line-height: 1.3;">
           请输入您的账号和密码完成绑定
+        </view>
+        <!-- 授权状态提示 -->
+        <view
+          v-if="hasSocialAuth"
+          style="margin-top: 20rpx; padding: 18rpx; background: #e7f5ff; border-left: 4rpx solid #38bdf8; border-radius: 12rpx;"
+        >
+          <text style="color: #0ea5e9; font-size: 24rpx;">
+            已获取社交授权，绑定后可一键使用社交登录
+          </text>
+        </view>
+        <view
+          v-else
+          style="margin-top: 20rpx; padding: 18rpx; background: #fff3cd; border-left: 4rpx solid #ffc107; border-radius: 12rpx;"
+        >
+          <text style="color: #a16207; font-size: 24rpx;">
+            未检测到社交授权，仅进行账号密码登录。若需社交绑定，请先完成授权。
+          </text>
         </view>
       </view>
 
@@ -182,14 +210,12 @@ onLoad(() => {
           <wd-input
             v-model="bindForm.username"
             label="账号"
+            label-width="40px"
             placeholder="请输入账号"
             required
             :maxlength="20"
             :disabled="isLoading"
             clearable
-            custom-style="margin-bottom: 0;"
-            custom-label-style="font-size: 28rpx; color: #374151; font-weight: 500;"
-            custom-input-style="font-size: 28rpx; height: 88rpx;"
           />
         </view>
 
@@ -198,6 +224,7 @@ onLoad(() => {
           <wd-input
             v-model="bindForm.password"
             label="密码"
+            label-width="40px"
             placeholder="请输入密码"
             required
             :maxlength="50"
@@ -205,9 +232,6 @@ onLoad(() => {
             type="text"
             :show-password="true"
             clearable
-            custom-style="margin-bottom: 0;"
-            custom-label-style="font-size: 28rpx; color: #374151; font-weight: 500;"
-            custom-input-style="font-size: 28rpx; height: 88rpx;"
           />
         </view>
 
@@ -222,30 +246,31 @@ onLoad(() => {
             custom-style="height: 88rpx; border-radius: 12rpx; font-size: 32rpx;"
             @click="handleBind"
           >
-            {{ isLoading ? '绑定中...' : '🔗 立即绑定' }}
+            {{ isLoading ? '绑定中...' : '立即绑定' }}
           </wd-button>
         </view>
 
-        <!-- 返回按钮 -->
+        <!-- 找回密码按钮 -->
         <view>
           <wd-button
-            type="default"
+            type="warning"
             size="large"
             block
             :disabled="isLoading"
+            plain
             custom-style="height: 88rpx; border-radius: 12rpx; font-size: 32rpx;"
-            @click="goBack"
+            @click="gotoForgotPassword"
           >
-            🔙 返回登录
+            找回密码
           </wd-button>
         </view>
       </view>
 
-      <!-- 说明信息 -->
-      <view class="text-center" style="margin-top: 30rpx;">
+      <!-- 说明信息：仅在有授权时显示详细说明 -->
+      <view v-if="hasSocialAuth" class="text-center" style="margin-top: 30rpx;">
         <view class="text-gray-500" style="font-size: 22rpx; line-height: 1.4;">
-          绑定后您可以使用微信一键登录<br>
-          也可以使用账号和密码登录
+          绑定成功后，您可以使用社交账号一键登录，
+          也可继续使用账号和密码登录
         </view>
       </view>
     </view>

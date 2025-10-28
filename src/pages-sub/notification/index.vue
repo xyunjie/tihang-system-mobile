@@ -10,6 +10,9 @@
 import type { NoticePageReqVO, NoticeRespVO } from '@/api/types/notice'
 import { getNoticePage } from '@/api/notice'
 import { formatStandardDateTime } from '@/utils'
+import { computed } from 'vue'
+import { useAppStore } from '@/store/app'
+import ThemeCard from '@/components/ThemeCard.vue'
 
 defineOptions({
   name: 'NotificationList',
@@ -32,6 +35,15 @@ const baseParams = reactive({
 onLoad(() => {
   // z-paging会自动触发首次加载
 })
+
+// 主题适配：浅色/深色
+const appStore = useAppStore()
+const isDark = computed(() => appStore.theme === 'dark')
+const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-gray-800'))
+const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-gray-600'))
+const textMutedClass = computed(() => (isDark.value ? 'text-gray-500' : 'text-gray-400'))
+const borderMutedClass = computed(() => (isDark.value ? 'border-white/10' : 'border-gray-100'))
+const activeRowBgClass = computed(() => (isDark.value ? 'active:bg-white/5' : 'active:bg-gray-50'))
 
 // 加载通知公告列表
 async function queryList(pageNo: number, pageSize: number) {
@@ -116,11 +128,21 @@ function getNotificationTypeText(type: number): string {
 
 // 获取通知类型颜色
 function getNotificationTypeColor(type: number): string {
-  switch (type) {
-    case 1: return 'text-blue-600 bg-blue-50 border-blue-200' // 系统通知
-    case 2: return 'text-red-600 bg-red-50 border-red-200' // 公告
-    case 3: return 'text-green-600 bg-green-50 border-green-200' // 活动
-    default: return 'text-gray-600 bg-gray-50 border-gray-200'
+  if (isDark.value) {
+    switch (type) {
+      case 1: return 'text-blue-400 bg-blue-500/12 border-blue-500/20'
+      case 2: return 'text-orange-400 bg-orange-500/12 border-orange-500/20'
+      case 3: return 'text-green-400 bg-green-500/12 border-green-500/20'
+      default: return 'text-gray-400 bg-white/6 border-white/12'
+    }
+  }
+  else {
+    switch (type) {
+      case 1: return 'text-blue-600 bg-blue-50 border-blue-200' // 系统通知
+      case 2: return 'text-red-600 bg-red-50 border-red-200' // 公告
+      case 3: return 'text-green-600 bg-green-50 border-green-200' // 活动
+      default: return 'text-gray-600 bg-gray-50 border-gray-200'
+    }
   }
 }
 
@@ -143,9 +165,10 @@ function getPlainTextContent(htmlContent: string): string {
 </script>
 
 <template>
-  <view class="min-h-screen bg-gray-50">
+  <view class="min-h-screen">
     <!-- 使用z-paging的全屏模式，搜索框放在slot="top"内 -->
     <z-paging
+      style="top: 0px"
       ref="pagingRef"
       v-model="notificationList"
       :refresher-enabled="true"
@@ -166,14 +189,17 @@ function getPlainTextContent(htmlContent: string): string {
     >
       <!-- 搜索栏固定在顶部 -->
       <template #top>
-        <view class="bg-white px-4 py-3 shadow-sm">
+        <!-- 顶部搜索不再使用白底，保持与页面统一背景 -->
+        <view class="px-4 py-3">
           <view class="flex items-center gap-3">
             <view class="flex-1">
               <wd-search
                 v-model="searchKeyword"
                 placeholder="搜索通知公告标题..."
                 cancel-txt="搜索"
-                custom-style="background-color: #f5f5f5; border-radius: 20rpx;"
+                :custom-style="isDark
+                  ? 'background-color: rgba(255,255,255,0.08); border-radius: 20rpx; color: #e5e7eb;'
+                  : 'border-radius: 20rpx'"
                 @search="searchNotifications"
                 @cancel="searchNotifications"
               />
@@ -189,10 +215,11 @@ function getPlainTextContent(htmlContent: string): string {
 
       <!-- 通知公告列表内容 -->
       <view v-else class="px-4 pt-2">
-        <view
+        <ThemeCard
           v-for="notification in notificationList"
           :key="notification.id"
-          class="mb-4 overflow-hidden rounded-2xl bg-white shadow-sm transition-all active:scale-98"
+          class="mb-4 transition-all active:scale-98"
+          :padding="false"
           @click="navigateToDetail(notification)"
         >
           <view class="p-4">
@@ -202,10 +229,10 @@ function getPlainTextContent(htmlContent: string): string {
                   <view class="h-4 w-4 rounded bg-current" />
                 </view>
                 <view class="flex-1">
-                  <view class="line-clamp-2 mb-2 text-base text-gray-800 font-medium">
+                  <view class="line-clamp-2 mb-2 text-base font-medium" :class="textPrimaryClass">
                     {{ notification.title }}
                   </view>
-                  <view class="line-clamp-3 text-sm text-gray-600 leading-relaxed">
+                  <view class="line-clamp-3 text-sm leading-relaxed" :class="textSecondaryClass">
                     {{ getPlainTextContent(notification.content) }}
                   </view>
                 </view>
@@ -216,15 +243,15 @@ function getPlainTextContent(htmlContent: string): string {
             </view>
 
             <view class="flex items-center justify-between">
-              <view class="text-xs text-gray-400">
+              <view class="text-xs" :class="textMutedClass">
                 {{ formatNotificationTime(notification.createTime) }}
               </view>
-              <view class="text-xs text-blue-500">
+              <view class="text-xs" :class="isDark ? 'text-blue-400' : 'text-blue-500'">
                 查看详情 ›
               </view>
             </view>
           </view>
-        </view>
+        </ThemeCard>
       </view>
     </z-paging>
   </view>

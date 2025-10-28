@@ -10,6 +10,9 @@
 import type { NotifyMessageRespVO } from '@/api/types/notify-message'
 import { getNotifyMessageById } from '@/api/notify-message'
 import { formatStandardDateTime } from '@/utils'
+import { computed } from 'vue'
+import { useAppStore } from '@/store/app'
+import ThemeCard from '@/components/ThemeCard.vue'
 
 defineOptions({
   name: 'MessageDetail',
@@ -106,12 +109,23 @@ function getMessageTypeText(templateType: number): string {
 
 // 获取消息类型颜色
 function getMessageTypeColor(templateType: number): string {
-  switch (templateType) {
-    case 1: return 'text-blue-600 bg-blue-50 border-blue-200' // 系统消息
-    case 2: return 'text-orange-600 bg-orange-50 border-orange-200' // 审批消息
-    case 3: return 'text-green-600 bg-green-50 border-green-200' // 考勤消息
-    case 4: return 'text-purple-600 bg-purple-50 border-purple-200' // 项目消息
-    default: return 'text-gray-600 bg-gray-50 border-gray-200'
+  if (isDark.value) {
+    switch (templateType) {
+      case 1: return 'text-blue-400 bg-blue-500/12 border-blue-500/20'
+      case 2: return 'text-orange-400 bg-orange-500/12 border-orange-500/20'
+      case 3: return 'text-green-400 bg-green-500/12 border-green-500/20'
+      case 4: return 'text-purple-400 bg-purple-500/12 border-purple-500/20'
+      default: return 'text-gray-400 bg-white/6 border-white/12'
+    }
+  }
+  else {
+    switch (templateType) {
+      case 1: return 'text-blue-600 bg-blue-50 border-blue-200' // 系统消息
+      case 2: return 'text-orange-600 bg-orange-50 border-orange-200' // 审批消息
+      case 3: return 'text-green-600 bg-green-50 border-green-200' // 考勤消息
+      case 4: return 'text-purple-600 bg-purple-50 border-purple-200' // 项目消息
+      default: return 'text-gray-600 bg-gray-50 border-gray-200'
+    }
   }
 }
 
@@ -119,14 +133,22 @@ function getMessageTypeColor(templateType: number): string {
 function goBack() {
   uni.navigateBack()
 }
+
+// 主题适配：浅色/深色
+const appStore = useAppStore()
+const isDark = computed(() => appStore.theme === 'dark')
+const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-gray-800'))
+const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-gray-700'))
+const textMutedClass = computed(() => (isDark.value ? 'text-gray-500' : 'text-gray-400'))
+const borderMutedClass = computed(() => (isDark.value ? 'border-white/12' : 'border-gray-100'))
 </script>
 
 <template>
-  <view class="min-h-screen bg-gray-50">
+  <view class="min-h-screen">
     <!-- 加载状态 -->
     <view v-if="loading" class="flex flex-col items-center justify-center py-20">
       <view class="mb-4 h-12 w-12 animate-spin border-2 border-blue-500 border-t-transparent rounded" />
-      <view class="text-lg text-gray-600 font-medium">
+      <view class="text-lg font-medium" :class="textSecondaryClass">
         加载中...
       </view>
     </view>
@@ -134,7 +156,7 @@ function goBack() {
     <!-- 消息详情内容 -->
     <view v-else-if="message" class="px-4 pt-4">
       <!-- 消息头部信息 -->
-      <view class="mb-6 overflow-hidden rounded-2xl bg-white shadow-sm">
+      <ThemeCard class="mb-6" :padding="false">
         <view class="p-6">
           <!-- 发送者信息和消息状态 -->
           <view class="mb-4 flex items-start justify-between">
@@ -143,7 +165,7 @@ function goBack() {
                 <view class="h-6 w-6 rounded bg-current" />
               </view>
               <view class="flex-1">
-                <view class="mb-2 text-lg text-gray-800 font-bold">
+                <view class="mb-2 text-lg font-bold" :class="textPrimaryClass">
                   {{ message.templateNickname || '系统' }}
                 </view>
                 <view class="flex items-center">
@@ -162,23 +184,23 @@ function goBack() {
           </view>
 
           <!-- 发送时间 -->
-          <view class="border-t border-gray-100 pt-4">
-            <view class="flex items-center text-sm text-gray-500">
+          <view class="border-t pt-4" :class="borderMutedClass">
+            <view class="flex items-center text-sm" :class="textMutedClass">
               <view class="mr-2 h-4 w-4 rounded bg-gray-400" />
               <view>发送时间：{{ formatMessageTime(message.createTime) }}</view>
             </view>
-            <view v-if="message.readTime" class="mt-1 flex items-center text-sm text-gray-500">
+            <view v-if="message.readTime" class="mt-1 flex items-center text-sm" :class="textMutedClass">
               <view class="mr-2 h-4 w-4 rounded bg-green-400" />
               <view>阅读时间：{{ formatMessageTime(message.readTime) }}</view>
             </view>
           </view>
         </view>
-      </view>
+      </ThemeCard>
 
       <!-- 消息内容 -->
-      <view class="mb-6 overflow-hidden rounded-2xl bg-white shadow-sm">
-        <view class="border-b border-gray-100 px-6 py-4">
-          <view class="text-lg text-gray-800 font-semibold">
+      <ThemeCard class="mb-6" :padding="false">
+        <view class="border-b px-6 py-4" :class="borderMutedClass">
+          <view class="text-lg font-semibold" :class="textPrimaryClass">
             消息内容
           </view>
         </view>
@@ -186,33 +208,34 @@ function goBack() {
           <!-- 使用 rich-text 组件渲染 HTML 内容 -->
           <rich-text
             :nodes="message.templateContent"
-            class="text-base text-gray-700 leading-loose"
+            class="text-base leading-loose"
+            :class="textSecondaryClass"
           />
         </view>
-      </view>
+      </ThemeCard>
 
       <!-- 相关说明 -->
-      <view class="mb-8 overflow-hidden rounded-2xl bg-white shadow-sm">
+      <ThemeCard class="mb-8" :padding="false">
         <view class="p-6">
-          <view class="mb-3 text-base text-gray-800 font-semibold">
+          <view class="mb-3 text-base font-semibold" :class="textPrimaryClass">
             温馨提示
           </view>
-          <view class="text-sm text-gray-600 leading-relaxed space-y-2">
+          <view class="text-sm leading-relaxed space-y-2" :class="textSecondaryClass">
             <view>• 重要消息请及时查看和处理</view>
             <view>• 如有疑问，请联系相关负责人</view>
             <view>• 消息内容仅供参考，具体以实际情况为准</view>
           </view>
         </view>
-      </view>
+      </ThemeCard>
     </view>
 
     <!-- 错误状态 -->
     <view v-else class="flex flex-col items-center justify-center py-20">
       <view class="mb-4 h-16 w-16 rounded-xl bg-red-100" />
-      <view class="mb-2 text-lg text-gray-600 font-medium">
+      <view class="mb-2 text-lg font-medium" :class="textSecondaryClass">
         消息不存在
       </view>
-      <view class="mb-6 text-sm text-gray-400">
+      <view class="mb-6 text-sm" :class="textMutedClass">
         该消息可能已被删除或不存在
       </view>
       <wd-button

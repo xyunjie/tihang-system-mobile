@@ -1,6 +1,5 @@
 <!-- 我的标签页 -->
-<route lang="jsonc" type="page">
-{
+<route lang="jsonc" type="page">{
   "layout": "tabbar",
   "style": {
     "navigationStyle": "default",
@@ -12,15 +11,16 @@
     "refresherBackground": "#f5f5f5",
     "backgroundTextStyle": "dark"
   }
-}
-</route>
+}</route>
 
 <script setup lang="ts">
 import type { ISystemUserInfoVo } from '@/api/types/user'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { logout } from '@/api/login'
 import { getUserInfo as _getUserInfo } from '@/api/user'
 import { useUserStore } from '@/store'
+import ThemeCard from '@/components/ThemeCard.vue'
+import { useAppStore } from '@/store/app'
 
 defineOptions({
   name: 'Profile',
@@ -36,11 +36,11 @@ let systemInfo
 systemInfo = uni.getWindowInfo()
 safeAreaInsets = systemInfo.safeArea
   ? {
-      top: systemInfo.safeArea.top,
-      right: systemInfo.windowWidth - systemInfo.safeArea.right,
-      bottom: systemInfo.windowHeight - systemInfo.safeArea.bottom,
-      left: systemInfo.safeArea.left,
-    }
+    top: systemInfo.safeArea.top,
+    right: systemInfo.windowWidth - systemInfo.safeArea.right,
+    bottom: systemInfo.windowHeight - systemInfo.safeArea.bottom,
+    left: systemInfo.safeArea.left,
+  }
   : null
 // #endif
 
@@ -242,37 +242,42 @@ const menuItems = [
     ],
   },
 ]
+
+// 主题感知：深色模式与通用样式
+const appStore = useAppStore()
+// 修正：使用 theme 字段判断深色模式
+const isDark = computed(() => appStore.theme === 'dark')
+
+const textPrimaryClass = computed(() => isDark.value ? 'text-white/95' : 'text-gray-800')
+const textSecondaryClass = computed(() => isDark.value ? 'text-white/70' : 'text-gray-600')
+const textMutedClass = computed(() => isDark.value ? 'text-white/50' : 'text-gray-400')
+const borderMutedClass = computed(() => isDark.value ? 'border-white/10' : 'border-gray-100')
+const activeRowBgClass = computed(() => isDark.value ? 'active:bg-white/6' : 'active:bg-gray-50')
+
 </script>
 
 <template>
-  <view class="min-h-screen from-blue-50 to-indigo-100 bg-gradient-to-br">
+  <view class="min-h-screen">
     <!-- 用户信息卡片 -->
     <view class="relative mx-4 pb-8 pt-6">
-      <view class="relative overflow-hidden rounded-3xl bg-white p-6 shadow-lg">
-        <!-- 装饰性背景 -->
-        <view class="absolute right-0 top-0 h-32 w-32 translate-x-8 rounded-full from-blue-100 to-transparent bg-gradient-to-bl opacity-60 -translate-y-8" />
-        <view class="absolute bottom-0 left-0 h-20 w-20 translate-y-4 rounded-full from-purple-100 to-transparent bg-gradient-to-tr opacity-40 -translate-x-4" />
-
+      <ThemeCard class="relative" radius="rounded-3xl" padding="p-6">
         <view class="relative z-10">
           <!-- 用户头像和基本信息 -->
           <view class="mb-6 flex items-center">
             <view class="relative">
-              <image
-                :src="systemUserInfo?.avatar || '/static/images/default-avatar.png'"
-                class="h-16 w-16 border-2 border-white rounded-2xl shadow-md"
-                mode="aspectFill"
-              />
+              <image :src="systemUserInfo?.avatar || '/static/images/default-avatar.png'"
+                class="h-16 w-16 border-2 border-white rounded-2xl shadow-md" mode="aspectFill" />
               <view class="absolute h-5 w-5 border-2 border-white rounded-full bg-green-400 -bottom-1 -right-1" />
             </view>
 
             <view class="ml-4 flex-1">
-              <view class="mb-1 text-lg text-gray-800 font-bold">
+              <view class="mb-1 text-lg font-bold" :class="textPrimaryClass">
                 {{ systemUserInfo?.username || '未登录' }}
               </view>
-              <view v-if="systemUserInfo" class="text-sm text-gray-500">
+              <view v-if="systemUserInfo" class="text-sm" :class="textSecondaryClass">
                 {{ systemUserInfo?.nickname || '暂无昵称' }}
               </view>
-              <view v-if="systemUserInfo" class="mt-1 text-xs text-gray-400">
+              <view v-if="systemUserInfo" class="mt-1 text-xs" :class="textMutedClass">
                 {{ formatDept(systemUserInfo?.dept) }}
               </view>
             </view>
@@ -283,44 +288,44 @@ const menuItems = [
             <view class="rounded-full bg-green-100 px-3 py-1 text-xs text-green-700 font-medium">
               正常状态
             </view>
-            <view v-if="systemUserInfo?.roles && systemUserInfo.roles.length > 0" class="rounded-full bg-purple-100 px-3 py-1 text-xs text-purple-700 font-medium">
+            <view v-if="systemUserInfo?.roles && systemUserInfo.roles.length > 0"
+              class="rounded-full bg-purple-100 px-3 py-1 text-xs text-purple-700 font-medium">
               {{ systemUserInfo.roles.length }}个角色
             </view>
           </view>
         </view>
-      </view>
+      </ThemeCard>
     </view>
 
     <!-- 快捷操作 -->
     <view class="mx-4 mb-6">
       <view class="grid grid-cols-4 gap-3">
-        <view
-          v-for="(action, index) in quickActions"
-          :key="index"
-          class="rounded-2xl bg-white p-4 text-center shadow-sm transition-all active:scale-95"
-          @click="action.handler"
-        >
-          <view class="mx-auto mb-2 h-10 w-10 flex items-center justify-center rounded-xl text-white" :class="action.color">
-            <wd-icon :name="action.icon" size="20px" color="white" />
+        <ThemeCard v-for="(action, index) in quickActions" :key="index"
+          card-class="text-center transition-all active:scale-95" radius="rounded-2xl" padding="p-4">
+          <view @click="action.handler">
+            <view class="mx-auto mb-2 h-10 w-10 flex items-center justify-center rounded-xl text-white"
+              :class="action.color">
+              <wd-icon :name="action.icon" size="20px" color="white" />
+            </view>
+            <!-- #ifdef H5 -->
+            <view class="whitespace-nowrap text-[11px] font-medium" :class="textPrimaryClass">
+              {{ action.label }}
+            </view>
+            <!-- #endif -->
+            <!-- #ifndef H5 -->
+            <view class="whitespace-nowrap text-xs font-medium" :class="textPrimaryClass">
+              {{ action.label }}
+            </view>
+            <!-- #endif -->
           </view>
-          <!-- #ifdef H5 -->
-          <view class="whitespace-nowrap text-[11px] text-gray-700 font-medium">
-            {{ action.label }}
-          </view>
-          <!-- #endif -->
-          <!-- #ifndef H5 -->
-          <view class="whitespace-nowrap text-xs text-gray-700 font-medium">
-            {{ action.label }}
-          </view>
-          <!-- #endif -->
-        </view>
+        </ThemeCard>
       </view>
     </view>
 
     <!-- 个人信息详情 -->
-    <view v-if="systemUserInfo" class="mx-4 mb-6 overflow-hidden rounded-2xl bg-white shadow-sm">
-      <view class="border-b border-gray-100 px-4 py-3">
-        <view class="text-base text-gray-800 font-semibold">
+    <ThemeCard v-if="systemUserInfo" card-class="mx-4 mb-6" :padding="false" radius="rounded-2xl">
+      <view :class="['border-b', borderMutedClass, 'px-4 py-3']">
+        <view :class="['text-base font-semibold', textPrimaryClass]">
           <text class="mr-2 text-blue-500">
             ●
           </text>个人信息
@@ -330,73 +335,71 @@ const menuItems = [
       <view class="p-4">
         <view class="space-y-3">
           <view class="flex items-center justify-between py-2">
-            <view class="text-sm text-gray-600">
+            <view class="text-sm" :class="textSecondaryClass">
               学号/工号
             </view>
-            <view class="text-sm text-gray-800 font-medium">
+            <view :class="['text-sm font-medium', textPrimaryClass]">
               {{ systemUserInfo.username }}
             </view>
           </view>
 
           <view class="flex items-center justify-between py-2">
-            <view class="text-sm text-gray-600">
+            <view class="text-sm" :class="textSecondaryClass">
               姓名
             </view>
-            <view class="text-sm text-gray-800 font-medium">
+            <view :class="['text-sm font-medium', textPrimaryClass]">
               {{ systemUserInfo.nickname || '未设置' }}
             </view>
           </view>
 
           <view class="flex items-center justify-between py-2">
-            <view class="text-sm text-gray-600">
+            <view class="text-sm" :class="textSecondaryClass">
               性别
             </view>
-            <view class="text-sm text-gray-800 font-medium">
+            <view :class="['text-sm font-medium', textPrimaryClass]">
               {{ formatSex(systemUserInfo.sex) }}
             </view>
           </view>
 
           <view v-if="systemUserInfo.mobile" class="flex items-center justify-between py-2">
-            <view class="text-sm text-gray-600">
+            <view class="text-sm" :class="textSecondaryClass">
               手机号
             </view>
-            <view class="text-sm text-gray-800 font-medium">
+            <view :class="['text-sm font-medium', textPrimaryClass]">
               {{ systemUserInfo.mobile }}
             </view>
           </view>
 
           <view v-if="systemUserInfo.email" class="flex items-center justify-between py-2">
-            <view class="text-sm text-gray-600">
+            <view class="text-sm" :class="textSecondaryClass">
               邮箱
             </view>
-            <view class="break-all text-sm text-gray-800 font-medium">
+            <view :class="['break-all text-sm font-medium', textPrimaryClass]">
               {{ systemUserInfo.email }}
             </view>
           </view>
 
           <view class="flex items-center justify-between py-2">
-            <view class="text-sm text-gray-600">
+            <view class="text-sm" :class="textSecondaryClass">
               所属部门
             </view>
-            <view class="text-sm text-gray-800 font-medium">
+            <view :class="['text-sm font-medium', textPrimaryClass]">
               {{ formatDept(systemUserInfo.dept) }}
             </view>
           </view>
 
-          <view v-if="systemUserInfo.roles && systemUserInfo.roles.length > 0" class="flex items-start justify-between py-2">
-            <view class="pt-1 text-sm text-gray-600">
+          <view v-if="systemUserInfo.roles && systemUserInfo.roles.length > 0"
+            class="flex items-start justify-between py-2">
+            <view class="pt-1 text-sm" :class="textSecondaryClass">
               用户角色
             </view>
-            <view class="ml-4 flex-1 text-right text-sm text-gray-800 font-medium">
+            <view :class="['ml-4 flex-1 text-right text-sm font-medium', textPrimaryClass]">
               <view v-if="systemUserInfo.roles.length === 1" class="inline-block">
                 {{ systemUserInfo.roles[0].name }}
               </view>
               <view v-else class="space-y-1">
-                <view
-                  v-for="role in systemUserInfo.roles"
-                  :key="role.id"
-                  class="mb-1 mr-1 inline-block rounded-md bg-purple-50 px-2 py-1 text-xs text-purple-700"
-                >
+                <view v-for="role in systemUserInfo.roles" :key="role.id"
+                  class="mb-1 mr-1 inline-block rounded-md bg-purple-50 px-2 py-1 text-xs text-purple-700">
                   {{ role.name }}
                 </view>
               </view>
@@ -404,51 +407,53 @@ const menuItems = [
           </view>
 
           <view v-if="systemUserInfo.loginIp" class="flex items-center justify-between py-2">
-            <view class="text-sm text-gray-600">
+            <view class="text-sm" :class="textSecondaryClass">
               最后登录IP
             </view>
-            <view class="text-sm text-gray-800 font-medium">
+            <view :class="['text-sm font-medium', textPrimaryClass]">
               {{ systemUserInfo.loginIp }}
             </view>
           </view>
         </view>
       </view>
-    </view>
+    </ThemeCard>
 
     <!-- 功能菜单 -->
-    <view v-for="(category, categoryIndex) in menuItems" :key="categoryIndex" class="mx-4 mb-4 overflow-hidden rounded-2xl bg-white shadow-sm">
-      <view class="border-b border-gray-100 px-4 py-3">
-        <view class="text-base text-gray-800 font-semibold">
+    <ThemeCard v-for="(category, categoryIndex) in menuItems" :key="categoryIndex" card-class="mx-4 mb-4"
+      :padding="false" radius="rounded-2xl">
+      <view :class="['border-b', borderMutedClass, 'px-4 py-3']">
+        <view :class="['text-base font-semibold', textPrimaryClass]">
           {{ category.category }}
         </view>
       </view>
 
       <view class="p-2">
-        <view
-          v-for="(item, index) in category.items"
-          :key="index"
-          class="mx-1 my-1 flex items-center rounded-xl px-3 py-3 transition-colors active:bg-gray-50"
-          @click="item.action"
-        >
+        <view v-for="(item, index) in category.items" :key="index"
+          :class="['mx-1 my-1 flex items-center rounded-xl px-3 py-3 transition-colors', activeRowBgClass]"
+          @click="item.action">
           <view class="mr-3 text-lg" :class="item.iconColor || 'text-gray-500'">
             {{ item.icon }}
           </view>
           <view class="flex-1">
-            <view class="text-sm text-gray-800 font-medium" :class="{ 'text-red-500': item.danger }">
+            <view :class="['text-sm font-medium', textPrimaryClass, { 'text-red-500': item.danger }]">
               {{ item.name }}
             </view>
-            <view v-if="item.desc" class="mt-1 text-xs text-gray-500">
+            <view v-if="item.desc" :class="['mt-1 text-xs', textSecondaryClass]">
               {{ item.desc }}
             </view>
           </view>
-          <view class="text-sm text-gray-400">
+          <view :class="['text-sm', textMutedClass]">
             ›
           </view>
         </view>
       </view>
-    </view>
+    </ThemeCard>
   </view>
 </template>
+
+<style lang="scss">
+/* 页面背景与底部覆盖层（非 scoped） */
+</style>
 
 <style lang="scss" scoped>
 /* 使用UnoCSS原子类，无需自定义CSS */

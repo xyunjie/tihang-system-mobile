@@ -9,9 +9,10 @@
 
 <script setup lang="ts">
 import type { GetProcessInstanceCopyPageReqVO, ProcessInstanceSimpleVO } from '@/api/types/bpm'
-import { reactive, ref } from 'vue'
+import { reactive, ref, computed } from 'vue'
 import { getProcessInstanceCopyPage } from '@/api/bpm'
 import { formatStandardDateTime } from '@/utils'
+import { useAppStore } from '@/store/app'
 
 // 页面数据
 const taskList = ref<ProcessInstanceSimpleVO[]>([])
@@ -76,14 +77,21 @@ function handleApprove(task: ProcessInstanceSimpleVO) {
 function formatTime(timeStr: string | number) {
   return formatStandardDateTime(timeStr)
 }
+
+// 主题适配：浅色/深色，与通知公告页面保持一致
+const appStore = useAppStore()
+const isDark = computed(() => appStore.theme === 'dark')
+const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-gray-800'))
+const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-gray-600'))
 </script>
 
 <template>
-  <view class="min-h-screen bg-gray-50">
+  <view class="min-h-screen">
     <!-- 任务列表 - 可滚动区域 -->
 
     <view>
       <z-paging
+        style="top: 0px"
         ref="pagingRef"
         v-model="taskList"
         :refresher-enabled="true"
@@ -102,9 +110,28 @@ function formatTime(timeStr: string | number) {
         empty-view-text="暂无抄送任务"
         @query="queryList"
       >
-        <view v-if="firstLoad">
-          <!-- 显示骨架平面 -->
-          <wd-skeleton theme="paragraph" />
+        <view v-if="firstLoad" class="p-4">
+          <!-- 骨架屏：匹配卡片结构与信息行（抄送列表） -->
+          <view v-for="n in 3" :key="n" class="mb-4">
+            <view class="rounded-xl p-4 shadow-sm" :class="isDark ? 'bg-white/6 border border-white/12' : 'bg-white'">
+              <!-- 头部标题占位 -->
+              <view class="mb-3 flex items-center justify-between">
+                <view class="h-4 w-2/3 rounded" :class="isDark ? 'bg-white/12' : 'bg-gray-200'" />
+              </view>
+
+              <!-- 详情信息占位：两行图标 + 文本 -->
+              <view class="space-y-2">
+                <view class="flex items-center">
+                  <view class="h-3 w-3 rounded-full" :class="isDark ? 'bg-white/16' : 'bg-gray-300'" />
+                  <view class="ml-2 h-3 w-28 rounded" :class="isDark ? 'bg-white/12' : 'bg-gray-200'" />
+                </view>
+                <view class="flex items-center">
+                  <view class="h-3 w-3 rounded-full" :class="isDark ? 'bg-white/16' : 'bg-gray-300'" />
+                  <view class="ml-2 h-3 w-36 rounded" :class="isDark ? 'bg-white/12' : 'bg-gray-200'" />
+                </view>
+              </view>
+            </view>
+          </view>
         </view>
         <view v-else class="p-4">
           <view
@@ -113,10 +140,10 @@ function formatTime(timeStr: string | number) {
             class="mb-4"
           >
             <!-- 任务卡片 -->
-            <view class="rounded-xl bg-white p-4 shadow-sm">
+            <view class="rounded-xl p-4 shadow-sm" :class="isDark ? 'bg-white/6 border border-white/12' : 'bg-white'">
               <!-- 任务头部信息 -->
               <view class="mb-3 flex items-center justify-between">
-                <view class="mr-3 flex-1 text-base text-gray-800 font-semibold">
+                <view class="mr-3 flex-1 text-base font-semibold" :class="textPrimaryClass">
                   {{ task.processInstanceName }}
                 </view>
               </view>
@@ -125,8 +152,8 @@ function formatTime(timeStr: string | number) {
               <view class="mb-4">
                 <!-- 始终显示发起人信息 -->
                 <view class="mb-1.5 flex items-center">
-                  <wd-icon name="user" size="12px" />
-                  <text class="ml-1.5 text-xs text-gray-600">
+                <wd-icon name="user" size="12px" :class="textSecondaryClass" />
+                  <text class="ml-1.5 text-xs" :class="textSecondaryClass">
                     发起人：{{ task.createUser?.nickname }}
                   </text>
                 </view>
@@ -134,15 +161,15 @@ function formatTime(timeStr: string | number) {
                 <!-- 显示摘要信息（如果有的话） -->
                 <view v-if="task.summary && task.summary.length > 0" class="mb-1.5">
                   <view v-for="item in task.summary" :key="item.key" class="mb-1 flex items-start">
-                    <text class="ml-1.5 text-xs text-gray-600">
+                    <text class="ml-1.5 text-xs" :class="textSecondaryClass">
                       {{ item.key }}: {{ item.value }}
                     </text>
                   </view>
                 </view>
 
                 <view class="mb-1.5 flex items-center">
-                  <wd-icon name="time" size="12px" />
-                  <text class="ml-1.5 text-xs text-gray-600">
+                <wd-icon name="time" size="12px" :class="textSecondaryClass" />
+                  <text class="ml-1.5 text-xs" :class="textSecondaryClass">
                     创建时间：{{ formatTime(task.createTime) }}
                   </text>
                 </view>

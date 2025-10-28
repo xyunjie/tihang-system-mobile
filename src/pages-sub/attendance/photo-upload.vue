@@ -13,6 +13,7 @@ import { resetFace as resetFaceApi } from '@/api/attendance'
 import { getUserExtra } from '@/api/user'
 import { useUserStore } from '@/store'
 import { compressImage } from '@/utils'
+import { useAppStore } from '@/store/app'
 
 // 页面状态
 const attendancePhotoUrl = ref<string>('')
@@ -22,6 +23,13 @@ const showCropper = ref<boolean>(false)
 const uploading = ref<boolean>(false)
 
 const userStore = useUserStore()
+
+// 深色模式样式
+const appStore = useAppStore()
+const isDark = computed(() => appStore.theme === 'dark')
+const cardClass = computed(() => (isDark.value ? 'bg-gray-800' : 'bg-white'))
+const titleClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-gray-900'))
+const textClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-gray-600'))
 
 // 计算属性：判断是否已有考勤照片
 const hasExistingPhoto = computed(() => {
@@ -285,28 +293,28 @@ async function handleResetFace() {
 </script>
 
 <template>
-  <view class="min-h-screen bg-gray-50 p-8">
+  <view class="min-h-screen p-8">
     <!-- 考勤照片配置区域 -->
-    <view class="mb-8 rounded-4 bg-white p-8 shadow-sm">
+    <view class="mb-8 rounded-4 p-8 shadow-sm" :class="cardClass">
       <view class="mb-10">
-        <view class="mb-3 text-5 text-gray-900 font-semibold">
+        <view class="mb-3 text-5 font-semibold" :class="titleClass">
           {{ hasExistingPhoto ? '考勤照片查看' : '考勤照片配置' }}
         </view>
-        <view class="text-3 text-gray-600 leading-relaxed">
+        <view class="text-3 leading-relaxed" :class="textClass">
           {{ hasExistingPhoto ? '考勤照片已上传，不允许修改' : '请上传清晰的一寸正面照片用于考勤识别' }}
         </view>
       </view>
 
       <!-- 照片预览区域 -->
       <view class="mb-10 flex justify-center">
-        <view v-if="!attendancePhotoUrl" class="h-49 w-35 flex flex-col items-center justify-center border-2 border-gray-300 rounded-4 border-dashed bg-gray-50 transition-all active:border-gray-400 active:bg-gray-100" @tap="selectPhoto">
+        <view v-if="!attendancePhotoUrl" class="h-49 w-35 flex flex-col items-center justify-center border-2 rounded-4 border-dashed transition-all" :class="isDark ? 'border-gray-600 bg-gray-800 active:border-gray-500 active:bg-gray-700' : 'border-gray-300 bg-gray-50 active:border-gray-400 active:bg-gray-100'" @tap="selectPhoto">
           <view class="mb-5">
             <wd-icon name="camera" size="40rpx" color="#999" />
           </view>
-          <view class="mb-3 text-3 text-gray-800 font-medium">
+          <view class="mb-3 text-3 font-medium" :class="titleClass">
             点击上传考勤照片
           </view>
-          <view class="px-3 text-center text-3 text-gray-500 leading-normal">
+          <view class="px-3 text-center text-3 leading-normal" :class="textClass">
             建议使用一寸照片标准尺寸
           </view>
         </view>
@@ -315,11 +323,11 @@ async function handleResetFace() {
           <image
             :src="attendancePhotoUrl"
             mode="aspectFill"
-            class="h-49 w-35 border-2 border-gray-200 rounded-4 object-cover"
+            class="h-49 w-35 border-2 rounded-4 object-cover" :class="isDark ? 'border-gray-700' : 'border-gray-200'"
             @tap="previewPhoto"
           />
           <view v-if="hasExistingPhoto" class="mt-6">
-            <view class="rounded-full bg-green-100 px-3 py-1 text-xs text-green-700 font-medium">
+            <view class="rounded-full px-3 py-1 text-xs font-medium" :class="isDark ? 'bg-green-900/40 text-green-300' : 'bg-green-100 text-green-700'">
               照片已上传
             </view>
           </view>
@@ -336,44 +344,44 @@ async function handleResetFace() {
       </view>
 
       <!-- 上传提示 -->
-      <view v-if="!hasExistingPhoto" class="border-2 border-orange-200 rounded-3 bg-orange-50 p-6">
-        <view class="mb-4 flex items-center gap-3 text-3 text-orange-600 font-medium">
+      <view v-if="!hasExistingPhoto" class="border-2 rounded-3 p-6" :class="isDark ? 'border-orange-700 bg-orange-900/30' : 'border-orange-200 bg-orange-50'">
+        <view class="mb-4 flex items-center gap-3 text-3 font-medium" :class="isDark ? 'text-orange-300' : 'text-orange-600'">
           <wd-icon name="info" size="12rpx" color="#ff7d00" />
           <text>上传要求</text>
         </view>
-        <view class="text-3 leading-relaxed">
-          <view class="mb-2 text-gray-600">
+        <view class="text-3 leading-relaxed" :class="textClass">
+          <view class="mb-2" :class="textClass">
             • 照片尺寸：推荐使用一寸照片尺寸
           </view>
-          <view class="mb-2 text-gray-600">
+          <view class="mb-2" :class="textClass">
             • 照片格式：支持 JPG、PNG 格式
           </view>
-          <view class="mb-2 text-gray-600">
+          <view class="mb-2" :class="textClass">
             • 照片大小：不超过 2MB
           </view>
-          <view class="mb-2 text-gray-600">
+          <view class="mb-2" :class="textClass">
             • 照片要求：正面免冠照片，五官清晰
           </view>
-          <view class="text-gray-600">
+          <view :class="textClass">
             • 光线要求：光线充足，避免阴影遮挡
           </view>
         </view>
       </view>
 
       <!-- 已上传提示 -->
-      <view v-else class="border-2 border-green-200 rounded-3 bg-green-50 p-6">
-        <view class="mb-4 flex items-center gap-3 text-3 text-green-600 font-medium">
+      <view v-else class="border-2 rounded-3 p-6" :class="isDark ? 'border-green-700 bg-green-900/30' : 'border-green-200 bg-green-50'">
+        <view class="mb-4 flex items-center gap-3 text-3 font-medium" :class="isDark ? 'text-green-300' : 'text-green-600'">
           <wd-icon name="check-circle" size="12rpx" color="#16a34a" />
           <text>上传完成</text>
         </view>
-        <view class="text-3 text-gray-600 leading-relaxed">
+        <view class="text-3 leading-relaxed" :class="textClass">
           考勤照片已成功上传，为保障考勤系统的安全性和准确性，不允许修改已上传的照片。
         </view>
       </view>
     </view>
 
     <!-- 操作按钮 -->
-    <view v-if="!hasExistingPhoto" class="fixed bottom-0 left-0 right-0 border-t-2 border-gray-100 bg-white p-8 shadow-lg">
+    <view v-if="!hasExistingPhoto" class="fixed bottom-0 left-0 right-0 border-t-2 p-8 shadow-lg" :class="[cardClass, isDark ? 'border-gray-700' : 'border-gray-100']">
       <wd-button
         type="primary"
         size="large"

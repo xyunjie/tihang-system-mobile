@@ -10,7 +10,21 @@
 <script setup lang="ts">
 import type { HydroProblemRespVO } from '@/pages-sub/api/type/oj'
 import { onLoad } from '@dcloudio/uni-app'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import { useAppStore } from '@/store/app'
+
+defineOptions({
+  name: 'ProblemDetail',
+})
+
+const appStore = useAppStore()
+
+// 深色模式计算属性
+const pageClass = computed(() => appStore.theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50')
+const cardClass = computed(() => appStore.theme === 'dark' ? 'bg-gray-800' : 'bg-white')
+const titleClass = computed(() => appStore.theme === 'dark' ? 'text-gray-100' : 'text-gray-900')
+const textClass = computed(() => appStore.theme === 'dark' ? 'text-gray-300' : 'text-gray-500')
+const contentClass = computed(() => appStore.theme === 'dark' ? 'text-gray-200' : 'text-gray-700')
 import HtmlContent from '@/components/HtmlContent.vue'
 import { getHydroOjProblemInfo } from '@/pages-sub/api/oj'
 
@@ -61,22 +75,19 @@ function metaItem(label: string, value?: string | number) {
 </script>
 
 <template>
-  <view class="min-h-screen bg-gray-50">
-    <view v-if="loading" class="p-4">
+  <view :class="pageClass" class="min-h-screen p-4">
+    <!-- 首屏骨架加载 -->
+    <view v-if="loading" class="p-2">
       <wd-skeleton theme="paragraph" />
     </view>
 
-    <view v-else-if="errorMsg" class="px-4 py-10 text-center text-gray-500">
-      {{ errorMsg }}
-    </view>
-
-    <view v-else-if="problem" class="px-4 py-3">
-      <!-- 标题与元信息 -->
-      <view class="rounded-2xl bg-white p-4 shadow-sm">
-        <view class="text-lg text-gray-900 font-bold">
+    <view v-else>
+      <!-- 题目标题 -->
+      <view :class="cardClass" class="mb-4 rounded-2xl p-4 shadow-sm">
+        <view :class="titleClass" class="text-lg font-bold">
           {{ problem.title }}
         </view>
-        <view class="mt-2 flex flex-wrap gap-2 text-xs text-gray-600">
+        <view :class="textClass" class="mt-2 flex flex-wrap gap-2 text-xs text-gray-600">
           <wd-tag v-if="problem.pid !== undefined" size="small" type="primary" plain>
             {{ metaItem('题目ID', problem.pid) }}
           </wd-tag>
@@ -89,14 +100,10 @@ function metaItem(label: string, value?: string | number) {
         </view>
       </view>
 
-      <!-- 题面内容（HTML渲染） -->
-      <view class="mt-3 rounded-2xl bg-white p-4 shadow-sm">
-        <HtmlContent :content="problem.content || ''" />
+      <!-- 题目内容 -->
+      <view :class="cardClass" class="rounded-2xl p-4 shadow-sm">
+        <HtmlContent :content="problem.content" :class="contentClass" />
       </view>
-    </view>
-
-    <view v-else class="px-4 py-10 text-center text-gray-500">
-      暂无题目信息
     </view>
   </view>
 </template>

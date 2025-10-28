@@ -8,11 +8,48 @@
 
 <script setup lang="ts">
 import type { GetHydroOjContestPageReqVO, HydroOjContestItemRespVO } from '@/pages-sub/api/type/oj'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { getHydroOjContestPage } from '@/pages-sub/api/oj'
 import { formatStandardDateTime } from '@/utils'
+import { useAppStore } from '@/store/app'
 
-defineOptions({ name: 'ContestList' })
+defineOptions({
+  name: 'ContestList',
+})
+
+const appStore = useAppStore()
+
+// 深色模式计算属性
+const cardClass = computed(() => appStore.theme === 'dark' ? 'bg-gray-800' : 'bg-white')
+const titleClass = computed(() => appStore.theme === 'dark' ? 'text-gray-100' : 'text-gray-900')
+const textClass = computed(() => appStore.theme === 'dark' ? 'text-gray-300' : 'text-gray-500')
+
+// 状态颜色计算属性
+const getStatusClass = computed(() => (status: string) => {
+  if (appStore.theme === 'dark') {
+    switch (status) {
+      case 'running':
+        return 'bg-green-900/30 text-green-300'
+      case 'upcoming':
+        return 'bg-amber-900/30 text-amber-300'
+      case 'ended':
+        return 'bg-gray-700 text-gray-400'
+      default:
+        return 'bg-purple-900/30 text-purple-300'
+    }
+  } else {
+    switch (status) {
+      case 'running':
+        return 'bg-green-50 text-green-700'
+      case 'upcoming':
+        return 'bg-amber-50 text-amber-700'
+      case 'ended':
+        return 'bg-gray-100 text-gray-600'
+      default:
+        return 'bg-purple-50 text-purple-700'
+    }
+  }
+})
 
 const contests = ref<HydroOjContestItemRespVO[]>([])
 const pagingRef = ref()
@@ -31,13 +68,29 @@ function contestStatus(item: HydroOjContestItemRespVO) {
   const now = Date.now()
   const s = toTimestamp(item.startAt)
   const e = toTimestamp(item.endAt)
-  if (!s && !e)
-    return { text: '未知', cls: 'bg-gray-100 text-gray-600' }
-  if (now < s)
-    return { text: '未开始', cls: 'bg-amber-50 text-amber-700' }
-  if (e && now > e)
-    return { text: '已结束', cls: 'bg-gray-100 text-gray-600' }
-  return { text: '进行中', cls: 'bg-green-50 text-green-700' }
+  
+  if (!s && !e) {
+    return { 
+      text: '未知', 
+      cls: appStore.theme === 'dark' ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-600' 
+    }
+  }
+  if (now < s) {
+    return { 
+      text: '未开始', 
+      cls: appStore.theme === 'dark' ? 'bg-amber-900/30 text-amber-300' : 'bg-amber-50 text-amber-700' 
+    }
+  }
+  if (e && now > e) {
+    return { 
+      text: '已结束', 
+      cls: appStore.theme === 'dark' ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-600' 
+    }
+  }
+  return { 
+    text: '进行中', 
+    cls: appStore.theme === 'dark' ? 'bg-green-900/30 text-green-300' : 'bg-green-50 text-green-700' 
+  }
 }
 
 async function queryList(pageNo: number, pageSize: number) {
@@ -69,8 +122,9 @@ function onTapContest(item: HydroOjContestItemRespVO) {
 </script>
 
 <template>
-  <view class="min-h-screen bg-gray-50">
+  <view class="min-h-screen">
     <z-paging
+      style="top: 0px"
       ref="pagingRef"
       v-model="contests"
       :refresher-enabled="true"
@@ -85,21 +139,22 @@ function onTapContest(item: HydroOjContestItemRespVO) {
         <view
           v-for="(item, idx) in contests"
           :key="idx"
-          class="rounded-2xl bg-white p-4 shadow-sm transition-all active:scale-98"
+          :class="cardClass"
+          class="rounded-2xl p-4 shadow-sm transition-all active:scale-98"
           @click="onTapContest(item)"
         >
           <!-- 标题与状态 -->
           <view class="flex items-start justify-between gap-2">
             <view class="min-w-0 flex-1">
-              <view class="truncate text-base font-semibold leading-tight">
+              <view :class="titleClass" class="truncate text-base font-semibold leading-tight">
                 {{ item.title || '比赛' }}
               </view>
-              <view class="mt-1 flex flex-wrap items-center gap-2 text-11px text-gray-600">
-                <view class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5">
-                  <text class="i-carbon-rule mr-1 text-gray-500" />
+              <view :class="textClass" class="mt-1 flex flex-wrap items-center gap-2 text-11px">
+                <view :class="cardClass" class="inline-flex items-center rounded-full px-2 py-0.5">
+                  <text :class="textClass" class="i-carbon-rule mr-1" />
                   {{ item.rule || '规则' }}
                 </view>
-                <view v-if="item.rated" class="inline-flex items-center rounded-full bg-purple-50 px-2 py-0.5 text-purple-700">
+                <view v-if="item.rated" class="inline-flex items-center rounded-full px-2 py-0.5" :class="getStatusClass('rated')">
                   <text class="i-carbon-star mr-1" />
                   rated
                 </view>
@@ -111,15 +166,15 @@ function onTapContest(item: HydroOjContestItemRespVO) {
           </view>
 
           <!-- 时间区间：垂直居中图标与文本 -->
-          <view class="mt-2 flex items-center text-12px text-gray-500">
-            <text class="i-carbon-time mr-1 text-gray-400" />
+          <view :class="textClass" class="mt-2 flex items-center text-12px">
+            <text :class="textClass" class="i-carbon-time mr-1" />
             {{ formatStandardDateTime(item.startAt) }} ~ {{ formatStandardDateTime(item.endAt) }}
           </view>
 
           <!-- 排名（-1 表示未参与排名）：垂直居中图标与文本 -->
-          <view v-if="item.rank !== undefined && item.rank !== null" class="mt-2 flex items-center text-12px text-gray-600">
+          <view v-if="item.rank !== undefined && item.rank !== null" :class="textClass" class="mt-2 flex items-center text-12px">
             <template v-if="item.rank === -1">
-              <text class="i-carbon-subtract-alt mr-1 text-gray-500" /> 未参与排名
+              <text :class="textClass" class="i-carbon-subtract-alt mr-1" /> 未参与排名
             </template>
             <template v-else>
               <text class="i-carbon-caret-up mr-1 text-red-500" /> 排名：{{ item.rank }}
@@ -129,10 +184,10 @@ function onTapContest(item: HydroOjContestItemRespVO) {
 
         <!-- 首屏骨架占位 -->
         <view v-if="firstLoad && contests.length === 0" class="space-y-3">
-          <view v-for="n in 4" :key="n" class="rounded-2xl bg-white p-4 shadow-sm">
-            <view class="h-4 w-2/3 rounded bg-gray-200" />
-            <view class="mt-2 h-3 w-1/3 rounded bg-gray-200" />
-            <view class="mt-4 h-3 w-full rounded bg-gray-200" />
+          <view v-for="n in 4" :key="n" :class="cardClass" class="rounded-2xl p-4 shadow-sm">
+            <view :class="cardClass" class="h-4 w-2/3 rounded" />
+            <view :class="cardClass" class="mt-2 h-3 w-1/3 rounded" />
+            <view :class="cardClass" class="mt-4 h-3 w-full rounded" />
           </view>
         </view>
       </view>

@@ -16,6 +16,7 @@
 <script setup lang="ts">
 import { onHide, onLoad, onPullDownRefresh, onShow } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
+import { useAppStore } from '@/store/app'
 import { getDeptTreeUsers } from '@/api/user'
 
 defineOptions({ name: 'Contact' })
@@ -200,10 +201,29 @@ onLoad(async () => {
   uni.removeStorageSync('contactPageCache')
   await loadDept(0)
 })
+
+// 主题适配：浅色/深色
+const appStore = useAppStore()
+const isDark = computed(() => appStore.theme === 'dark')
+const cardBgClass = computed(() =>
+  isDark.value
+    ? 'bg-[#0b1220] border border-white/15 shadow-lg'
+    : 'bg-white border border-gray-100 shadow-sm'
+)
+const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-gray-900'))
+const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-gray-600'))
+const textMutedClass = computed(() => (isDark.value ? 'text-gray-500' : 'text-gray-500'))
+const borderMutedClass = computed(() => (isDark.value ? 'divide-white/10' : 'divide-gray-100'))
+const iconMutedBgClass = computed(() => (isDark.value ? 'bg-white/20' : 'bg-gray-100'))
+const contactBottomStyle = computed(() => ({
+  background: isDark.value
+    ? 'linear-gradient(180deg, #0b1220 0%, #0f172a 35%, #0f172a 100%)'
+    : 'linear-gradient(180deg, #f6f8fc 0%, #eef2f7 35%, #eef2f7 100%)',
+}))
 </script>
 
 <template>
-  <view class="min-h-screen bg-gray-50">
+  <view class="min-h-screen contact-content">
     <!-- 顶部搜索（仿钉钉） -->
     <!-- <view class="px-4 pt-3">
       <wd-search
@@ -227,23 +247,23 @@ onLoad(async () => {
         请输入关键词进行搜索
       </view>
       <view v-else-if="searchResults.length > 0" class="pt-2">
-        <view class="overflow-hidden rounded-lg bg-white">
-          <view class="divide-y divide-gray-100">
+        <view :class="[cardBgClass, 'overflow-hidden rounded-lg']">
+          <view :class="['divide-y', borderMutedClass]">
             <view
               v-for="user in searchResults"
               :key="`user-${user.id}`"
               class="flex items-center gap-3 px-4 py-3"
               @tap="goToUserProfile(user.id)"
             >
-              <view class="h-8 w-8 flex flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-100">
+              <view class="h-8 w-8 flex flex-shrink-0 items-center justify-center overflow-hidden rounded-full" :class="iconMutedBgClass">
                 <image v-if="user.avatar" :src="user.avatar" mode="aspectFill" class="h-full w-full" />
-                <view v-else class="h-full w-full flex items-center justify-center text-xs text-gray-700">
+                <view v-else class="h-full w-full flex items-center justify-center text-xs" :class="textSecondaryClass">
                   {{ getAvatarText(user.nickname) }}
                 </view>
               </view>
               <view class="min-w-0 flex-1">
                 <view class="flex items-center gap-2">
-                  <view class="truncate text-sm text-gray-900">
+                  <view class="truncate text-sm" :class="textPrimaryClass">
                     {{ user.nickname }}
                   </view>
                   <view class="flex flex-wrap items-center gap-1">
@@ -263,14 +283,14 @@ onLoad(async () => {
           </view>
         </view>
       </view>
-      <view v-else class="py-8 text-center text-gray-500">
+      <view v-else class="py-8 text-center" :class="textSecondaryClass">
         未找到相关内容
       </view>
     </view>
 
     <!-- 面包屑导航（仿钉钉） -->
     <view v-if="!isSearching" class="px-4 py-2">
-      <view class="flex flex-wrap items-center text-xs text-gray-600">
+      <view class="flex flex-wrap items-center text-xs" :class="textSecondaryClass">
         <template v-for="(crumb, index) in breadcrumbs" :key="crumb.id">
           <view
             class="mr-1 cursor-pointer text-blue-600 leading-6"
@@ -285,7 +305,7 @@ onLoad(async () => {
 
     <!-- 合并列表（部门 + 联系人，钉钉风格） -->
     <view v-if="!isSearching && !loading && (filteredChildren.length > 0 || filteredUsers.length > 0)" class="px-4 pt-2">
-      <view class="overflow-hidden rounded-lg bg-white">
+      <view :class="[cardBgClass, 'overflow-hidden rounded-lg']">
         <wd-cell-group>
           <!-- 部门项 -->
           <wd-cell
@@ -300,7 +320,7 @@ onLoad(async () => {
           >
             <template #title>
               <view class="flex items-center">
-                <text class="text-sm text-gray-900">
+                <text class="text-sm" :class="textPrimaryClass">
                   {{ dept.name }}
                 </text>
               </view>
@@ -308,22 +328,22 @@ onLoad(async () => {
           </wd-cell>
         </wd-cell-group>
 
-        <view class="divide-y divide-gray-100">
+        <view :class="['divide-y', borderMutedClass]">
           <view
             v-for="user in filteredUsers"
             :key="`user-${user.id}`"
             class="flex items-center gap-3 px-4 py-3"
             @tap="goToUserProfile(user.id)"
           >
-            <view class="h-8 w-8 flex flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-gray-100">
+            <view class="h-8 w-8 flex flex-shrink-0 items-center justify-center overflow-hidden rounded-full" :class="iconMutedBgClass">
               <image v-if="user.avatar" :src="user.avatar" mode="aspectFill" class="h-full w-full" />
-              <view v-else class="h-full w-full flex items-center justify-center text-xs text-gray-700">
+              <view v-else class="h-full w-full flex items-center justify-center text-xs" :class="textSecondaryClass">
                 {{ getAvatarText(user.nickname) }}
               </view>
             </view>
             <view class="min-w-0 flex-1">
               <view class="flex items-center gap-2">
-                <view class="truncate text-sm text-gray-900">
+                <view class="truncate text-sm" :class="textPrimaryClass">
                   {{ user.nickname }}
                 </view>
                 <view class="flex flex-wrap items-center gap-1">
@@ -352,7 +372,7 @@ onLoad(async () => {
 
     <!-- 空状态提示 -->
     <view v-if="!isSearching && !loading && filteredChildren.length === 0 && filteredUsers.length === 0" class="px-4 py-8">
-      <view class="text-center text-gray-500">
+      <view class="text-center" :class="textSecondaryClass">
         <view v-if="searchKeyword.trim()">
           未找到相关内容
         </view>
@@ -371,4 +391,36 @@ onLoad(async () => {
       刷新中...
     </wd-button>
   </view>
+  <!-- 底部覆盖层：避免 H5 TabBar 占位符白底影响整体背景 -->
+  <view
+    class="contact-bottom-bg fixed left-0 right-0 bottom-0 z-0"
+    :style="contactBottomStyle"
+    style="height: calc(env(safe-area-inset-bottom) + 100rpx);"
+  />
 </template>
+
+<style lang="scss">
+/* 为通讯录所在的 page 元素设置整体背景（非 scoped，覆盖整页），与首页一致 */
+page {
+  /* 浅色主题下的整体背景（纯色或渐变） */
+  background: linear-gradient(180deg, #f6f8fc 0%, #eef2f7 35%, #eef2f7 100%);
+  min-height: 100vh;
+}
+
+/* 深色主题（跟随系统）下的整体背景 */
+@media (prefers-color-scheme: dark) {
+  page {
+    background: linear-gradient(180deg, #0b1220 0%, #0f172a 35%, #0f172a 100%);
+  }
+}
+
+/* 主内容容器底部留白，避免被 TabBar 遮挡 */
+.contact-content {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 100rpx);
+}
+
+/* 底部覆盖层用于和整体背景平滑衔接 */
+.contact-bottom-bg {
+  pointer-events: none;
+}
+</style>

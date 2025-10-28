@@ -9,12 +9,21 @@
 <script lang="ts" setup>
 import type { HydroOjContestRankItemRespVO } from '@/pages-sub/api/type/oj'
 import { onLoad } from '@dcloudio/uni-app'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { getHydroOjContestRank } from '@/pages-sub/api/oj'
+import { useAppStore } from '@/store/app'
 
 const contestId = ref<string>('')
 const loading = ref<boolean>(false)
 const list = ref<HydroOjContestRankItemRespVO[]>([])
+
+// 深色模式计算属性
+const appStore = useAppStore()
+const cardClass = computed(() => appStore.theme === 'dark' ? 'bg-gray-800' : 'bg-white')
+const titleClass = computed(() => appStore.theme === 'dark' ? 'text-gray-100' : 'text-gray-900')
+const subTextClass = computed(() => appStore.theme === 'dark' ? 'text-gray-400' : 'text-gray-500')
+const borderClass = computed(() => appStore.theme === 'dark' ? 'border-gray-700' : 'border-gray-100')
+const acceptTextClass = computed(() => appStore.theme === 'dark' ? 'text-green-400' : 'text-green-600')
 
 function displayRankText(rank: number | undefined, fallback: number) {
   if (rank === -1)
@@ -24,15 +33,15 @@ function displayRankText(rank: number | undefined, fallback: number) {
 
 function rankBadgeClass(rank: number | undefined, fallback: number) {
   if (rank === -1)
-    return 'bg-gray-100 text-gray-400'
+    return appStore.theme === 'dark' ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-400'
   const r = rank && rank > 0 ? rank : fallback
   if (r === 1)
-    return 'bg-amber-300 text-amber-900'
+    return appStore.theme === 'dark' ? 'bg-amber-900/50 text-amber-200' : 'bg-amber-300 text-amber-900'
   if (r === 2)
-    return 'bg-zinc-200 text-zinc-700'
+    return appStore.theme === 'dark' ? 'bg-zinc-700 text-zinc-200' : 'bg-zinc-200 text-zinc-700'
   if (r === 3)
-    return 'bg-orange-300 text-orange-900'
-  return 'bg-gray-100 text-gray-700'
+    return appStore.theme === 'dark' ? 'bg-orange-900/40 text-orange-200' : 'bg-orange-300 text-orange-900'
+  return appStore.theme === 'dark' ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-700'
 }
 
 async function fetchRank() {
@@ -75,19 +84,19 @@ onLoad((options) => {
 </script>
 
 <template>
-  <view class="min-h-screen bg-gray-50 pb-6">
+  <view class="min-h-screen pb-6">
     <view class="px-4 pb-2 pt-4">
-      <text class="text-lg font-semibold">
+      <text :class="titleClass" class="text-lg font-semibold">
         排行榜
       </text>
     </view>
 
-    <view v-if="loading" class="px-6 py-6 text-gray-400">
+    <view v-if="loading" :class="subTextClass" class="px-6 py-6">
       加载中...
     </view>
 
     <view v-else>
-      <view v-if="list.length === 0" class="px-6 py-6 text-gray-400">
+      <view v-if="list.length === 0" :class="subTextClass" class="px-6 py-6">
         暂无排名数据
       </view>
 
@@ -95,7 +104,8 @@ onLoad((options) => {
         <view
           v-for="(item, idx) in list"
           :key="item.uid ?? idx"
-          class="mb-2 flex items-center border border-gray-100 rounded-xl bg-white p-3 shadow-sm"
+          :class="[cardClass, borderClass]"
+          class="mb-2 flex items-center border rounded-xl p-3 shadow-sm"
         >
           <view class="w-12 flex justify-center">
             <text
@@ -108,23 +118,23 @@ onLoad((options) => {
 
           <view class="flex flex-1 flex-col gap-1">
             <view class="flex items-center">
-              <text class="truncate text-sm text-gray-900 font-medium">
+              <text :class="titleClass" class="truncate text-sm font-medium">
                 {{ item.uname || '未知用户' }}
               </text>
-              <text v-if="item.rank === -1" class="ml-2 rounded-full bg-gray-100 px-1 py-0.5 text-10px text-gray-500">
+              <text v-if="item.rank === -1" :class="appStore.theme==='dark' ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-500'" class="ml-2 rounded-full px-1 py-0.5 text-10px">
                 不参与排名
               </text>
             </view>
-            <text class="text-xs text-gray-500">
+            <text :class="subTextClass" class="text-xs">
               UID: {{ item.uid }}
             </text>
           </view>
 
           <view class="flex flex-col items-end gap-1">
-            <text class="text-sm text-gray-900 font-semibold">
+            <text :class="titleClass" class="text-sm font-semibold">
               得分：{{ item.score }}
             </text>
-            <text class="text-xs text-green-600">
+            <text :class="acceptTextClass" class="text-xs">
               通过：{{ item.accept ?? 0 }}
             </text>
           </view>

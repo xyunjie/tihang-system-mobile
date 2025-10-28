@@ -106,3 +106,27 @@ export interface IAuthSendScanMessageReqVO {
   /** 状态 */
   status: string
 }
+
+/**
+ * 社交授权跳转请求参数
+ */
+export interface ISocialAuthRedirectReqVO {
+  /** 社交类型 */
+  type: number
+  /** 回调路径 */
+  redirectUri: string
+}
+
+/**
+ * 通过邮箱验证码重置密码请求体
+ */
+export interface AuthResetPasswordByEmailReqVO {
+  /** 用户名 */
+  username: string
+  /** 邮箱 */
+  email: string
+  /** 验证码 */
+  code: string
+  /** 新密码 */
+  password: string
+}

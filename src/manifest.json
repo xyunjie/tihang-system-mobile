@@ -93,7 +93,8 @@
     "optimization": {
       "subPackages": true
     },
-    "lazyCodeLoading": "requiredComponents"
+    "lazyCodeLoading": "requiredComponents",
+    "darkmode": true
   },
   "mp-alipay": {
     "usingComponents": true,
@@ -110,6 +111,7 @@
   },
   "vueVersion": "3",
   "h5": {
-    "router": {}
+    "router": {},
+    "darkmode": true
   }
 }

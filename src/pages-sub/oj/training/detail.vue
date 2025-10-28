@@ -12,6 +12,29 @@ import { onLoad } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 import HtmlContent from '@/components/HtmlContent.vue'
 import { getHydroOjTrainingDetail } from '@/pages-sub/api/oj'
+import { useAppStore } from '@/store/app'
+
+const appStore = useAppStore()
+
+// 深色模式计算属性
+const cardClass = computed(() => appStore.theme === 'dark' ? 'bg-gray-800' : 'bg-white')
+const titleClass = computed(() => appStore.theme === 'dark' ? 'text-gray-100' : 'text-gray-900')
+const textClass = computed(() => appStore.theme === 'dark' ? 'text-gray-300' : 'text-gray-500')
+const iconClass = computed(() => appStore.theme === 'dark' ? 'text-gray-400' : 'text-gray-400')
+
+// 状态颜色计算属性
+const getCompletedStatusClass = computed(() => (isCompleted: boolean) => {
+  if (appStore.theme === 'dark') {
+    return isCompleted ? 'bg-green-900/30 text-green-300' : 'bg-gray-700 text-gray-300'
+  } else {
+    return isCompleted ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'
+  }
+})
+
+const getBorderClass = computed(() => appStore.theme === 'dark' ? 'border-gray-700' : 'border-gray-100')
+const getStageHeaderClass = computed(() => appStore.theme === 'dark' ? 'bg-gray-800 text-gray-100' : 'bg-white text-gray-800')
+const getStageContentClass = computed(() => appStore.theme === 'dark' ? 'bg-gray-800' : 'bg-white')
+const getProblemItemClass = computed(() => appStore.theme === 'dark' ? 'bg-gray-800 border-gray-700 active:bg-gray-700' : 'bg-white border-gray-100 active:bg-gray-50')
 
 // 训练标题与原始dag数据
 const title = ref<string>('训练详情')
@@ -140,15 +163,15 @@ function onTapProblem(pid: string | number, t?: string) {
 </script>
 
 <template>
-  <view class="min-h-screen bg-gray-50 p-4">
-    <view class="rounded-2xl bg-white p-4 shadow-sm">
-      <view class="text-base font-semibold leading-tight">
+  <view class="min-h-screen p-4">
+    <view :class="cardClass" class="rounded-2xl p-4 shadow-sm">
+      <view :class="titleClass" class="text-base font-semibold leading-tight">
         {{ title }}
       </view>
-      <view v-if="detail?.content" class="mt-1 text-xs text-gray-500">
+      <view v-if="detail?.content" :class="textClass" class="mt-1 text-xs">
         {{ detail?.content }}
       </view>
-      <HtmlContent v-if="detail?.description" class="mt-1 text-xs text-gray-500" :content="detail?.description" />
+      <HtmlContent v-if="detail?.description" :class="textClass" class="mt-1 text-xs" :content="detail?.description" />
     </view>
 
     <!-- 新增：阶段+题目列表渲染（折叠） -->
@@ -162,37 +185,37 @@ function onTapProblem(pid: string | number, t?: string) {
           <!-- 自定义标题，默认折叠，点击展开 -->
           <template #title="{ expanded }">
             <view
-              class="flex items-center justify-between border border-gray-100 rounded-2 bg-white px-4 py-3 shadow-sm transition-all duration-300"
-              :class="{ 'rounded-b-0': expanded }"
+              :class="[getStageHeaderClass, getBorderClass, { 'rounded-b-0': expanded }]"
+              class="flex items-center justify-between border rounded-2 px-4 py-3 shadow-sm transition-all duration-300"
             >
               <view class="min-w-0 flex-1">
-                <view class="truncate text-base text-gray-800 font-semibold">
+                <view :class="titleClass" class="truncate text-base font-semibold">
                   章节{{ si + 1 }}. {{ s.title }}
                 </view>
-                <view class="mt-1 text-11px text-gray-500">
+                <view :class="textClass" class="mt-1 text-11px">
                   已完成 {{ s.completed || 0 }} / {{ s.total || 0 }}
                 </view>
               </view>
               <wd-icon
                 :name="expanded ? 'arrow-up' : 'arrow-down'"
-                class="ml-2 text-gray-400 transition-transform duration-300"
-                :class="{ 'rotate-180 text-blue-500': expanded }"
+                :class="[iconClass, { 'rotate-180 text-blue-500': expanded }]"
+                class="ml-2 transition-transform duration-300"
                 size="14px"
               />
             </view>
           </template>
 
           <!-- 折叠内容 -->
-          <view class="bg白 border-x border-b border-gray-100 rounded-b-2 px-4 pb-4 pt-2">
+          <view :class="[getStageContentClass, getBorderClass]" class="border-x border-b rounded-b-2 px-4 pb-4 pt-2">
             <view v-if="s.requireNids && s.requireNids.length" class="mb-2 flex flex-wrap items-center gap-2">
-              <view class="text-12px text-gray-500">
+              <view :class="textClass" class="text-12px">
                 前置阶段：
               </view>
               <view
                 v-for="req in s.requireNids"
                 :key="`req-${req.id}`"
+                :class="getCompletedStatusClass(req.isCompleted)"
                 class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-12px"
-                :class="req.isCompleted ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'"
               >
                 <wd-icon :name="req.isCompleted ? 'check-circle' : 'clock'" size="12px" :color="req.isCompleted ? '#10b981' : '#9ca3af'" />
                 <text>{{ req.title }}</text>
@@ -203,10 +226,11 @@ function onTapProblem(pid: string | number, t?: string) {
               <view
                 v-for="p in s.pids"
                 :key="`p-${p.pid}`"
-                class="flex items-center justify-between border border-gray-100 rounded-xl bg-white p-3 active:bg-gray-50"
+                :class="getProblemItemClass"
+                class="flex items-center justify-between border rounded-xl p-3"
                 @click="onTapProblem(p.pid, p.title)"
               >
-                <view class="text-sm text-gray-800">
+                <view :class="titleClass" class="text-sm">
                   <text class="font-semibold">
                     {{ p.pid }}
                   </text>
@@ -214,8 +238,8 @@ function onTapProblem(pid: string | number, t?: string) {
                   <text> {{ p.title || '' }}</text>
                 </view>
                 <view
+                  :class="getCompletedStatusClass(p.isCompleted)"
                   class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-11px"
-                  :class="p.isCompleted ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'"
                 >
                   <wd-icon :name="p.isCompleted ? 'check-circle' : 'close'" size="14px" :color="p.isCompleted ? '#10b981' : '#9ca3af'" />
                   <text>{{ p.isCompleted ? '已完成' : '未完成' }}</text>
@@ -227,7 +251,7 @@ function onTapProblem(pid: string | number, t?: string) {
       </wd-collapse>
     </view>
 
-    <view v-else class="mt-6 text-center text-gray-500">
+    <view v-else :class="textClass" class="mt-6 text-center">
       暂无数据
     </view>
   </view>

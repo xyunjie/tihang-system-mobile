@@ -13,8 +13,9 @@
 <script setup lang="ts">
 import type { EduScheduleRespVO } from '@/api/types/attendance'
 import { onLoad } from '@dcloudio/uni-app'
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { createEduSchedule, getEduSchedule } from '@/api/attendance'
+import { useAppStore } from '@/store/app'
 
 defineOptions({ name: 'AttendanceTimetable' })
 
@@ -45,6 +46,14 @@ const editor = reactive({
 // 临时选择的周次（1-20周）
 const weeksOptions = Array.from({ length: 20 }, (_, i) => i + 1)
 const tempWeeks = ref<number[]>([])
+
+// 深色模式样式
+const appStore = useAppStore()
+const isDark = computed(() => appStore.theme === 'dark')
+const cardClass = computed(() => (isDark.value ? 'bg-gray-800' : 'bg-white'))
+const borderClass = computed(() => (isDark.value ? 'border-gray-700' : 'border-gray-200'))
+const titleClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-gray-800'))
+const textClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-gray-500'))
 
 function getKey(dayIndex: number, slotIndex: number) {
   return `${dayIndex}-${slotIndex}`
@@ -112,9 +121,12 @@ async function saveEdit() {
 function getCellClass(dayIndex: number, slotIndex: number) {
   const key = getKey(dayIndex, slotIndex)
   const has = (tableData[key] || []).length > 0
-  return has
-    ? 'bg-white text-gray-700 shadow-sm'
-    : 'bg-white text-gray-700'
+  // 根据深色模式调整单元格底色与文字颜色
+  const appStore = useAppStore()
+  const isDark = appStore.theme === 'dark'
+  const base = isDark ? 'bg-gray-800 text-gray-200' : 'bg-white text-gray-700'
+  const withShadow = isDark ? 'bg-gray-800 text-gray-200 shadow-sm' : 'bg-white text-gray-700 shadow-sm'
+  return has ? withShadow : base
 }
 
 // 新增：判断单元格是否有课
@@ -191,31 +203,29 @@ function applyServerSchedules(list: EduScheduleRespVO[]) {
 </script>
 
 <template>
-  <view class="min-h-screen bg-gray-50">
+  <view class="min-h-screen">
     <!-- 加载中 -->
     <view v-if="loading" class="py-20 flex items-center justify-center">
       <view class="flex flex-col items-center gap-3">
         <view class="w-6 h-6 border-2 border-gray-300 border-t-sky-500 rounded-full animate-spin" />
-        <text class="text-sm text-gray-500">加载中...</text>
+        <text class="text-sm" :class="textClass">加载中...</text>
       </view>
     </view>
 
     <!-- 未配置学期信息空状态 -->
     <view v-else-if="emptyTerm" class="mt-4 px-4">
-      <view class="rounded-xl border border-gray-200 bg-white p-8 text-center shadow-sm">
-        <view class="text-base text-gray-800 font-medium">系统未配置学期信息，请联系管理员配置学期信息！</view>
+      <view class="rounded-xl border p-8 text-center shadow-sm" :class="[cardClass, borderClass]">
+        <view class="text-base font-medium" :class="titleClass">系统未配置学期信息，请联系管理员配置学期信息！</view>
       </view>
     </view>
 
     <!-- 课程表网格 -->
     <view v-else class="mt-4 px-4">
-      <view
-        class="overflow-hidden border border-gray-200 rounded-xl bg-white shadow-sm"
-      >
+      <view class="overflow-hidden border rounded-xl shadow-sm" :class="[cardClass, borderClass]">
         <!-- 表头：时间 + 7天 -->
-        <view class="sticky top-0 z-10 grid bg-white" style="grid-template-columns: 35px repeat(5, 1fr);">
-          <view class="h-12 flex items-center justify-center text-sm text-gray-700 font-medium" />
-          <view v-for="(d, di) in days" :key="di" class="h-12 flex items-center justify-center text-sm text-gray-700 font-medium">
+        <view class="sticky top-0 z-10 grid" :class="cardClass" style="grid-template-columns: 35px repeat(5, 1fr);">
+          <view class="h-12 flex items-center justify-center text-sm font-medium" :class="titleClass" />
+          <view v-for="(d, di) in days" :key="di" class="h-12 flex items-center justify-center text-sm font-medium" :class="titleClass">
             {{ d }}
           </view>
         </view>
@@ -225,14 +235,14 @@ function applyServerSchedules(list: EduScheduleRespVO[]) {
           <template v-for="(slot, si) in slots" :key="si">
             <view class="grid" style="grid-template-columns: 35px repeat(5, 1fr);">
               <!-- 左侧时间列（上：节次数字；下：两行小号时间） -->
-              <view class="h-16 flex flex-col items-center justify-center rounded-none bg-white px-1 py-2" :style="(si === lunchDividerIndex || si === eveningDividerIndex) ? 'border-top: 1px solid #E5E7EB; border-bottom: 1px solid #E5E7EB;' : 'border-top: 1px solid #E5E7EB;'">
-                <view class="text-sm text-gray-800 font-semibold">
+              <view class="h-16 flex flex-col items-center justify-center rounded-none px-1 py-2" :class="cardClass" :style="(si === lunchDividerIndex || si === eveningDividerIndex) ? 'border-top: 1px solid #E5E7EB; border-bottom: 1px solid #E5E7EB;' : 'border-top: 1px solid #E5E7EB;'">
+                <view class="text-sm font-semibold" :class="titleClass">
                   {{ getPeriodNumber(slot.label) }}
                 </view>
-                <view class="text-10px text-gray-500 leading-tight font-mono">
+                <view class="text-10px leading-tight font-mono" :class="textClass">
                   {{ splitTime(slot.time).start }}
                 </view>
-                <view class="text-10px text-gray-500 leading-tight font-mono">
+                <view class="text-10px leading-tight font-mono" :class="textClass">
                   {{ splitTime(slot.time).end }}
                 </view>
               </view>
@@ -240,18 +250,18 @@ function applyServerSchedules(list: EduScheduleRespVO[]) {
               <view
                 v-for="(d, di) in days"
                 :key="di"
-                class="relative h-16 overflow-hidden bg-white px-2 py-2 transition-all active:scale-98" :style="(si === lunchDividerIndex || si === eveningDividerIndex) ? 'border-top: 1px solid #E5E7EB; border-left: 1px solid #E5E7EB; border-bottom: 1px solid #E5E7EB;' : 'border-top: 1px solid #E5E7EB; border-left: 1px solid #E5E7EB;'"
-                :class="[{ 'bg-sky-50 shadow-sm': hasCourse(di, si) }, getCellClass(di, si)]"
+                class="relative h-16 overflow-hidden px-2 py-2 transition-all active:scale-98" :style="(si === lunchDividerIndex || si === eveningDividerIndex) ? 'border-top: 1px solid #E5E7EB; border-left: 1px solid #E5E7EB; border-bottom: 1px solid #E5E7EB;' : 'border-top: 1px solid #E5E7EB; border-left: 1px solid #E5E7EB;'"
+                :class="[{ [isDark ? 'bg-sky-900/30' : 'bg-sky-50']: hasCourse(di, si) }, getCellClass(di, si)]"
                 @tap="openEdit(di, si)"
               >
                 <view class="h-full w-full flex flex-col items-center justify-center gap-1">
-                  <view v-if="hasCourse(di, si)" class="inline-flex items-center rounded-full bg-sky-100 px-2 py-0.5 text-11px text-sky-700">
+                  <view v-if="hasCourse(di, si)" class="inline-flex items-center rounded-full px-2 py-0.5 text-11px" :class="isDark ? 'bg-sky-900/40 text-sky-300' : 'bg-sky-100 text-sky-700'">
                     有课
                   </view>
-                  <text v-if="hasCourse(di, si)" class="text-9px text-sky-700">
+                  <text v-if="hasCourse(di, si)" class="text-9px" :class="isDark ? 'text-sky-300' : 'text-sky-700'">
                     已选 {{ getCellCount(di, si) }} 周
                   </text>
-                  <text v-else class="text-12px text-gray-500">
+                  <text v-else class="text-12px" :class="textClass">
                     空闲
                   </text>
                 </view>
@@ -259,11 +269,11 @@ function applyServerSchedules(list: EduScheduleRespVO[]) {
               </view>
             </view>
             <!-- 分割线：中午 -->
-            <view v-if="si === lunchDividerIndex" class="h-8 flex items-center justify-center border-y border-gray-200 bg-gray-50 text-xs text-gray-500">
+            <view v-if="si === lunchDividerIndex" class="h-8 flex items-center justify-center border-y text-xs" :class="[borderClass, textClass]">
               午休
             </view>
             <!-- 分割线：晚上 -->
-            <view v-if="si === eveningDividerIndex" class="h-8 flex items-center justify-center border-y border-gray-200 bg-gray-50 text-xs text-gray-500">
+            <view v-if="si === eveningDividerIndex" class="h-8 flex items-center justify-center border-y text-xs" :class="[borderClass, textClass]">
               晚上
             </view>
           </template>
@@ -273,10 +283,10 @@ function applyServerSchedules(list: EduScheduleRespVO[]) {
 
     <!-- 编辑弹窗 -->
     <wd-popup v-model="editor.visible" position="bottom" :safe-area-inset-bottom="true">
-      <view class="max-h-80vh flex flex-col rounded-t-4 bg-white">
+      <view class="max-h-80vh flex flex-col rounded-t-4" :class="cardClass">
         <!-- 头部 -->
-        <view class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-          <view class="text-lg text-gray-800 font-semibold">
+        <view class="flex items-center justify-between border-b px-5 py-4" :class="borderClass">
+          <view class="text-lg font-semibold" :class="titleClass">
             {{ days[editor.dayIndex] }} · {{ slots[editor.slotIndex].label }}
           </view>
           <wd-button type="text" @click="closeEdit">
@@ -286,7 +296,7 @@ function applyServerSchedules(list: EduScheduleRespVO[]) {
 
         <!-- 周次多选 -->
         <view class="flex-1 overflow-auto px-5 py-4">
-          <view class="mb-3 text-sm text-gray-700">
+          <view class="mb-3 text-sm" :class="titleClass">
             选择有课的周次（1-20周）
           </view>
           <wd-checkbox-group v-model="tempWeeks" shape="button" checked-color="#4D7FFF">
@@ -299,7 +309,7 @@ function applyServerSchedules(list: EduScheduleRespVO[]) {
         </view>
 
         <!-- 底部确认 -->
-        <view class="border-t border-gray-100 bg-white px-5 py-4">
+        <view class="border-t px-5 py-4" :class="[cardClass, borderClass]">
           <wd-button type="primary" block @click="saveEdit">
             确定
           </wd-button>

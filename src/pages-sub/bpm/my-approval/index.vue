@@ -9,9 +9,11 @@
 
 <script setup lang="ts">
 import type { BpmProcessInstanceMyRespVO, BpmTaskRespVO, GetProcessInstanceMyPageReqVO } from '@/api/types/bpm'
-import { reactive, ref } from 'vue'
+import { reactive, ref, computed } from 'vue'
 import { getProcessInstanceMyPage } from '@/api/bpm'
 import { formatStandardDateTime } from '@/utils'
+import { useAppStore } from '@/store/app'
+import ThemeCard from '@/components/ThemeCard.vue'
 
 defineOptions({
   name: 'MyApproval',
@@ -97,17 +99,24 @@ function getTaskStatusText(status: number) {
 
 // 获取任务状态颜色
 function getTaskStatusColor(status: number) {
-  switch (status) {
-    case 1:
-      return 'text-blue-600'
-    case 2:
-      return 'text-green-600'
-    case 3:
-      return 'text-red-600'
-    case 4:
-      return 'text-gray-600'
-    default:
-      return 'text-gray-600'
+  // 深色/浅色下返回完整的文本/背景/边框类，参考通知公告页面
+  if (isDark.value) {
+    switch (status) {
+      case 1: return 'text-blue-400 bg-blue-500/12 border border-blue-500/20'
+      case 2: return 'text-green-400 bg-green-500/12 border border-green-500/20'
+      case 3: return 'text-red-400 bg-red-500/12 border border-red-500/20'
+      case 4: return 'text-gray-400 bg-white/6 border border-white/12'
+      default: return 'text-gray-400 bg-white/6 border border-white/12'
+    }
+  }
+  else {
+    switch (status) {
+      case 1: return 'text-blue-600 bg-blue-50 border border-blue-200'
+      case 2: return 'text-green-600 bg-green-50 border border-green-200'
+      case 3: return 'text-red-600 bg-red-50 border border-red-200'
+      case 4: return 'text-gray-600 bg-gray-50 border border-gray-200'
+      default: return 'text-gray-600 bg-gray-50 border border-gray-200'
+    }
   }
 }
 
@@ -153,13 +162,21 @@ function calcDuration(duration: number) {
 onShow(() => {
   queryList(1, 10)
 })
+
+// 主题适配：浅色/深色，与通知公告页面保持一致
+const appStore = useAppStore()
+const isDark = computed(() => appStore.theme === 'dark')
+const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-gray-800'))
+const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-gray-600'))
+const textMutedClass = computed(() => (isDark.value ? 'text-gray-500' : 'text-gray-400'))
 </script>
 
 <template>
-  <view class="min-h-screen bg-gray-50">
+  <view class="min-h-screen">
     <!-- 审批列表 - 可滚动区域 -->
     <view>
       <z-paging
+        style="top: 0px"
         ref="pagingRef"
         v-model="approvalList"
         :refresher-enabled="true"
@@ -178,9 +195,37 @@ onShow(() => {
         empty-view-text="暂无我的审批"
         @query="queryList"
       >
-        <view v-if="firstLoad">
-          <!-- 显示骨架平面 -->
-          <wd-skeleton theme="paragraph" />
+        <view v-if="firstLoad" class="p-4">
+          <!-- 骨架屏：匹配 ThemeCard 卡片结构、状态徽标与详情提示 -->
+          <view v-for="n in 3" :key="n" class="mb-4">
+            <ThemeCard :padding="false">
+              <view class="p-4">
+                <!-- 头部：标题 + 右侧状态徽标占位 -->
+                <view class="mb-3 flex items-center justify-between">
+                  <view class="h-4 w-2/3 rounded" :class="isDark ? 'bg-white/12' : 'bg-gray-200'" />
+                  <view class="h-5 w-16 rounded-full" :class="isDark ? 'bg-white/10' : 'bg-gray-200'" />
+                </view>
+
+                <!-- 详情信息占位：两行图标 + 文本 -->
+                <view class="space-y-2">
+                  <view class="flex items-center">
+                    <view class="h-3 w-3 rounded-full" :class="isDark ? 'bg-white/16' : 'bg-gray-300'" />
+                    <view class="ml-2 h-3 w-28 rounded" :class="isDark ? 'bg-white/12' : 'bg-gray-200'" />
+                  </view>
+                  <view class="flex items-center">
+                    <view class="h-3 w-3 rounded-full" :class="isDark ? 'bg-white/16' : 'bg-gray-300'" />
+                    <view class="ml-2 h-3 w-36 rounded" :class="isDark ? 'bg-white/12' : 'bg-gray-200'" />
+                  </view>
+                </view>
+
+                <!-- 底部提示占位：点击查看详情 -->
+                <view class="mt-3 flex items-center justify-end">
+                  <view class="h-3 w-20 rounded" :class="isDark ? 'bg-white/12' : 'bg-gray-300'" />
+                  <view class="ml-1 h-3 w-3 rounded" :class="isDark ? 'bg-white/16' : 'bg-gray-300'" />
+                </view>
+              </view>
+            </ThemeCard>
+          </view>
         </view>
         <view v-else class="p-4">
           <view
@@ -189,15 +234,16 @@ onShow(() => {
             class="mb-4"
             @click="handleViewDetail(task)"
           >
-            <!-- 审批卡片 -->
-            <view class="cursor-pointer rounded-xl bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
+            <!-- 审批卡片采用 ThemeCard，适配深色模式背景与阴影 -->
+            <ThemeCard class="cursor-pointer transition-shadow hover:shadow-md" :padding="false">
+              <view class="p-4">
               <!-- 审批头部信息 -->
               <view class="mb-3 flex items-center justify-between">
-                <view class="mr-3 flex-1 text-base text-gray-800 font-semibold">
+                <view class="mr-3 flex-1 text-base font-semibold" :class="textPrimaryClass">
                   {{ task.name || '未知流程' }}
                 </view>
                 <!-- 审批状态标签 -->
-                <view class="rounded-full bg-gray-100 px-2 py-1 text-xs" :class="getTaskStatusColor(task.status)">
+                <view class="rounded-full px-2 py-1 text-xs" :class="getTaskStatusColor(task.status)">
                   {{ getTaskStatusText(task.status) }}
                 </view>
               </view>
@@ -206,50 +252,51 @@ onShow(() => {
               <view class="mb-3">
                 <!-- 始终显示发起人信息 -->
                 <view v-if="task.startUser" class="mb-1.5 flex items-center">
-                  <wd-icon name="user" size="12px" />
-                  <text class="ml-1.5 text-xs text-gray-600">
+                <wd-icon name="user" size="12px" :class="textSecondaryClass" />
+                  <text class="ml-1.5 text-xs" :class="textSecondaryClass">
                     发起人：{{ task.startUser.nickname }}
                   </text>
                 </view>
 
                 <view v-if="task.id" class="mb-1.5 flex items-start">
-                  <wd-icon name="code" size="12px" />
-                  <text class="ml-1.5 text-xs text-gray-600">
+                <wd-icon name="code" size="12px" :class="textSecondaryClass" />
+                  <text class="ml-1.5 text-xs" :class="textSecondaryClass">
                     编号：{{ task.id }}
                   </text>
                 </view>
                 <view v-if="task.categoryName" class="mb-1.5 flex items-center">
-                  <wd-icon name="filter1" size="12px" />
-                  <text class="ml-1.5 text-xs text-gray-600">
+                <wd-icon name="filter1" size="12px" :class="textSecondaryClass" />
+                  <text class="ml-1.5 text-xs" :class="textSecondaryClass">
                     分类：{{ task.categoryName }}
                   </text>
                 </view>
                 <view class="mb-1.5 flex items-center">
-                  <wd-icon name="time" size="12px" />
-                  <text class="ml-1.5 text-xs text-gray-600">
+                <wd-icon name="time" size="12px" :class="textSecondaryClass" />
+                  <text class="ml-1.5 text-xs" :class="textSecondaryClass">
                     创建时间：{{ formatTime(task.startTime) }}
                   </text>
                 </view>
                 <view v-if="task.endTime" class="mb-1.5 flex items-center">
-                  <wd-icon name="check" size="12px" />
-                  <text class="ml-1.5 text-xs text-gray-600">
+                <wd-icon name="check" size="12px" :class="textSecondaryClass" />
+                  <text class="ml-1.5 text-xs" :class="textSecondaryClass">
                     完成时间：{{ formatTime(task.endTime) }}
                   </text>
                 </view>
                 <view v-if="task.durationInMillis" class="flex items-center">
-                  <wd-icon name="detection" size="12px" />
-                  <text class="ml-1.5 text-xs text-gray-600">
+                <wd-icon name="detection" size="12px" :class="textSecondaryClass" />
+                  <text class="ml-1.5 text-xs" :class="textSecondaryClass">
                     耗时：{{ calcDuration(task.durationInMillis) }}
                   </text>
                 </view>
               </view>
 
               <!-- 查看详情提示 -->
-              <view class="flex items-center justify-end text-xs text-gray-400">
+              <view class="flex items-center justify-end text-xs" :class="textMutedClass">
                 <text>点击查看详情</text>
-                <wd-icon name="arrow-right" size="12px" class="ml-1" />
+                <wd-icon name="arrow-right" size="12px" class="ml-1" :class="textMutedClass" />
               </view>
-            </view>
+              </view>
+            </ThemeCard>
           </view>
         </view>
       </z-paging>

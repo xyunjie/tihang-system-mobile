@@ -14,6 +14,8 @@
 import type { BpmCategoryRespVO, BpmTaskStatisticsRespVO, ProcessDefinitionRespVO } from '@/api/types/bpm'
 import { computed, reactive, ref } from 'vue'
 import { getCategorySimpleList, getProcessDefinitionList, getTaskStatistics } from '@/api/bpm'
+import { useAppStore } from '@/store/app'
+import ThemeCard from '@/components/ThemeCard.vue'
 
 defineOptions({
   name: 'Workspace',
@@ -61,6 +63,26 @@ const statistics = ref<BpmTaskStatisticsRespVO>({
   ccCount: 0,
   todayCount: 0,
 })
+
+// 主题适配：浅色/深色
+const appStore = useAppStore()
+const isDark = computed(() => appStore.theme === 'dark')
+// 底部覆盖层背景，叠在占位符之上但在 TabBar 之下
+const wsBottomStyle = computed(() => ({
+  background: isDark.value
+    ? 'linear-gradient(180deg, rgba(15,23,42,1) 0%, rgba(15,23,42,0.85) 70%)'
+    : 'linear-gradient(180deg, rgba(238,242,247,1) 0%, rgba(238,242,247,0.85) 70%)',
+}))
+// 卡片与文本类
+const cardBgClass = computed(() =>
+  isDark.value
+    ? 'bg-[#0b1220] border border-white/15 shadow-lg'
+    : 'bg-white border border-gray-100 shadow-md'
+)
+const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-gray-800'))
+const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-gray-500'))
+const borderMutedClass = computed(() => (isDark.value ? 'border-white/10' : 'border-gray-100'))
+const subTileBgClass = computed(() => (isDark.value ? 'bg-white/6 border border-white/8' : 'bg-gray-50 border border-gray-100'))
 
 // 按分类获取流程定义 - 根据获取的分类数据和流程定义的category进行匹配
 const processDefinitionsByCategory = computed(() => {
@@ -336,11 +358,11 @@ onPullDownRefresh(() => {
   <!-- 使用普通的view容器，不需要scroll-view -->
   <view>
     <!-- 加载状态 -->
-    <view v-if="pageState.loading" class="px-4 pt-4">
+    <view v-if="pageState.loading" class="ws-content px-4 pt-4">
       <wd-skeleton theme="paragraph" class="mt-2" />
     </view>
 
-    <view v-else class="px-4 pb-8 pt-4">
+    <view v-else class="ws-content px-4 pb-8 pt-4">
       <!-- 统计卡片 -->
       <view class="grid grid-cols-2 mb-5 gap-4">
         <view
@@ -429,11 +451,11 @@ onPullDownRefresh(() => {
           class="mb-4 last:mb-0"
         >
           <!-- 分类卡片 -->
-          <view class="overflow-hidden rounded-2xl bg-white shadow-xl">
+          <ThemeCard :padding="false">
             <!-- 卡片标题 -->
-            <view class="flex items-center justify-between border-b border-gray-100 bg-blue-100 px-4 py-3">
+            <view class="flex items-center justify-between px-4 py-3" :class="['border-b', borderMutedClass, subTileBgClass]">
               <view class="flex items-center">
-                <view class="text-base text-gray-800 font-bold">
+                <view class="text-base font-bold" :class="textPrimaryClass">
                   {{ categoryData.name }}
                 </view>
               </view>
@@ -448,7 +470,7 @@ onPullDownRefresh(() => {
                 @click="startProcess(process)"
               >
                 <!-- 图标容器 -->
-                <view class="mb-2 h-16 w-16 flex items-center justify-center overflow-hidden rounded-2xl bg-blue-50">
+                <view :class="['mb-2 h-16 w-16 flex items-center justify-center overflow-hidden rounded-2xl', subTileBgClass]">
                   <view class="h-14 w-14 flex items-center justify-center rounded-xl bg-blue-500 shadow-md">
                     <template v-if="process.icon">
                       <image
@@ -466,15 +488,22 @@ onPullDownRefresh(() => {
                 </view>
 
                 <!-- 流程名称 -->
-                <view class="line-clamp-2 w-full text-center text-sm text-gray-700 font-medium leading-tight">
+                <view :class="['line-clamp-2 w-full text-center text-sm font-medium leading-tight', textPrimaryClass]">
                   {{ process.name }}
                 </view>
               </view>
             </view>
-          </view>
+          </ThemeCard>
         </view>
       </view>
     </view>
+
+    <!-- 底部覆盖层：避免 H5 TabBar 占位符白底影响整体背景 -->
+    <view
+      class="ws-bottom-bg fixed left-0 right-0 bottom-0 z-0"
+      :style="wsBottomStyle"
+      style="height: calc(env(safe-area-inset-bottom) + 100rpx);"
+    />
   </view>
 </template>
 

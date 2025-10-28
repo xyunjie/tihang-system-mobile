@@ -5,6 +5,9 @@ import { useUserStore } from '@/store'
 import { notLoginPages as _notLoginPages, getNotLoginPages } from '@/utils'
 import { tabbarList as _tabBarList } from './layouts/fg-tabbar/tabbarList'
 import 'abortcontroller-polyfill/dist/abortcontroller-polyfill-only'
+import { useAppStore } from '@/store/app'
+
+const appStore = useAppStore()
 
 const isDev = import.meta.env.DEV
 const loginRoute = import.meta.env.VITE_LOGIN_URL
@@ -91,6 +94,9 @@ function checkInitialAuth() {
 usePageAuth()
 
 onLaunch(() => {
+  // 初始化主题为系统主题，并订阅系统主题变化
+  // #ifdef MP-WEIXIN
+  appStore.initThemeFromSystem()
   checkInitialAuth()
   // 从缓存中获取app-tabbar-index，进行跳转
   const tabIndex = uni.getStorageSync('app-tabbar-index')
@@ -103,6 +109,7 @@ onLaunch(() => {
   const tabbarList = _tabBarList.map(item => ({ ...item, path: `/${item.pagePath}` }))
   const url = tabbarList[tabIndex].path
   uni.switchTab({ url })
+  // #endif
 })
 onShow(() => {
   checkInitialAuth()
@@ -124,4 +131,61 @@ image {
   height: 100%;
   vertical-align: middle;
 }
+
+page {
+  /* #ifdef MP-WEIXIN */
+  background: -webkit-linear-gradient(135deg,
+      #f3f7ff 0%,
+      #f0f4ff 20%,
+      #e8edff 45%,
+      #e2e8ff 70%,
+      #dde5ff 100%);
+  /* #endif */
+
+  /* #ifndef MP-WEIXIN */
+  /* 标准版本 */
+  background: linear-gradient(135deg,
+      #f3f7ff 0%,
+      #f0f4ff 20%,
+      #e8edff 45%,
+      #e2e8ff 70%,
+      #dde5ff 100%);
+  /* #endif */
+
+  
+
+  min-height: 100vh;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+
+@media (prefers-color-scheme: dark) {
+  page {
+    /* #ifdef MP-WEIXIN */
+    background: -webkit-linear-gradient(135deg,
+        #0b1220 0%,
+        #0d1426 20%,
+        #0f182e 45%,
+        #101a33 70%,
+        #12203b 100%);
+    /* #endif */
+    /* #ifndef MP-WEIXIN */
+    background: linear-gradient(135deg,
+        #0b1220 0%,
+        #0d1426 20%,
+        #0f182e 45%,
+        #101a33 70%,
+        #12203b 100%);
+    /* #endif */
+    
+  }
+}
+
+/* #ifdef H5 */
+uni-page-head {
+  display: none;
+}
+
+/* #endif */
 </style>

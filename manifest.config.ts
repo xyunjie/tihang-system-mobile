@@ -32,6 +32,7 @@ export default defineManifestConfig({
     router: {
       // base: VITE_APP_PUBLIC_BASE,
     },
+    darkmode: true,
   },
   /* 5+App特有相关 */
   'app-plus': {
@@ -129,6 +130,7 @@ export default defineManifestConfig({
     },
     usingComponents: true,
     lazyCodeLoading: 'requiredComponents',
+    darkmode: true,
     // __usePrivacyCheck__: true,
   },
   'mp-alipay': {

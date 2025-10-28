@@ -8,6 +8,8 @@
 </route>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useAppStore } from '@/store/app'
 defineOptions({
   name: 'AttendanceManagement',
 })
@@ -53,16 +55,24 @@ function navigateToFunction(route: string) {
     },
   })
 }
+
+// 深色模式支持
+const appStore = useAppStore()
+const isDark = computed(() => appStore.theme === 'dark')
+const cardClass = computed(() => (isDark.value ? 'bg-gray-800' : 'bg-white'))
+const titleClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-gray-800'))
+const textClass = computed(() => (isDark.value ? 'text-gray-300' : 'text-gray-500'))
 </script>
 
 <template>
-  <view class="min-h-screen bg-gray-50 p-4">
+  <view class="min-h-screen p-4">
     <!-- 功能列表 -->
     <view class="space-y-4">
       <view
         v-for="item in functionList"
         :key="item.id"
-        class="overflow-hidden rounded-2xl bg-white shadow-sm transition-all active:scale-98"
+        class="overflow-hidden rounded-2xl shadow-sm transition-all active:scale-98"
+        :class="cardClass"
         @tap="navigateToFunction(item.route)"
       >
         <view class="p-4">
@@ -71,10 +81,10 @@ function navigateToFunction(route: string) {
               <wd-icon :name="item.icon" />
             </view>
             <view class="min-w-0 flex-1">
-              <view class="mb-1 text-base text-gray-800 font-semibold">
+              <view class="mb-1 text-base font-semibold" :class="titleClass">
                 {{ item.title }}
               </view>
-              <view class="text-sm text-gray-500">
+              <view class="text-sm" :class="textClass">
                 {{ item.description }}
               </view>
             </view>

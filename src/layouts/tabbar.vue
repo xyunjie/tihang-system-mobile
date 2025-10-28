@@ -1,16 +1,19 @@
 <script lang="ts" setup>
 import type { ConfigProviderThemeVars } from 'wot-design-uni'
 import FgTabbar from './fg-tabbar/fg-tabbar.vue'
+import { useAppStore } from '@/store/app'
 
 const themeVars: ConfigProviderThemeVars = {
   // colorTheme: 'red',
   // buttonPrimaryBgColor: '#07c160',
   // buttonPrimaryColor: '#07c160',
 }
+
+const appStore = useAppStore()
 </script>
 
 <template>
-  <wd-config-provider :theme-vars="themeVars">
+  <wd-config-provider :theme-vars="themeVars" :theme="appStore.theme">
     <slot />
     <FgTabbar />
     <wd-toast />

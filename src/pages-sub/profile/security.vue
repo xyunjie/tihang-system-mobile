@@ -9,13 +9,27 @@
 
 <script setup lang="ts">
 import type { IUserProfileLoginLogRespVO, IUserProfileUpdatePasswordReqVO } from '@/api/types/user'
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { getUserLoginLogs, updateUserPassword } from '@/api/user'
 import { useUserStore } from '@/store'
+import { useAppStore } from '@/store/app'
 
 defineOptions({
   name: 'ProfileSecurity',
 })
+
+// 深色模式支持
+const appStore = useAppStore()
+const isDark = computed(() => appStore.theme === 'dark')
+
+// 深色模式样式类
+const cardClass = computed(() => isDark.value ? 'bg-gray-800' : 'bg-white')
+const titleClass = computed(() => isDark.value ? 'text-gray-100' : 'text-gray-800')
+const textClass = computed(() => isDark.value ? 'text-gray-300' : 'text-gray-600')
+const labelClass = computed(() => isDark.value ? 'text-gray-200' : 'text-gray-700')
+const inputClass = computed(() => isDark.value ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400' : 'bg-white border-gray-200 text-gray-900')
+const borderClass = computed(() => isDark.value ? 'border-gray-700' : 'border-gray-100')
+const cardBgClass = computed(() => isDark.value ? 'bg-gray-700' : 'bg-gray-50')
 
 // 获取屏幕边界到安全区域距离
 let safeAreaInsets
@@ -214,14 +228,26 @@ function getPasswordStrengthText(strength: number) {
 
 // 密码强度颜色
 function getPasswordStrengthColor(strength: number) {
+  const light = {
+    weak: 'text-red-600 bg-red-50',
+    medium: 'text-yellow-600 bg-yellow-50',
+    strong: 'text-green-600 bg-green-50',
+  }
+  const dark = {
+    weak: 'text-red-400 bg-red-900/30',
+    medium: 'text-yellow-400 bg-yellow-900/30',
+    strong: 'text-green-400 bg-green-900/30',
+  }
+  const palette = isDark.value ? dark : light
+
   switch (strength) {
     case 0:
-    case 1: return 'text-red-500 bg-red-50'
+    case 1: return palette.weak
     case 2:
-    case 3: return 'text-yellow-600 bg-yellow-50'
+    case 3: return palette.medium
     case 4:
-    case 5: return 'text-green-600 bg-green-50'
-    default: return 'text-red-500 bg-red-50'
+    case 5: return palette.strong
+    default: return palette.weak
   }
 }
 
@@ -341,7 +367,12 @@ function getLoginResult(result: number) {
 
 // 格式化登录结果颜色
 function getLoginResultColor(result: number) {
-  return result === 0 ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'
+  if (result === 0) {
+    return isDark.value ? 'text-green-400 bg-green-900/30' : 'text-green-600 bg-green-50'
+  }
+  else {
+    return isDark.value ? 'text-red-400 bg-red-900/30' : 'text-red-600 bg-red-50'
+  }
 }
 
 // 页面加载时获取登录日志
@@ -359,15 +390,15 @@ onMounted(() => {
 </script>
 
 <template>
-  <view class="min-h-screen bg-gray-50" :style="{ paddingBottom: `${(safeAreaInsets?.bottom || 0) + 32}px` }">
+  <view class="min-h-screen" :style="{ paddingBottom: `${(safeAreaInsets?.bottom || 0) + 32}px` }">
     <!-- 修改密码区域 -->
-    <view id="password-section" class="mx-4 mt-4 overflow-hidden rounded-2xl bg-white shadow-sm">
-      <view class="border-b border-gray-100 px-4 py-4">
+    <view id="password-section" class="mx-4 mt-4 overflow-hidden rounded-2xl shadow-sm" :class="cardClass">
+      <view class="border-b px-4 py-4" :class="borderClass">
         <view class="flex items-center">
           <view class="mr-3 h-10 w-10 flex items-center justify-center rounded-xl bg-blue-500">
             <text class="i-carbon-locked text-xl text-white" />
           </view>
-          <view class="text-lg text-gray-800 font-semibold">
+          <view class="text-lg font-semibold" :class="titleClass">
             修改密码
           </view>
         </view>
@@ -376,7 +407,7 @@ onMounted(() => {
       <view class="p-4 space-y-4">
         <!-- 原密码输入 -->
         <view class="space-y-2">
-          <view class="text-sm text-gray-700 font-medium">
+          <view class="text-sm font-medium" :class="labelClass">
             原密码
           </view>
           <view class="relative">
@@ -384,7 +415,8 @@ onMounted(() => {
               v-model="passwordForm.oldPassword"
               :password="!showOldPassword"
               placeholder="请输入原密码"
-              class="h-12 w-full border border-gray-200 rounded-xl px-4 pr-12 text-sm focus:border-blue-400 focus:outline-none"
+              class="h-12 w-4/5 border rounded-xl px-4 pr-12 text-sm focus:border-blue-400 focus:outline-none"
+              :class="inputClass"
               :disabled="isSubmitting"
             >
             <view
@@ -401,7 +433,7 @@ onMounted(() => {
 
         <!-- 新密码输入 -->
         <view class="space-y-2">
-          <view class="text-sm text-gray-700 font-medium">
+          <view class="text-sm font-medium" :class="labelClass">
             新密码
           </view>
           <view class="relative">
@@ -409,7 +441,8 @@ onMounted(() => {
               v-model="passwordForm.newPassword"
               :password="!showNewPassword"
               placeholder="请输入新密码（至少6位）"
-              class="h-12 w-full border border-gray-200 rounded-xl px-4 pr-12 text-sm focus:border-blue-400 focus:outline-none"
+              class="h-12 w-4/5 border rounded-xl px-4 pr-12 text-sm focus:border-blue-400 focus:outline-none"
+              :class="inputClass"
               :disabled="isSubmitting"
             >
             <view
@@ -425,7 +458,7 @@ onMounted(() => {
 
           <!-- 密码强度指示器 -->
           <view v-if="passwordForm.newPassword" class="flex items-center gap-2">
-            <view class="text-xs text-gray-500">
+            <view class="text-xs" :class="textClass">
               密码强度:
             </view>
             <view class="flex flex-1 items-center gap-1">
@@ -452,7 +485,7 @@ onMounted(() => {
 
         <!-- 确认密码输入 -->
         <view class="space-y-2">
-          <view class="text-sm text-gray-700 font-medium">
+          <view class="text-sm font-medium" :class="labelClass">
             确认密码
           </view>
           <view class="relative">
@@ -460,7 +493,8 @@ onMounted(() => {
               v-model="confirmPassword"
               :password="!showConfirmPassword"
               placeholder="请再次输入新密码"
-              class="h-12 w-full border border-gray-200 rounded-xl px-4 pr-12 text-sm focus:border-blue-400 focus:outline-none"
+              class="h-12 w-4/5 border rounded-xl px-4 pr-12 text-sm focus:border-blue-400 focus:outline-none"
+              :class="inputClass"
               :disabled="isSubmitting"
             >
             <view
@@ -508,13 +542,13 @@ onMounted(() => {
     </view>
 
     <!-- 安全建议 -->
-    <view class="mx-4 mt-2 overflow-hidden rounded-2xl bg-white shadow-sm">
-      <view class="border-b border-gray-100 px-4 py-4">
+    <view class="mx-4 mt-2 overflow-hidden rounded-2xl shadow-sm" :class="cardClass">
+      <view class="border-b px-4 py-4" :class="borderClass">
         <view class="flex items-center">
           <view class="mr-3 h-10 w-10 flex items-center justify-center rounded-xl bg-green-500">
             <text class="i-carbon-security text-xl text-white" />
           </view>
-          <view class="text-lg text-gray-800 font-semibold">
+          <view class="text-lg font-semibold" :class="titleClass">
             安全建议
           </view>
         </view>
@@ -526,7 +560,7 @@ onMounted(() => {
             <view class="mt-0.5 h-5 w-5 flex items-center justify-center rounded-full bg-green-100">
               <text class="i-carbon-checkmark text-xs text-green-600" />
             </view>
-            <view class="flex-1 text-sm text-gray-600 leading-relaxed">
+            <view class="flex-1 text-sm leading-relaxed" :class="textClass">
               使用至少8位字符，包含大小写字母、数字和特殊符号
             </view>
           </view>
@@ -534,7 +568,7 @@ onMounted(() => {
             <view class="mt-0.5 h-5 w-5 flex items-center justify-center rounded-full bg-green-100">
               <text class="i-carbon-checkmark text-xs text-green-600" />
             </view>
-            <view class="flex-1 text-sm text-gray-600 leading-relaxed">
+            <view class="flex-1 text-sm leading-relaxed" :class="textClass">
               避免使用生日、姓名等容易被猜到的信息
             </view>
           </view>
@@ -542,7 +576,7 @@ onMounted(() => {
             <view class="mt-0.5 h-5 w-5 flex items-center justify-center rounded-full bg-green-100">
               <text class="i-carbon-checkmark text-xs text-green-600" />
             </view>
-            <view class="flex-1 text-sm text-gray-600 leading-relaxed">
+            <view class="flex-1 text-sm leading-relaxed" :class="textClass">
               定期更换密码，建议每3-6个月更换一次
             </view>
           </view>
@@ -550,7 +584,7 @@ onMounted(() => {
             <view class="mt-0.5 h-5 w-5 flex items-center justify-center rounded-full bg-green-100">
               <text class="i-carbon-checkmark text-xs text-green-600" />
             </view>
-            <view class="flex-1 text-sm text-gray-600 leading-relaxed">
+            <view class="flex-1 text-sm leading-relaxed" :class="textClass">
               不要在多个平台使用相同的密码
             </view>
           </view>
@@ -559,13 +593,13 @@ onMounted(() => {
     </view>
 
     <!-- 登录记录 -->
-    <view class="mx-4 mt-2 overflow-hidden rounded-2xl bg-white shadow-sm">
-      <view class="border-b border-gray-100 px-4 py-4">
+    <view class="mx-4 mt-2 overflow-hidden rounded-2xl shadow-sm" :class="cardClass">
+      <view class="border-b px-4 py-4" :class="borderClass">
         <view class="flex items-center">
           <view class="mr-3 h-10 w-10 flex items-center justify-center rounded-xl bg-purple-500">
             <text class="i-carbon-data-table text-xl text-white" />
           </view>
-          <view class="text-lg text-gray-800 font-semibold">
+          <view class="text-lg font-semibold" :class="titleClass">
             登录记录
           </view>
         </view>
@@ -574,11 +608,11 @@ onMounted(() => {
       <view class="p-2">
         <view v-if="loginRecords.length === 0 && !loadingLogs" class="p-12 text-center">
           <view class="mb-3 flex justify-center">
-            <view class="h-16 w-16 flex items-center justify-center rounded-2xl bg-gray-100">
+            <view class="h-16 w-16 flex items-center justify-center rounded-2xl" :class="isDark ? 'bg-gray-800' : 'bg-gray-100'">
               <text class="i-carbon-document-blank text-3xl text-gray-400" />
             </view>
           </view>
-          <view class="text-sm text-gray-500">
+          <view class="text-sm" :class="textClass">
             暂无登录记录
           </view>
         </view>
@@ -586,7 +620,8 @@ onMounted(() => {
         <view
           v-for="(record, index) in loginRecords"
           :key="record.id || index"
-          class="mx-1 my-2 rounded-xl bg-gray-50 p-4"
+          class="mx-1 my-2 rounded-xl p-4"
+          :class="cardBgClass"
         >
           <view class="flex items-start justify-between">
             <view class="flex flex-1 items-start gap-3">
@@ -598,7 +633,7 @@ onMounted(() => {
               </view>
               <view class="flex-1">
                 <view class="mb-2 flex items-center justify-between">
-                  <view class="text-sm text-gray-800 font-medium">
+                  <view class="text-sm font-medium" :class="titleClass">
                     {{ parseDeviceInfo(record).device }}
                   </view>
                   <view
@@ -610,7 +645,7 @@ onMounted(() => {
                 </view>
 
                 <view class="mb-2 space-y-1.5">
-                  <view class="flex items-center gap-1.5 text-xs text-gray-600">
+                  <view class="flex items-center gap-1.5 text-xs" :class="textClass">
                     <text class="i-carbon-browser text-sm" />
                     <text>{{ parseDeviceInfo(record).browser }}</text>
                     <text class="text-gray-400">
@@ -619,7 +654,7 @@ onMounted(() => {
                     <text class="i-carbon-location text-sm" />
                     <text>{{ parseDeviceInfo(record).area }}</text>
                   </view>
-                  <view class="flex items-center gap-1.5 text-xs text-gray-500">
+                  <view class="flex items-center gap-1.5 text-xs" :class="textClass">
                     <text class="i-carbon-network-3 text-sm" />
                     <text>{{ record.userIp }}</text>
                     <text class="text-gray-400">

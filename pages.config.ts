@@ -4,10 +4,10 @@ import { tabBar } from './src/layouts/fg-tabbar/tabbarList'
 export default defineUniPages({
   globalStyle: {
     navigationStyle: 'default',
-    navigationBarTitleText: 'unibest',
-    navigationBarBackgroundColor: '#f8f8f8',
-    navigationBarTextStyle: 'black',
-    backgroundColor: '#FFFFFF',
+    navigationBarTitleText: '正在加载',
+    navigationBarBackgroundColor: '@bar-bg-color',
+    navigationBarTextStyle: '@text-color',
+    backgroundColor: '@bg-color',
   },
   easycom: {
     autoscan: true,

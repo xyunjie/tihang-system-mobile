@@ -13,10 +13,23 @@ import { computed, ref } from 'vue'
 import HtmlContent from '@/components/HtmlContent.vue'
 import { getHydroOjContestInfo } from '@/pages-sub/api/oj'
 import { formatStandardDateTime } from '@/utils'
+import { useAppStore } from '@/store/app'
 
 const loading = ref(true)
 const detail = ref<HydroOjContestDetailRespVO | null>(null)
 const errorMsg = ref('')
+
+// 深色模式计算属性
+const appStore = useAppStore()
+const titleClass = computed(() => appStore.theme === 'dark' ? 'text-gray-100' : 'text-gray-900')
+const textClass = computed(() => appStore.theme === 'dark' ? 'text-gray-300' : 'text-gray-600')
+const subTextClass = computed(() => appStore.theme === 'dark' ? 'text-gray-400' : 'text-gray-500')
+const cardClass = computed(() => appStore.theme === 'dark' ? 'bg-gray-800' : 'bg-white')
+const borderClass = computed(() => appStore.theme === 'dark' ? 'border-gray-700' : 'border-gray-100')
+const iconClass = computed(() => appStore.theme === 'dark' ? 'text-gray-400' : 'text-gray-400')
+const btnSecondaryClass = computed(() => appStore.theme === 'dark'
+  ? 'border-gray-700 bg-gray-800 text-gray-200 active:bg-gray-700'
+  : 'border-gray-200 bg-white text-gray-700 active:bg-gray-50')
 
 // 折叠：题目列表，默认折叠
 const activePanels = ref<string[]>([])
@@ -32,17 +45,17 @@ function toTimestamp(v?: string | number): number {
 
 const statusTag = computed(() => {
   if (!detail.value)
-    return { text: '未知', cls: 'bg-gray-100 text-gray-600' }
+    return { text: '未知', cls: appStore.theme === 'dark' ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-600' }
   const now = Date.now()
   const s = toTimestamp(detail.value.startAt)
   const e = toTimestamp(detail.value.endAt)
   if (!s && !e)
-    return { text: '未知', cls: 'bg-gray-100 text-gray-600' }
+    return { text: '未知', cls: appStore.theme === 'dark' ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-600' }
   if (now < s)
-    return { text: '未开始', cls: 'bg-amber-50 text-amber-700' }
+    return { text: '未开始', cls: appStore.theme === 'dark' ? 'bg-amber-900/30 text-amber-300' : 'bg-amber-50 text-amber-700' }
   if (e && now > e)
-    return { text: '已结束', cls: 'bg-gray-100 text-gray-600' }
-  return { text: '进行中', cls: 'bg-green-50 text-green-700' }
+    return { text: '已结束', cls: appStore.theme === 'dark' ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-600' }
+  return { text: '进行中', cls: appStore.theme === 'dark' ? 'bg-green-900/30 text-green-300' : 'bg-green-50 text-green-700' }
 })
 
 function displayRank(rank?: number | string) {
@@ -117,8 +130,8 @@ function goRankboard() {
 </script>
 
 <template>
-  <view class="min-h-screen bg-gray-50">
-    <view v-if="loading" class="p-4 text-gray-400">
+  <view class="min-h-screen">
+    <view v-if="loading" :class="subTextClass" class="p-4">
       加载中...
     </view>
     <view v-else-if="!detail" class="p-4 text-red-500">
@@ -127,7 +140,7 @@ function goRankboard() {
 
     <view v-else class="p-4 space-y-4">
       <!-- 标题与状态 -->
-      <view class="flex items-start justify-between gap-3">
+      <view :class="titleClass" class="flex items-start justify-between gap-3">
         <view class="min-w-0 flex-1">
           <view class="truncate text-lg font-semibold leading-tight">
             {{ detail.title }}
@@ -139,9 +152,9 @@ function goRankboard() {
       </view>
 
       <!-- 基本信息：时间与排名、参赛人数 -->
-      <view class="text-sm text-gray-600 space-y-1">
+      <view :class="textClass" class="text-sm space-y-1">
         <view class="flex items-center">
-          <text class="w-16 shrink-0 text-gray-500">
+          <text :class="subTextClass" class="w-16 shrink-0">
             时间
           </text>
           <text class="ml-2">
@@ -149,7 +162,7 @@ function goRankboard() {
           </text>
         </view>
         <view class="flex items-center">
-          <text class="w-16 shrink-0 text-gray-500">
+          <text :class="subTextClass" class="w-16 shrink-0">
             排名
           </text>
           <text class="ml-2">
@@ -157,7 +170,7 @@ function goRankboard() {
           </text>
         </view>
         <view v-if="detail.userCount !== undefined" class="flex items-center">
-          <text class="w-16 shrink-0 text-gray-500">
+          <text :class="subTextClass" class="w-16 shrink-0">
             参赛人数
           </text>
           <text class="ml-2">
@@ -171,17 +184,17 @@ function goRankboard() {
         <view class="inline-flex items-center justify-center rounded-full bg-primary px-3 py-1 text-12px text-white active:opacity-90" @click="goRecordList">
           提交记录
         </view>
-        <view class="inline-flex items-center justify-center border border-gray-200 rounded-full bg-white px-3 py-1 text-12px text-gray-700 active:bg-gray-50" @click="goRankboard">
+        <view :class="btnSecondaryClass" class="inline-flex items-center justify-center border rounded-full px-3 py-1 text-12px" @click="goRankboard">
           排行榜
         </view>
       </view>
 
       <!-- 题目列表：默认折叠，位于描述上方；折叠组件带圆角卡片 -->
-      <view v-if="Array.isArray(detail.problems) && detail.problems.length" class="rounded-2xl bg-white p-2 shadow-sm">
+      <view v-if="Array.isArray(detail.problems) && detail.problems.length" :class="cardClass" class="rounded-2xl p-2 shadow-sm">
         <wd-collapse v-model="activePanels" class="overflow-hidden rounded-xl bg-transparent">
           <wd-collapse-item name="problems">
             <template #title>
-              <view class="w-full flex items-center justify-between text-sm text-gray-700 font-semibold">
+              <view :class="titleClass" class="w-full flex items-center justify-between text-sm font-semibold">
                 <text>题目列表（{{ detail.problems.length }}）</text>
               </view>
             </template>
@@ -191,17 +204,18 @@ function goRankboard() {
                 <view
                   v-for="p in detail.problems"
                   :key="`p-${p.pid}`"
-                  class="flex items-center justify-between border border-gray-100 rounded-xl bg-white p-3 active:bg-gray-50"
+                  :class="[cardClass, borderClass]"
+                  class="flex items-center justify-between border rounded-xl p-3"
                   @click="toProblem(p)"
                 >
-                  <view class="text-sm text-gray-800">
+                  <view :class="titleClass" class="text-sm">
                     <text class="font-semibold">
                       {{ p.pid }}
                     </text>
                     <text>{{ ' ' }}</text>
                     <text>{{ p.title || '' }}</text>
                   </view>
-                  <wd-icon name="arrow-right" size="16px" color="#9ca3af" />
+                  <wd-icon name="arrow-right" size="16px" :class="iconClass" />
                 </view>
               </view>
             </view>
@@ -210,8 +224,8 @@ function goRankboard() {
       </view>
 
       <!-- 比赛介绍：放到题目列表下方 -->
-      <view v-if="detail.content" class="rounded-2xl bg-white p-4 shadow-sm">
-        <HtmlContent :content="detail.content || ''" />
+      <view v-if="detail.content" :class="cardClass" class="rounded-2xl p-4 shadow-sm">
+        <HtmlContent :class="textClass" :content="detail.content || ''" />
       </view>
     </view>
   </view>

@@ -119,9 +119,9 @@ export const useUserStore = defineStore(
      * @param socialCode 微信登录凭证
      * @param socialState 状态标识
      */
-    const navigateToBindPage = (socialCode: string, socialState: string) => {
+    const navigateToBindPage = (socialCode: string, socialState: string, socialType: number = 34) => {
       const bindParams = {
-        socialType: 34,
+        socialType,
         socialCode,
         socialState,
       }
@@ -180,36 +180,62 @@ export const useUserStore = defineStore(
     }
 
     /**
-     * 社交登录（微信）
+     * 统一的社交登录（通过 code + state）
+     * @param socialType 社交类型：34=微信小程序，31=微信H5
+     * @param code 授权码
+     * @param state 状态字符串
      */
-    const socialLogin = async () => {
-      const state = generateUUID()
-      const data = await getWxCode()
-      console.log('微信登录code', data)
-
+    const socialLoginByCode = async (socialType: number, code: string, state?: string) => {
       const res = await _socialLogin({
-        type: 34,
-        code: data.code,
+        type: socialType,
+        code,
         state,
       })
 
-      // 处理特殊响应码：未绑定账号
+      // 未绑定账号
       if (res.code === 1_002_000_005) {
-        console.log('未绑定账号，需要先绑定')
-        navigateToBindPage(data.code, state)
-        return null // 返回null表示需要绑定
+        console.log('未绑定账号，需要先绑定', { socialType, code, state })
+        navigateToBindPage(code, state || '', socialType)
+        return null
+      }
+      // 未授权/未登录等
+      if (res.code === 401) {
+        console.warn('社交登录未授权：', res.msg)
+        uni.showToast({
+          icon: 'none',
+          title: res.msg || '授权未完成，请重试',
+        })
+        return null
       }
       if (res.code !== 0) {
-        // 提示登录失败
         uni.showToast({
           icon: 'none',
           title: res.msg,
         })
         return null
       }
-      // 使用公共方法处理登录成功逻辑
+      // 登录成功
       handleLoginSuccess(res.data, undefined, false)
       return res
+    }
+
+    /**
+     * 社交登录（微信）
+     */
+    const socialLogin = async () => {
+      const state = generateUUID()
+      const data = await getWxCode()
+      console.log('微信登录code', data)
+      return socialLoginByCode(34, data.code, state)
+    }
+
+    /**
+     * 社交登录（H5 微信浏览器，通过回调code）
+     * @param code OAuth 回调code
+     * @param state OAuth 状态
+     */
+    const socialLoginByCode31 = async (code: string, state?: string) => {
+      return socialLoginByCode(31, code, state)
     }
 
     /**
@@ -240,6 +266,8 @@ export const useUserStore = defineStore(
       login,
       wxLogin,
       socialLogin,
+      socialLoginByCode,
+      socialLoginByCode31,
       bindAccount,
       getUserInfo,
       getUserInfoCache,

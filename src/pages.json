@@ -1,10 +1,10 @@
 {
   "globalStyle": {
     "navigationStyle": "default",
-    "navigationBarTitleText": "unibest",
-    "navigationBarBackgroundColor": "#f8f8f8",
-    "navigationBarTextStyle": "black",
-    "backgroundColor": "#FFFFFF"
+    "navigationBarTitleText": "正在加载",
+    "navigationBarBackgroundColor": "@bar-bg-color",
+    "navigationBarTextStyle": "@text-color",
+    "backgroundColor": "@bg-color"
   },
   "easycom": {
     "autoscan": true,
@@ -60,10 +60,7 @@
         "navigationBarTitleText": "梯航小助手",
         "enablePullDownRefresh": true,
         "refresherEnabled": true,
-        "refresherThreshold": 80,
-        "refresherDefaultStyle": "black",
-        "refresherBackground": "#f5f5f5",
-        "backgroundTextStyle": "dark"
+        "refresherThreshold": 80
       }
     },
     {
@@ -95,6 +92,30 @@
         "refresherThreshold": 80,
         "backgroundTextStyle": "dark"
       }
+    },
+    {
+      "path": "pages/login/callback",
+      "type": "page",
+      "layout": "default",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "正在登录",
+        "enablePullDownRefresh": false,
+        "disableScroll": true
+      },
+      "notLogin": true
+    },
+    {
+      "path": "pages/login/forgot",
+      "type": "page",
+      "layout": "default",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "找回密码",
+        "enablePullDownRefresh": false,
+        "disableScroll": true
+      },
+      "notLogin": true
     },
     {
       "path": "pages/login/index",
@@ -211,32 +232,6 @@
             "navigationStyle": "default",
             "enablePullDownRefresh": true,
             "backgroundTextStyle": "dark"
-          }
-        },
-        {
-          "path": "demo/index",
-          "type": "page",
-          "layout": "default",
-          "style": {
-            "navigationBarTitleText": "分包页面"
-          }
-        },
-        {
-          "path": "help/detail",
-          "type": "page",
-          "layout": "default",
-          "style": {
-            "navigationStyle": "default",
-            "navigationBarTitleText": "问题详情"
-          }
-        },
-        {
-          "path": "help/index",
-          "type": "page",
-          "layout": "tabbar",
-          "style": {
-            "navigationStyle": "default",
-            "navigationBarTitleText": "帮助中心"
           }
         },
         {

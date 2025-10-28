@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import mpHtml from '@/components/mp-html/mp-html.vue'
+import { useAppStore } from '@/store/app'
 
 const props = defineProps<{
   content: string
@@ -8,7 +9,14 @@ const props = defineProps<{
   scrollTable?: boolean | string
 }>()
 
-const containerStyle = computed(() => props.containerStyle ?? 'padding: 6px 0; font-size: 15px; line-height: 1.8; color: #374151; word-break: break-word; overflow-wrap: break-word; overflow: hidden;')
+// 仅适配文本颜色为主题感知，其余保持不变
+const appStore = useAppStore()
+const isDark = computed(() => appStore.theme === 'dark')
+const containerStyle = computed(() => {
+  if (props.containerStyle) return props.containerStyle
+  const textColor = isDark.value ? '#e5e7eb' : '#374151'
+  return `padding: 6px 0; font-size: 15px; line-height: 1.8; color: ${textColor}; word-break: break-word; overflow-wrap: break-word; overflow: hidden;`
+})
 
 const defaultTagStyle: Record<string, string> = {
   table: 'border-collapse: collapse; width: 100%; border: 1px solid #d1d5db;',

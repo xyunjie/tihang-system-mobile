@@ -12,12 +12,20 @@
 </route>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { sendScanMessage } from '@/api/login'
 import { useUserStore } from '@/store'
+import { useAppStore } from '@/store/app'
+import ThemeCard from '@/components/ThemeCard.vue'
 import { formatStandardDateTime } from '@/utils'
 
 const userStore = useUserStore()
+const appStore = useAppStore()
+const isDark = computed(() => appStore.theme === 'dark')
+const pageBgClass = computed(() => (isDark.value ? 'bg-[#0b0d10]' : 'bg-[#f6f7f9]'))
+// 采用 login 页面相同的深色适配方式
+const headerTitleClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-gray-800'))
+const headerSubClass = computed(() => (isDark.value ? 'text-gray-300' : 'text-gray-600'))
 const isLoading = ref(false)
 const deviceInfo = ref('')
 const loginTime = ref('')
@@ -28,7 +36,7 @@ onLoad((options) => {
   // 获取设备信息和时间
   const systemInfo = uni.getSystemInfoSync()
   deviceInfo.value = `${systemInfo.deviceModel} ${systemInfo.system}`.replace(/<[^>]*>/g, '')
-  loginTime.value = formatStandardDateTime(new Date().toISOString())
+  loginTime.value = formatStandardDateTime(new Date().toLocaleString())
   nonce.value = options.scene
 })
 
@@ -134,69 +142,62 @@ function cancelLogin() {
 </script>
 
 <template>
-  <view class="fixed left-0 top-0 h-full w-full flex items-center justify-center" style="background: linear-gradient(135deg, #4A90E2 0%, #2E5BBA 50%, #1E3A8A 100%); touch-action: none; overflow: hidden;">
-    <view class="login-card w-full bg-white" style="border-radius: 20rpx; padding: 50rpx 40rpx; box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.1); max-width: 600rpx; max-height: calc(100vh - 80rpx); overflow-y: auto; -webkit-overflow-scrolling: touch; box-sizing: border-box;">
+  <view class="fixed left-0 top-0 h-full w-full flex items-center justify-center" style="touch-action: none;">
+    <ThemeCard
+      :padding="false"
+      radius="rounded-2xl"
+      shadow
+      cardClass="w-full max-w-[600rpx] max-h-[calc(100vh-80rpx)] overflow-y-auto box-border p-[50rpx] px-[40rpx]"
+    >
       <!-- 头部 -->
-      <view class="text-center" style="margin-bottom: 50rpx;">
-        <view class="text-gray-800 font-bold" style="font-size: 46rpx; margin-bottom: 10rpx; line-height: 1.2;">
-          🔐 扫码登录授权
+      <view class="text-center mb-[50rpx]">
+        <view :class="['font-bold text-[46rpx] mb-[10rpx] leading-[1.2]', headerTitleClass]">
+          扫码登录授权
         </view>
-        <view class="text-gray-600" style="font-size: 24rpx; line-height: 1.3;">
+        <view :class="['text-[24rpx] leading-[1.3]', headerSubClass]">
           梯航小助手
         </view>
       </view>
 
       <!-- 授权信息 -->
-      <view class="auth-info" style="margin-bottom: 40rpx; padding: 30rpx; background: #f8f9fa; border-radius: 12rpx;">
-        <view class="text-gray-700" style="font-size: 28rpx; font-weight: 500; margin-bottom: 20rpx; text-align: center;">
-          📱 PC端请求登录授权
+      <view class="mb-[40rpx] p-[30rpx] rounded-[12rpx] bg-[#f8f9fa] dark:bg-white/6">
+        <view class="text-[28rpx] font-500 mb-[20rpx] text-center text-gray-700 dark:text-gray-200">
+          PC端请求登录授权
         </view>
 
-        <view class="info-item" style="margin-bottom: 15rpx;">
-          <view class="text-gray-600" style="font-size: 24rpx;">
-            <text style="color: #666;">
-              设备信息：
-            </text>
-            <text style="color: #333;">
-              {{ deviceInfo }}
-            </text>
+        <view class="mb-[15rpx]">
+          <view class="text-[24rpx] text-gray-600 dark:text-gray-400">
+            <text class="text-gray-500 dark:text-gray-400">设备信息：</text>
+            <text class="text-gray-800 dark:text-gray-200">{{ deviceInfo }}</text>
           </view>
         </view>
 
-        <view class="info-item" style="margin-bottom: 15rpx;">
-          <view class="text-gray-600" style="font-size: 24rpx;">
-            <text style="color: #666;">
-              请求时间：
-            </text>
-            <text style="color: #333;">
-              {{ loginTime }}
-            </text>
+        <view class="mb-[15rpx]">
+          <view class="text-[24rpx] text-gray-600 dark:text-gray-400">
+            <text class="text-gray-500 dark:text-gray-400">请求时间：</text>
+            <text class="text-gray-800 dark:text-gray-200">{{ loginTime }}</text>
           </view>
         </view>
 
-        <view v-if="userStore.userInfo.username" class="info-item">
-          <view class="text-gray-600" style="font-size: 24rpx;">
-            <text style="color: #666;">
-              登录账号：
-            </text>
-            <text style="color: #333;">
-              {{ userStore.userInfo.username }}
-            </text>
+        <view v-if="userStore.userInfo.username">
+          <view class="text-[24rpx] text-gray-600 dark:text-gray-400">
+            <text class="text-gray-500 dark:text-gray-400">登录账号：</text>
+            <text class="text-gray-800 dark:text-gray-200">{{ userStore.userInfo.username }}</text>
           </view>
         </view>
       </view>
 
       <!-- 授权提示 -->
-      <view class="auth-notice" style="margin-bottom: 40rpx; padding: 20rpx; background: #fff3cd; border-radius: 12rpx; border-left: 4rpx solid #ffc107;">
-        <view class="text-orange-800" style="font-size: 26rpx; line-height: 1.5;">
-          ⚠️ 确认授权后，PC端将使用您的账号登录系统
+      <view class="mb-[40rpx] p-[20rpx] rounded-[12rpx] border-l-[4rpx] border-[#ffc107] bg-amber-50/80 dark:bg-amber-500/10">
+        <view class="text-[26rpx] leading-[1.5] text-amber-800 dark:text-amber-300">
+          确认授权后，PC端将使用您的账号登录系统
         </view>
       </view>
 
       <!-- 操作按钮 -->
-      <view class="action-buttons" style="margin-bottom: 30rpx;">
+      <view class="mb-[30rpx]">
         <!-- 确认授权按钮 -->
-        <view style="margin-bottom: 20rpx;">
+        <view class="mb-[20rpx]">
           <wd-button
             type="primary"
             size="large"
@@ -206,7 +207,7 @@ function cancelLogin() {
             custom-style="height: 88rpx; border-radius: 12rpx; font-size: 32rpx;"
             @click="confirmLogin"
           >
-            {{ isLoading ? '授权中...' : '✅ 确认授权' }}
+            {{ isLoading ? '授权中...' : '确认授权' }}
           </wd-button>
         </view>
 
@@ -215,61 +216,33 @@ function cancelLogin() {
           <wd-button
             type="info"
             size="large"
-
-            plain block
+            plain
+            block
             :disabled="isLoading"
             custom-style="height: 88rpx; border-radius: 12rpx; font-size: 32rpx;"
             @click="cancelLogin"
           >
-            ❌ 取消授权
+            取消授权
           </wd-button>
         </view>
       </view>
 
       <!-- 安全提示 -->
-      <view class="security-tips" style="padding: 20rpx; background: #e8f4fd; border-radius: 12rpx; text-align: center;">
-        <view class="text-blue-700" style="font-size: 24rpx; line-height: 1.5;">
-          🔒 为了您的账号安全，请确认是否为本人操作
+      <view class="p-[20rpx] rounded-[12rpx] text-center bg-[#e8f4fd] dark:bg-blue-500/10">
+        <view class="text-[24rpx] leading-[1.5] text-blue-700 dark:text-blue-300">
+          为了您的账号安全，请确认是否为本人操作
         </view>
       </view>
-    </view>
+    </ThemeCard>
   </view>
 </template>
 
 <style lang='scss' scoped>
-// 只保留UnoCSS无法处理的特殊样式
-.login-card {
-  // 修复滚动条样式
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
-
-  &::-webkit-scrollbar {
-    display: none; /* Chrome, Safari and Opera */
-  }
-}
-
 // 微信小程序特定优化
 /* #ifdef MP-WEIXIN */
-.login-card {
+.scan-card {
   // 小程序中的高度调整
   max-height: 85vh;
 }
 /* #endif */
-
-// 扫码区域样式
-.scan-area {
-  .scan-icon {
-    animation: pulse 2s infinite;
-  }
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.7;
-  }
-}
 </style>

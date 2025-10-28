@@ -10,6 +10,9 @@
 import type { ArticleSearchRespVO } from '@/api/types/article'
 import { getArticlePage } from '@/api/article'
 import { formatStandardDateTime } from '@/utils'
+import { computed } from 'vue'
+import { useAppStore } from '@/store/app'
+import ThemeCard from '@/components/ThemeCard.vue'
 
 defineOptions({
   name: 'ArticleList',
@@ -91,21 +94,39 @@ function formatCount(count: number): string {
 }
 
 // 获取文章分类颜色
+// 主题适配：浅色/深色
+const appStore = useAppStore()
+const isDark = computed(() => appStore.theme === 'dark')
+const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-gray-800'))
+const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-gray-500'))
+const textMutedClass = computed(() => (isDark.value ? 'text-gray-500' : 'text-gray-400'))
+
 function getCategoryColor(tags: string[]): string {
   if (!tags || tags.length === 0)
-    return 'text-gray-600 bg-gray-50'
+    return isDark.value ? 'text-gray-400 bg-white/6 border-white/12' : 'text-gray-600 bg-gray-50 border-gray-200'
 
-  const tagColorMap: Record<string, string> = {
-    技术分享: 'text-blue-600 bg-blue-50',
-    项目经验: 'text-green-600 bg-green-50',
-    学习笔记: 'text-purple-600 bg-purple-50',
-    工作总结: 'text-orange-600 bg-orange-50',
-    团队建设: 'text-red-600 bg-red-50',
-    竞赛指导: 'text-indigo-600 bg-indigo-50',
+  if (isDark.value) {
+    const tagColorDark: Record<string, string> = {
+      技术分享: 'text-blue-400 bg-blue-500/12 border-blue-500/20',
+      项目经验: 'text-green-400 bg-green-500/12 border-green-500/20',
+      学习笔记: 'text-purple-400 bg-purple-500/12 border-purple-500/20',
+      工作总结: 'text-orange-400 bg-orange-500/12 border-orange-500/20',
+      团队建设: 'text-red-400 bg-red-500/12 border-red-500/20',
+      竞赛指导: 'text-indigo-400 bg-indigo-500/12 border-indigo-500/20',
+    }
+    return tagColorDark[tags[0]] || 'text-gray-400 bg-white/6 border-white/12'
   }
-
-  const firstTag = tags[0]
-  return tagColorMap[firstTag] || 'text-gray-600 bg-gray-50'
+  else {
+    const tagColorLight: Record<string, string> = {
+      技术分享: 'text-blue-600 bg-blue-50 border-blue-200',
+      项目经验: 'text-green-600 bg-green-50 border-green-200',
+      学习笔记: 'text-purple-600 bg-purple-50 border-purple-200',
+      工作总结: 'text-orange-600 bg-orange-50 border-orange-200',
+      团队建设: 'text-red-600 bg-red-50 border-red-200',
+      竞赛指导: 'text-indigo-600 bg-indigo-50 border-indigo-200',
+    }
+    return tagColorLight[tags[0]] || 'text-gray-600 bg-gray-50 border-gray-200'
+  }
 }
 
 // 跳转到文章详情
@@ -137,9 +158,10 @@ function highlightSearchKeywords(text: string | undefined): string {
 </script>
 
 <template>
-  <view class="min-h-screen bg-gray-50">
+  <view class="min-h-screen">
     <!-- 使用z-paging的全屏模式，搜索框放在slot="top"内 -->
     <z-paging
+      style="top: 0px"
       ref="pagingRef"
       v-model="articles"
       :refresher-enabled="true"
@@ -160,14 +182,16 @@ function highlightSearchKeywords(text: string | undefined): string {
     >
       <!-- 搜索栏固定在顶部 -->
       <template #top>
-        <view class="bg-white px-4 py-3 shadow-sm">
+        <view class="px-4 py-3">
           <view class="flex items-center gap-3">
             <view class="flex-1">
               <wd-search
                 v-model="searchParams.keyword"
                 placeholder="搜索文章标题、内容..."
                 cancel-txt="搜索"
-                custom-style="background-color: #f5f5f5; border-radius: 20rpx;"
+                :custom-style="isDark
+                  ? 'background-color: rgba(255,255,255,0.08); border-radius: 20rpx; color: #e5e7eb;'
+                  : 'border-radius: 20rpx;'"
                 @search="searchArticles"
                 @cancel="searchArticles"
               />
@@ -183,26 +207,24 @@ function highlightSearchKeywords(text: string | undefined): string {
 
       <!-- 文章列表内容 -->
       <view v-else class="p-4">
-        <view
+        <ThemeCard
           v-for="article in articles"
           :key="article.id"
-          class="mb-4"
+          class="mb-4 transition-all active:scale-98"
+          :padding="false"
+          @click="goToArticleDetail(article.id)"
         >
-          <!-- 文章卡片 -->
-          <view
-            class="overflow-hidden rounded-2xl bg-white p-4 shadow-sm transition-all active:bg-gray-50"
-            @click="goToArticleDetail(article.id)"
-          >
+          <view class="p-4">
             <!-- 有封面图片的布局 -->
             <view v-if="article.coverImage" class="mb-3">
               <!-- 标题和标签 -->
               <view class="mb-3 flex items-start justify-between">
                 <view class="flex-1">
-                  <view class="line-clamp-2 mb-2 text-base text-gray-800 font-semibold">
+                  <view class="line-clamp-2 mb-2 text-base font-semibold" :class="textPrimaryClass">
                     <rich-text :nodes="highlightSearchKeywords(article.title)" />
                   </view>
                 </view>
-                <view v-if="article.tagNames && article.tagNames.length > 0" class="ml-3 rounded-full px-3 py-1 text-xs font-medium" :class="getCategoryColor(article.tagNames)">
+                <view v-if="article.tagNames && article.tagNames.length > 0" class="ml-3 rounded-full px-3 py-1 text-xs font-medium border" :class="getCategoryColor(article.tagNames)">
                   {{ article.tagNames[0] }}
                 </view>
               </view>
@@ -219,7 +241,7 @@ function highlightSearchKeywords(text: string | undefined): string {
                 </view>
                 <!-- 摘要 -->
                 <view v-if="article.blogAbstract" class="flex-1">
-                  <view class="line-clamp-3 text-sm text-gray-500">
+                  <view class="line-clamp-3 text-sm" :class="textSecondaryClass">
                     <rich-text :nodes="highlightSearchKeywords(article.blogAbstract)" />
                   </view>
                 </view>
@@ -230,15 +252,15 @@ function highlightSearchKeywords(text: string | undefined): string {
             <view v-else class="mb-3">
               <view class="flex items-start justify-between">
                 <view class="flex-1">
-                  <view class="line-clamp-2 mb-2 text-base text-gray-800 font-semibold">
+                  <view class="line-clamp-2 mb-2 text-base font-semibold" :class="textPrimaryClass">
                     <rich-text :nodes="highlightSearchKeywords(article.title)" />
                   </view>
                   <!-- 摘要占满整行 -->
-                  <view v-if="article.blogAbstract" class="line-clamp-3 text-sm text-gray-500">
+                  <view v-if="article.blogAbstract" class="line-clamp-3 text-sm" :class="textSecondaryClass">
                     <rich-text :nodes="highlightSearchKeywords(article.blogAbstract)" />
                   </view>
                 </view>
-                <view v-if="article.tagNames && article.tagNames.length > 0" class="ml-3 rounded-full px-3 py-1 text-xs font-medium" :class="getCategoryColor(article.tagNames)">
+                <view v-if="article.tagNames && article.tagNames.length > 0" class="ml-3 rounded-full px-3 py-1 text-xs font-medium border" :class="getCategoryColor(article.tagNames)">
                   {{ article.tagNames[0] }}
                 </view>
               </view>
@@ -246,14 +268,14 @@ function highlightSearchKeywords(text: string | undefined): string {
 
             <!-- 底部信息 -->
             <view class="flex items-center justify-between">
-              <view class="flex items-center text-xs text-gray-500">
+              <view class="flex items-center text-xs" :class="textMutedClass">
                 <view class="mr-2 h-3 w-3 rounded bg-gray-400" />
                 <text class="mr-3">
                   {{ article.authorName }}
                 </text>
                 <text>{{ formatTime(article.createTime) }}</text>
               </view>
-              <view class="flex items-center text-xs text-gray-400">
+              <view class="flex items-center text-xs" :class="textMutedClass">
                 <text class="mr-3">
                   浏览 {{ formatCount(article.browse) }}
                 </text>
@@ -261,7 +283,7 @@ function highlightSearchKeywords(text: string | undefined): string {
               </view>
             </view>
           </view>
-        </view>
+        </ThemeCard>
       </view>
     </z-paging>
   </view>

@@ -9,9 +9,10 @@
 
 <script setup lang="ts">
 import type { ISystemUserInfoVo, IUserProfileUpdateReqVO } from '@/api/types/user'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { getUserInfo, updateUserProfile, uploadFile } from '@/api/user'
 import { useUserStore } from '@/store'
+import { useAppStore } from '@/store/app'
 import { compressImage } from '@/utils'
 
 defineOptions({
@@ -19,6 +20,16 @@ defineOptions({
 })
 
 const userStore = useUserStore()
+const appStore = useAppStore()
+
+// 深色模式相关
+const isDark = computed(() => appStore.theme === 'dark')
+const pageClass = computed(() => isDark.value ? 'bg-gray-900' : 'bg-gray-50')
+const cardClass = computed(() => isDark.value ? 'bg-gray-800' : 'bg-white')
+const titleClass = computed(() => isDark.value ? 'text-gray-100' : 'text-gray-800')
+const textClass = computed(() => isDark.value ? 'text-gray-300' : 'text-gray-600')
+const inputClass = computed(() => isDark.value ? 'bg-gray-700 text-gray-100' : 'bg-gray-50 text-gray-800')
+const borderClass = computed(() => isDark.value ? 'border-gray-600' : 'border-gray-100')
 
 // 用户信息
 const userInfo = ref<ISystemUserInfoVo | null>(null)
@@ -289,10 +300,10 @@ onLoad(() => {
 
 <template>
   <!-- 主页面容器 -->
-  <view v-show="!showCropper" class="min-h-screen bg-gray-50">
+  <view v-show="!showCropper" class="min-h-screen" :class="pageClass">
     <!-- 加载状态 -->
     <view v-if="loading" class="flex items-center justify-center py-20">
-      <view class="text-sm text-gray-500">
+      <view class="text-sm" :class="textClass">
         正在加载用户信息...
       </view>
     </view>
@@ -300,8 +311,8 @@ onLoad(() => {
     <!-- 表单内容 -->
     <view v-else class="p-4 pb-32 space-y-4">
       <!-- 头像设置 -->
-      <view class="rounded-2xl bg-white p-6">
-        <view class="mb-4 text-lg text-gray-800 font-semibold">
+      <view class="rounded-2xl p-6" :class="cardClass">
+        <view class="mb-4 text-lg font-semibold" :class="titleClass">
           头像设置
         </view>
 
@@ -310,7 +321,8 @@ onLoad(() => {
           <view class="relative">
             <image
               :src="formData.avatar || '/static/images/default-avatar.png'"
-              class="h-20 w-20 border-2 border-gray-200 rounded-2xl"
+              class="h-20 w-20 border-2 rounded-2xl"
+              :class="isDark ? 'border-gray-600' : 'border-gray-200'"
               mode="aspectFill"
             />
 
@@ -361,21 +373,21 @@ onLoad(() => {
           <!-- #endif -->
         </view>
 
-        <view class="mt-3 text-center text-xs text-gray-500">
+        <view class="mt-3 text-center text-xs" :class="textClass">
           点击按钮选择头像
         </view>
       </view>
 
       <!-- 基本信息 -->
-      <view class="rounded-2xl bg-white p-6">
-        <view class="mb-4 text-lg text-gray-800 font-semibold">
+      <view class="rounded-2xl p-6" :class="cardClass">
+        <view class="mb-4 text-lg font-semibold" :class="titleClass">
           基本信息
         </view>
 
         <view class="space-y-4">
           <!-- 手机号 -->
           <view class="space-y-2">
-            <view class="text-sm text-gray-700 font-medium">
+            <view class="text-sm font-medium" :class="isDark ? 'text-gray-200' : 'text-gray-700'">
               手机号
             </view>
             <view class="flex gap-3">
@@ -383,86 +395,89 @@ onLoad(() => {
                 v-model="formData.mobile"
                 placeholder="请输入手机号"
                 type="number"
-                class="flex-1 rounded-xl border-none bg-gray-50 px-4 py-3 text-sm text-gray-800"
+                class="flex-1 rounded-xl border-none px-4 py-3 text-sm"
+                :class="inputClass"
               >
             </view>
           </view>
 
           <!-- 邮箱 -->
           <view class="space-y-2">
-            <view class="text-sm text-gray-700 font-medium">
+            <view class="text-sm font-medium" :class="isDark ? 'text-gray-200' : 'text-gray-700'">
               邮箱
             </view>
             <input
               v-model="formData.email"
               placeholder="请输入邮箱地址"
-              class="flex-1 rounded-xl border-none bg-gray-50 px-4 py-3 text-sm text-gray-800"
+              class="flex-1 rounded-xl border-none px-4 py-3 text-sm"
+              :class="inputClass"
             >
           </view>
         </view>
       </view>
 
       <!-- 账号信息 -->
-      <view v-if="userInfo" class="rounded-2xl bg-white p-6">
-        <view class="mb-4 text-lg text-gray-800 font-semibold">
+      <view v-if="userInfo" class="rounded-2xl p-6" :class="cardClass">
+        <view class="mb-4 text-lg font-semibold" :class="titleClass">
           账号信息
         </view>
 
         <view class="space-y-3">
           <view class="flex items-center justify-between py-2">
-            <view class="text-sm text-gray-600">
+            <view class="text-sm" :class="textClass">
               用户ID
             </view>
-            <view class="text-sm text-gray-800 font-medium">
+            <view class="text-sm font-medium" :class="titleClass">
               {{ userInfo.id }}
             </view>
           </view>
 
           <view class="flex items-center justify-between py-2">
-            <view class="text-sm text-gray-600">
+            <view class="text-sm" :class="textClass">
               学号/工号
             </view>
-            <view class="text-sm text-gray-800 font-medium">
+            <view class="text-sm font-medium" :class="titleClass">
               {{ userInfo.username }}
             </view>
           </view>
 
           <view class="flex items-center justify-between py-2">
-            <view class="text-sm text-gray-600">
+            <view class="text-sm" :class="textClass">
               姓名
             </view>
-            <view class="text-sm text-gray-800 font-medium">
+            <view class="text-sm font-medium" :class="titleClass">
               {{ userInfo.nickname || '未设置' }}
             </view>
           </view>
 
           <view class="flex items-center justify-between py-2">
-            <view class="text-sm text-gray-600">
+            <view class="text-sm" :class="textClass">
               性别
             </view>
-            <view class="text-sm text-gray-800 font-medium">
+            <view class="text-sm font-medium" :class="titleClass">
               {{ userInfo.sex === 1 ? '男' : userInfo.sex === 2 ? '女' : '未知' }}
             </view>
           </view>
 
           <view class="flex items-center justify-between py-2">
-            <view class="text-sm text-gray-600">
+            <view class="text-sm" :class="textClass">
               所属部门
             </view>
-            <view class="text-sm text-gray-800 font-medium">
+            <view class="text-sm font-medium" :class="titleClass">
               {{ userInfo.dept ? userInfo.dept.name : '暂无部门' }}
             </view>
           </view>
 
           <view v-if="userInfo.roles && userInfo.roles.length > 0" class="flex items-start justify-between py-2">
-            <view class="pt-1 text-sm text-gray-600">
+            <view class="pt-1 text-sm" :class="textClass">
               用户角色
             </view>
             <view class="ml-4 flex-1 text-right">
               <view
                 v-for="role in userInfo.roles"
                 :key="role.id"
-                class="mb-1 mr-1 inline-block rounded-md bg-purple-50 px-2 py-1 text-xs text-purple-700"
+                class="mb-1 mr-1 inline-block rounded-md px-2 py-1 text-xs"
+                :class="isDark ? 'bg-purple-900 text-purple-200' : 'bg-purple-50 text-purple-700'"
               >
                 {{ role.name }}
               </view>
@@ -472,15 +487,11 @@ onLoad(() => {
       </view>
     </view>
 
-    <!-- #ifdef H5 -->
-    <view style="height: 96px" />
-    <!-- #endif -->
-
     <!-- 底部操作栏 -->
-    <view class="pb-safe-h5 fixed bottom-0 left-0 right-0 border-t border-gray-100 bg-white p-4 pb-safe">
+    <view class="pb-safe-h5 fixed bottom-0 left-0 right-0 border-t p-4 pb-safe" :class="[cardClass, borderClass]">
       <button
         class="w-full rounded-xl py-3 text-base font-medium transition-colors"
-        :class="submitting ? 'bg-gray-300 text-gray-500' : 'bg-blue-500 text-white active:bg-blue-600'"
+        :class="submitting ? (isDark ? 'bg-gray-600 text-gray-400' : 'bg-gray-300 text-gray-500') : 'bg-blue-500 text-white active:bg-blue-600'"
         :disabled="submitting"
         @click="handleSubmit"
       >
