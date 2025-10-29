@@ -155,7 +155,7 @@ const borderMutedClass = computed(() => (isDark.value ? 'border-white/12' : 'bor
     <!-- 消息详情内容 -->
     <view v-else-if="message" class="px-4 pt-4">
       <!-- 消息头部信息 -->
-      <ThemeCard class="mb-6" :padding="false">
+      <ThemeCard card-class="mb-6" :padding="false">
         <view class="p-6">
           <!-- 发送者信息和消息状态 -->
           <view class="mb-4 flex items-start justify-between">
@@ -197,7 +197,7 @@ const borderMutedClass = computed(() => (isDark.value ? 'border-white/12' : 'bor
       </ThemeCard>
 
       <!-- 消息内容 -->
-      <ThemeCard class="mb-6" :padding="false">
+      <ThemeCard card-class="mb-6" :padding="false">
         <view class="border-b px-6 py-4" :class="borderMutedClass">
           <view class="text-lg font-semibold" :class="textPrimaryClass">
             消息内容
@@ -214,7 +214,7 @@ const borderMutedClass = computed(() => (isDark.value ? 'border-white/12' : 'bor
       </ThemeCard>
 
       <!-- 相关说明 -->
-      <ThemeCard class="mb-8" :padding="false">
+      <ThemeCard card-class="mb-8" :padding="false">
         <view class="p-6">
           <view class="mb-3 text-base font-semibold" :class="textPrimaryClass">
             温馨提示

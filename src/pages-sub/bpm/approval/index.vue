@@ -754,7 +754,7 @@ async function handleReturnConfirm() {
     <!-- 主要内容 -->
     <view v-else class="pb-2">
       <!-- 流程信息 -->
-      <ThemeCard class="mx-4 mt-4" padding="p-2">
+      <ThemeCard card-class="mx-4 mt-4" padding="p-2">
         <view class="relative border-b p-4" :class="borderBaseClass">
           <!-- 右上角状态图标 -->
           <view class="absolute right-4 top-1">
@@ -775,7 +775,7 @@ async function handleReturnConfirm() {
       </ThemeCard>
 
       <!-- 自定义表单字段（对齐 business-process 的卡片样式） -->
-      <ThemeCard class="mx-4 mt-4">
+      <ThemeCard card-class="mx-4 mt-4">
         <wd-cell-group title="表单信息">
           <LeaveApplication
             v-if="businessFormType === 'oa_leave'"
@@ -814,7 +814,7 @@ async function handleReturnConfirm() {
       </ThemeCard>
 
       <!-- 审批流程（对齐 business-process 的卡片样式） -->
-      <ThemeCard v-if="approvalDetail?.processDefinition?.id || (approvalDetail?.activityNodes && approvalDetail.activityNodes.length > 0)" class="mx-4 mt-4">
+      <ThemeCard v-if="approvalDetail?.processDefinition?.id || (approvalDetail?.activityNodes && approvalDetail.activityNodes.length > 0)" card-class="mx-4 mt-4">
         <ApprovalSteps
           :process-definition-id="approvalDetail?.processDefinition?.id"
           :process-instance-id="processInstanceId"
@@ -827,7 +827,7 @@ async function handleReturnConfirm() {
     </view>
 
     <!-- 底部操作区域 -->
-    <ThemeCard v-if="approvalDetail?.status === 1 && isCurrentUserAssignee" class="mx-4 mt-4" padding="p-1">
+    <ThemeCard v-if="approvalDetail?.status === 1 && isCurrentUserAssignee" card-class="mx-4 mt-4" padding="p-1">
       <!-- 审批意见输入区域 -->
       <view class="border-b px-4 pb-3 pt-4" :class="borderBaseClass">
         <view class="mb-3 flex items-center">
@@ -846,7 +846,7 @@ async function handleReturnConfirm() {
           :show-word-limit="true"
           :auto-height="true"
           :min-height="60"
-          :class="[isDark ? 'border-white/12 bg-white/6 text-gray-100 placeholder:text-gray-400' : 'border-gray-200 bg-gray-50 text-gray-800 placeholder:text-gray-500', 'rounded-1 focus:border-blue-500 focus:bg-transparent']"
+          class="rounded-1 focus:border-blue-500 focus:bg-transparent" :class="[isDark ? 'border-white/12 bg-white/6 text-gray-100 placeholder:text-gray-400' : 'border-gray-200 bg-gray-50 text-gray-800 placeholder:text-gray-500']"
         />
       </view>
 

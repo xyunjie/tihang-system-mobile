@@ -116,7 +116,8 @@ onLaunch(() => {
   // H5 端：根据用户偏好给 html 根元素添加主题类，覆盖媒体查询
   const updateGlobalThemeClass = () => {
     const el = document.documentElement
-    if (!el) return
+    if (!el)
+      return
     el.classList.remove('theme-dark', 'theme-light')
     if (appStore.themePreference === 'system') {
       // 跟随系统：不加类，继续用 prefers-color-scheme
@@ -154,7 +155,8 @@ image {
 
 page {
   /* #ifdef MP-WEIXIN */
-  background: -webkit-linear-gradient(135deg, #f3f7ff 0%, #f0f4ff 20%, #e8edff 45%, #e2e8ff 70%, #dde5ff 100%);
+  /* 微信小程序使用纯色背景（浅色模式） */
+  background: #ecf1f9;
   /* #endif */
 
   /* #ifndef MP-WEIXIN */
@@ -171,7 +173,8 @@ page {
 @media (prefers-color-scheme: dark) {
   page {
     /* #ifdef MP-WEIXIN */
-    background: -webkit-linear-gradient(135deg, #0b1220 0%, #0d1426 20%, #0f182e 45%, #101a33 70%, #12203b 100%);
+    /* 微信小程序使用纯色背景（深色模式） */
+    background: #0b1220;
     /* #endif */
     /* #ifndef MP-WEIXIN */
     background: linear-gradient(135deg, #0b1220 0%, #0d1426 20%, #0f182e 45%, #101a33 70%, #12203b 100%);

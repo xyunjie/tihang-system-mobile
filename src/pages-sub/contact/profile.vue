@@ -26,7 +26,6 @@ const profile = ref<ISystemUserInfoVo | null>(null)
 // 深色模式适配
 const appStore = useAppStore()
 const isDark = computed(() => appStore.theme === 'dark')
-const pageClass = computed(() => (isDark.value ? 'bg-gray-900' : 'bg-gray-50'))
 const titleClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-gray-900'))
 const subTextClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-gray-500'))
 const avatarBgClass = computed(() => (isDark.value ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'))
@@ -71,7 +70,7 @@ onPullDownRefresh(async () => {
 </script>
 
 <template>
-  <view class="min-h-screen" :class="pageClass">
+  <view class="min-h-screen">
     <view v-if="loading" class="px-4 py-4">
       <wd-skeleton theme="paragraph" />
     </view>

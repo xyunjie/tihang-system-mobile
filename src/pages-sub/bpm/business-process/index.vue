@@ -9,14 +9,14 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { getProcessDefinitionList } from '@/api/bpm'
 import ApprovalSteps from '@/components/ApprovalSteps.vue'
-import LeaveApplication from '@/components/business-forms/LeaveApplication.vue'
 import CourseScheduleApplication from '@/components/business-forms/CourseScheduleApplication.vue'
+import LeaveApplication from '@/components/business-forms/LeaveApplication.vue'
 import ThemeCard from '@/components/ThemeCard.vue'
 import { submitBusinessForm } from '@/pages-sub/utils/businessApiConfig'
 import { getBusinessTitle } from '@/pages-sub/utils/businessComponentConfig'
 import { useAppStore } from '@/store/app'
-import { getProcessDefinitionList } from '@/api/bpm'
 
 // 主题状态管理
 const appStore = useAppStore()
@@ -231,7 +231,7 @@ function handleGoBack() {
       <!-- 根据processKey静态渲染对应的业务组件 -->
 
       <!-- 请假申请组件 -->
-      <ThemeCard>
+      <ThemeCard card-class="mx-4 mt-4">
         <LeaveApplication
           v-if="processKey === 'oa_leave'"
           ref="businessFormRef"
@@ -251,7 +251,7 @@ function handleGoBack() {
       </ThemeCard>
 
       <!-- 审批流程组件（统一在这里显示） -->
-      <ThemeCard>
+      <ThemeCard card-class="mx-4 mt-4">
         <ApprovalSteps
           v-if="processDefinitionId"
           ref="approvalStepsRef"

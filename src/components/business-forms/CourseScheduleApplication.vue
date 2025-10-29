@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, defineEmits, ref } from 'vue'
-import { useAppStore } from '@/store/app'
-import { getEduTermSimpleList } from '@/api/edu'
 import { getClass } from '@/api/bpm'
+import { getEduTermSimpleList } from '@/api/edu'
+import { useAppStore } from '@/store/app'
 
 interface Props {
   processDefinitionId: string
@@ -100,7 +100,8 @@ function splitTime(time: string) {
 
 function openEdit(dayIndex: number, slotIndex: number) {
   // 审批回显只读模式下不可编辑
-  if (props.readonly) return
+  if (props.readonly)
+    return
   const key = getKey(dayIndex, slotIndex)
   tempWeeks.value = [...(tableData.value[key] || [])]
   editor.value.dayIndex = dayIndex
@@ -164,7 +165,8 @@ function emitFormDataChange() {
       const [dayIndex, slotIndex] = key.split('-').map(n => Number(n))
       const dayKey = String(dayIndex + 1)
       const sectionKey = String(slotIndex + 1)
-      if (!schedule[dayKey]) schedule[dayKey] = {}
+      if (!schedule[dayKey])
+        schedule[dayKey] = {}
       schedule[dayKey][sectionKey] = weeks
     })
   emit('form-data-change', {
@@ -206,7 +208,8 @@ defineExpose({
         const [dayIndex, slotIndex] = key.split('-').map(n => Number(n))
         const dayKey = String(dayIndex + 1)
         const sectionKey = String(slotIndex + 1)
-        if (!schedule[dayKey]) schedule[dayKey] = {}
+        if (!schedule[dayKey])
+          schedule[dayKey] = {}
         schedule[dayKey][sectionKey] = weeks
       })
     return {
@@ -232,9 +235,11 @@ async function loadSemesters() {
 
 // 审批详情回显：加载课程申报详情
 async function loadClassData() {
-  if (!props.businessKey) return
+  if (!props.businessKey)
+    return
   const id = Number(props.businessKey)
-  if (!id || Number.isNaN(id)) return
+  if (!id || Number.isNaN(id))
+    return
   try {
     uni.showLoading({ title: '加载数据...' })
     const response = await getClass(id)
@@ -293,7 +298,7 @@ onMounted(async () => {
       <wd-cell title-width="80px" title="学期" required vertical>
         <wd-picker
           v-model="formData.termId"
-          :placeholder="'请选择学期'"
+          placeholder="请选择学期"
           :disabled="props.readonly"
           :columns="semesterOptions"
           @confirm="handleSemesterPickerConfirm"
@@ -369,21 +374,31 @@ onMounted(async () => {
       <view class="max-h-80vh flex flex-col rounded-t-4" :class="cardClass">
         <!-- 头部 -->
         <view class="flex items-center justify-between border-b px-5 py-4" :class="borderClass">
-          <view class="text-lg font-semibold" :class="titleClass">选择周次</view>
-          <wd-button type="text" @click="closeEdit">取消</wd-button>
+          <view class="text-lg font-semibold" :class="titleClass">
+            选择周次
+          </view>
+          <wd-button type="text" @click="closeEdit">
+            取消
+          </wd-button>
         </view>
         <!-- 周次选择 -->
         <view class="px-5 py-4">
-          <view class="mb-2 text-xs" :class="textClass">选择有课的周次（1-20周）</view>
+          <view class="mb-2 text-xs" :class="textClass">
+            选择有课的周次（1-20周）
+          </view>
           <wd-checkbox-group v-model="tempWeeks" shape="button" checked-color="#4D7FFF">
             <view class="grid grid-cols-4 gap-2">
-              <wd-checkbox v-for="w in weeksOptions" :key="w" :model-value="w" class="w-full text-center">第{{ w }}周</wd-checkbox>
+              <wd-checkbox v-for="w in weeksOptions" :key="w" :model-value="w" class="w-full text-center">
+                第{{ w }}周
+              </wd-checkbox>
             </view>
           </wd-checkbox-group>
         </view>
         <!-- 底部确认 -->
         <view class="border-t px-5 py-4" :class="borderClass">
-          <wd-button type="primary" block @click="saveEdit">确定</wd-button>
+          <wd-button type="primary" block @click="saveEdit">
+            确定
+          </wd-button>
         </view>
       </view>
     </wd-popup>
@@ -393,12 +408,18 @@ onMounted(async () => {
       <view class="max-h-80vh flex flex-col rounded-t-4" :class="cardClass">
         <!-- 头部 -->
         <view class="flex items-center justify-between border-b px-5 py-4" :class="borderClass">
-          <view class="text-lg font-semibold" :class="titleClass">已选周次预览</view>
-          <wd-button type="text" @click="closeView">关闭</wd-button>
+          <view class="text-lg font-semibold" :class="titleClass">
+            已选周次预览
+          </view>
+          <wd-button type="text" @click="closeView">
+            关闭
+          </wd-button>
         </view>
         <!-- 预览内容 -->
         <view class="px-5 py-4">
-          <view class="mb-2 text-xs" :class="textClass">{{ viewerTitle }}</view>
+          <view class="mb-2 text-xs" :class="textClass">
+            {{ viewerTitle }}
+          </view>
           <view v-if="viewerWeeks.length > 0" class="flex flex-wrap gap-2">
             <view v-for="w in viewerWeeks" :key="w" class="rounded-full px-2 py-0.5 text-11px" :class="isDark ? 'bg-sky-900/40 text-sky-300' : 'bg-sky-100 text-sky-700'">
               第{{ w }}周
@@ -410,12 +431,13 @@ onMounted(async () => {
         </view>
         <!-- 底部仅关闭，无编辑按钮 -->
         <view class="border-t px-5 py-4" :class="borderClass">
-          <wd-button type="primary" block @click="closeView">关闭</wd-button>
+          <wd-button type="primary" block @click="closeView">
+            关闭
+          </wd-button>
         </view>
       </view>
     </wd-popup>
   </view>
-  
 </template>
 
 <style scoped>
