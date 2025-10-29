@@ -3,6 +3,7 @@ import { computed, defineEmits, ref, watch } from 'vue'
 import { getLeave } from '@/api/bpm'
 import { getDictDataListByType } from '@/api/dict'
 import { uploadFile } from '@/api/user'
+import { useAppStore } from '@/store/app'
 import { DictTypeEnum } from '@/utils/dictTypes'
 
 // 组件属性
@@ -69,6 +70,16 @@ const showLeaveTypePicker = ref(false)
 const selectedLeaveTypeIndex = ref<string>('')
 const showStartDatePicker = ref(false)
 const showEndDatePicker = ref(false)
+
+// 主题与样式（暗色模式适配）
+const appStore = useAppStore()
+const isDark = computed(() => appStore.theme === 'dark')
+const uploadBoxClass = computed(() => (isDark.value ? 'border-white/10 bg-white/6' : 'border-gray-200 bg-gray-50'))
+const uploadTextClass = computed(() => (isDark.value ? 'text-gray-300' : 'text-gray-500'))
+const addButtonBoxClass = computed(() => (isDark.value ? 'border-white/20 bg-white/4' : 'border-gray-200 bg-gray-50'))
+const addButtonPlusTextClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-gray-300'))
+const addButtonHintClass = computed(() => (isDark.value ? 'text-gray-500' : 'text-gray-400'))
+const tipTextClass = computed(() => (isDark.value ? 'text-gray-500' : 'text-gray-400'))
 
 // 计算请假天数
 const leaveDays = computed(() => {
@@ -357,54 +368,54 @@ defineExpose({
     <view>
       <wd-form ref="form" :model="formData" :rules="rules">
         <!-- 请假类型 -->
-        <wd-cell title="请假类型" required center>
+        <wd-cell title-width="80px" title="请假类型" required center>
           <wd-picker
             v-model="selectedLeaveTypeIndex"
             v-model:visible="showLeaveTypePicker"
             :columns="leaveTypeColumns"
             placeholder="请选择请假类型"
             prop="type"
-            :disabled="props.readonly"
+            :readonly="props.readonly"
             @confirm="handleLeaveTypeConfirm"
             @cancel="showLeaveTypePicker = false"
           />
         </wd-cell>
 
         <!-- 开始时间 -->
-        <wd-cell title="开始时间" required center>
+        <wd-cell title-width="80px" title="开始时间" required center>
           <wd-datetime-picker
             v-model="formData.startTime"
             :default-value="defaultValue"
             type="date"
             placeholder="请选择开始时间"
             prop="startTime"
-            :disabled="props.readonly"
+            :readonly="props.readonly"
             @confirm="handleStartDateConfirm"
           />
         </wd-cell>
 
         <!-- 结束时间 -->
-        <wd-cell title="结束时间" required center>
+        <wd-cell title-width="80px" title="结束时间" required center>
           <wd-datetime-picker
             v-model="formData.endTime"
             :default-value="defaultValue"
             type="date"
             placeholder="请选择结束时间"
             prop="endTime"
-            :disabled="props.readonly"
+            :readonly="props.readonly"
             @confirm="handleEndDateConfirm"
           />
         </wd-cell>
 
         <!-- 请假天数 -->
-        <wd-cell title="请假天数" center>
+        <wd-cell title-width="80px" title="请假天数" center>
           <text>
             {{ leaveDays }}天
           </text>
         </wd-cell>
 
         <!-- 请假原因 -->
-        <wd-cell title="请假原因" vertical required center>
+        <wd-cell title-width="80px" title="请假原因" vertical required center>
           <wd-textarea
             v-model="formData.reason"
             placeholder="请详细说明请假原因..."
@@ -412,13 +423,13 @@ defineExpose({
             show-word-limit
             :rows="4"
             prop="reason"
-            :disabled="props.readonly"
+            :readonly="props.readonly"
             @blur="triggerApprovalUpdate"
           />
         </wd-cell>
 
         <!-- 附件上传 -->
-        <wd-cell title="附件上传" vertical center>
+        <wd-cell title-width="80px" title="附件上传" vertical center>
           <!-- 图片列表 -->
           <view>
             <!-- 已上传的图片 -->
@@ -436,10 +447,11 @@ defineExpose({
               <!-- 删除按钮 -->
               <view
                 v-if="!props.readonly"
-                style="position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; background-color: #ff4444; border-radius: 50%; display: flex; align-items: center; justify-content: center;"
+                style="position: absolute; top: -8px; right: -8px; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center;"
+                class="bg-red-500"
                 @click="handleDeleteAttachment(index)"
               >
-                <text style="color: white; font-size: 12px;">
+                <text class="text-xs text-white">
                   ×
                 </text>
               </view>
@@ -451,14 +463,14 @@ defineExpose({
               :key="uploadItem.id"
               style="display: inline-block; position: relative; width: 100px; height: 100px; margin: 5px;"
             >
-              <view style="width: 100%; height: 100%; border: 1px solid #ddd; border-radius: 8px; background-color: #f5f5f5; display: flex; align-items: center; justify-content: center;">
-                <text style="font-size: 12px; color: #999;">
+              <view style="width: 100%; height: 100%; border-radius: 8px; display: flex; align-items: center; justify-content: center;" class="border" :class="uploadBoxClass">
+                <text class="text-xs" :class="uploadTextClass">
                   上传中...
                 </text>
               </view>
               <!-- 上传进度遮罩 -->
-              <view style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.5); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-                <text style="color: white; font-size: 12px;">
+              <view style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 8px; display: flex; align-items: center; justify-content: center;" class="bg-black/50">
+                <text class="text-xs text-white">
                   {{ uploadItem.progress }}%
                 </text>
               </view>
@@ -467,19 +479,21 @@ defineExpose({
             <!-- 添加图片按钮 -->
             <view
               v-if="!props.readonly && formData.attachments.length + uploadingImages.length < 9"
-              style="display: inline-block; width: 100px; height: 100px; margin: 5px; border: 2px dashed #ddd; border-radius: 8px; background-color: #fafafa; display: flex; align-items: center; justify-content: center; flex-direction: column;"
+              style="display: inline-block; width: 100px; height: 100px; margin: 5px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-direction: column;"
+              class="border-2 border-dashed"
+              :class="addButtonBoxClass"
               @click="handleSelectImage"
             >
-              <text style="font-size: 24px; color: #ccc;">
+              <text class="text-2xl" :class="addButtonPlusTextClass">
                 +
               </text>
-              <text style="font-size: 12px; color: #ccc; margin-top: 4px;">
+              <text class="mt-1 text-xs" :class="addButtonHintClass">
                 添加图片
               </text>
             </view>
           </view>
 
-          <text style="font-size: 12px; color: #999; margin-top: 8px; display: block;">
+          <text class="mt-2 block text-xs" :class="tipTextClass">
             最多上传9张图片！
           </text>
         </wd-cell>

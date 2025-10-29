@@ -205,17 +205,21 @@ function applyServerSchedules(list: EduScheduleRespVO[]) {
 <template>
   <view class="min-h-screen">
     <!-- 加载中 -->
-    <view v-if="loading" class="py-20 flex items-center justify-center">
+    <view v-if="loading" class="flex items-center justify-center py-20">
       <view class="flex flex-col items-center gap-3">
-        <view class="w-6 h-6 border-2 border-gray-300 border-t-sky-500 rounded-full animate-spin" />
-        <text class="text-sm" :class="textClass">加载中...</text>
+        <view class="h-6 w-6 animate-spin border-2 border-gray-300 border-t-sky-500 rounded-full" />
+        <text class="text-sm" :class="textClass">
+          加载中...
+        </text>
       </view>
     </view>
 
     <!-- 未配置学期信息空状态 -->
     <view v-else-if="emptyTerm" class="mt-4 px-4">
-      <view class="rounded-xl border p-8 text-center shadow-sm" :class="[cardClass, borderClass]">
-        <view class="text-base font-medium" :class="titleClass">系统未配置学期信息，请联系管理员配置学期信息！</view>
+      <view class="border rounded-xl p-8 text-center shadow-sm" :class="[cardClass, borderClass]">
+        <view class="text-base font-medium" :class="titleClass">
+          系统未配置学期信息，请联系管理员配置学期信息！
+        </view>
       </view>
     </view>
 

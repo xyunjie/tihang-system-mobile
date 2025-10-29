@@ -13,11 +13,14 @@
 <script setup lang="ts">
 import type { IBindAccountForm } from '@/api/types/login'
 import { computed, reactive, ref } from 'vue'
+import ThemeCard from '@/components/ThemeCard.vue'
 import { useUserStore } from '@/store'
+import { useAppStore } from '@/store/app'
 import { currRoute } from '@/utils'
 // 获取当前完整路径
 
 const userStore = useUserStore()
+const appStore = useAppStore()
 const query = ref('') as any
 
 // 绑定表单数据
@@ -34,6 +37,20 @@ const bindForm = reactive<IBindAccountForm & {
 
 // 表单验证和UI状态
 const isLoading = ref(false)
+const isDark = computed(() => appStore.theme === 'dark')
+
+// 页面与文本样式类
+const titleClass = computed(() => (isDark.value ? 'text-gray-200' : 'text-gray-800'))
+const subtitleClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-gray-600'))
+const infoTextClass = computed(() => (isDark.value ? 'text-gray-300' : 'text-gray-500'))
+const authBoxClass = computed(() => (isDark.value
+  ? 'bg-[#0c3a58] border-l-4 border-[#38bdf8] rounded-[12rpx] p-[18rpx]'
+  : 'bg-[#e7f5ff] border-l-4 border-[#38bdf8] rounded-[12rpx] p-[18rpx]'))
+const authTextClass = computed(() => (isDark.value ? 'text-[#7dd3fc]' : 'text-[#0ea5e9]'))
+const warnBoxClass = computed(() => (isDark.value
+  ? 'bg-[#3b2f0b] border-l-4 border-[#ffc107] rounded-[12rpx] p-[18rpx]'
+  : 'bg-[#fff3cd] border-l-4 border-[#ffc107] rounded-[12rpx] p-[18rpx]'))
+const warnTextClass = computed(() => (isDark.value ? 'text-[#facc15]' : 'text-[#a16207]'))
 
 // 是否包含社交授权参数
 const hasSocialAuth = computed(() => !!bindForm.type && !!bindForm.code && !!bindForm.state)
@@ -174,37 +191,37 @@ onLoad(() => {
 </script>
 
 <template>
-  <view class="fixed left-0 top-0 h-full w-full flex items-center justify-center" style="background: linear-gradient(135deg, #4A90E2 0%, #2E5BBA 50%, #1E3A8A 100%); touch-action: none; overflow: hidden;">
-    <view class="bind-card w-full bg-white" style="border-radius: 20rpx; padding: 50rpx 40rpx; box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.1); max-width: 600rpx; max-height: calc(100vh - 80rpx); overflow-y: auto; -webkit-overflow-scrolling: touch; box-sizing: border-box;">
+  <view class="fixed left-0 top-0 h-full w-full flex items-center justify-center" style="touch-action: none; overflow: hidden;">
+    <ThemeCard
+      padding="py-[50rpx] px-[40rpx]"
+      radius="rounded-[20rpx]"
+      shadow
+      card-class="w-full"
+      style="max-width: 600rpx; max-height: calc(100vh - 80rpx); overflow-y: auto; -webkit-overflow-scrolling: touch; box-sizing: border-box;"
+    >
       <!-- 头部 -->
       <view class="text-center" style="margin-bottom: 50rpx;">
-        <view class="text-gray-800 font-bold" style="font-size: 46rpx; margin-bottom: 10rpx; line-height: 1.2;">
+        <view class="font-bold" :class="titleClass" style="font-size: 46rpx; margin-bottom: 10rpx; line-height: 1.2;">
           绑定账号
         </view>
-        <view class="text-gray-600" style="font-size: 24rpx; line-height: 1.3;">
+        <view :class="[subtitleClass]" style="font-size: 24rpx; line-height: 1.3;">
           请输入您的账号和密码完成绑定
         </view>
         <!-- 授权状态提示 -->
-        <view
-          v-if="hasSocialAuth"
-          style="margin-top: 20rpx; padding: 18rpx; background: #e7f5ff; border-left: 4rpx solid #38bdf8; border-radius: 12rpx;"
-        >
-          <text style="color: #0ea5e9; font-size: 24rpx;">
+        <view v-if="hasSocialAuth" :class="[authBoxClass]" style="margin-top: 20rpx;">
+          <text :class="[authTextClass]" style="font-size: 24rpx;">
             已获取社交授权，绑定后可一键使用社交登录
           </text>
         </view>
-        <view
-          v-else
-          style="margin-top: 20rpx; padding: 18rpx; background: #fff3cd; border-left: 4rpx solid #ffc107; border-radius: 12rpx;"
-        >
-          <text style="color: #a16207; font-size: 24rpx;">
-            未检测到社交授权，仅进行账号密码登录。若需社交绑定，请先完成授权。
+        <view v-else :class="[warnBoxClass]" style="margin-top: 20rpx;">
+          <text :class="[warnTextClass]" style="font-size: 24rpx;">
+            未检测到社交授权，请先完成授权后再绑定。
           </text>
         </view>
       </view>
 
       <!-- 绑定表单 -->
-      <view style="margin-bottom: 40rpx;">
+      <view v-if="hasSocialAuth" style="margin-bottom: 40rpx;">
         <!-- 学号/工号输入框 -->
         <view style="margin-bottom: 30rpx;">
           <wd-input
@@ -255,9 +272,9 @@ onLoad(() => {
           <wd-button
             type="warning"
             size="large"
-            block
+
             :disabled="isLoading"
-            plain
+            plain block
             custom-style="height: 88rpx; border-radius: 12rpx; font-size: 32rpx;"
             @click="gotoForgotPassword"
           >
@@ -268,12 +285,12 @@ onLoad(() => {
 
       <!-- 说明信息：仅在有授权时显示详细说明 -->
       <view v-if="hasSocialAuth" class="text-center" style="margin-top: 30rpx;">
-        <view class="text-gray-500" style="font-size: 22rpx; line-height: 1.4;">
+        <view :class="[infoTextClass]" style="font-size: 22rpx; line-height: 1.4;">
           绑定成功后，您可以使用社交账号一键登录，
           也可继续使用账号和密码登录
         </view>
       </view>
-    </view>
+    </ThemeCard>
   </view>
 </template>
 

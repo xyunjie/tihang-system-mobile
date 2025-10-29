@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { ConfigProviderThemeVars } from 'wot-design-uni'
-import FgTabbar from './fg-tabbar/fg-tabbar.vue'
 import { useAppStore } from '@/store/app'
+import FgTabbar from './fg-tabbar/fg-tabbar.vue'
 
 const themeVars: ConfigProviderThemeVars = {
   // colorTheme: 'red',
@@ -15,6 +15,9 @@ const appStore = useAppStore()
 <template>
   <wd-config-provider :theme-vars="themeVars" :theme="appStore.theme">
     <slot />
+    <!-- #ifndef MP-WEIXIN -->
+    <view class="h-10" />
+    <!-- #endif -->
     <FgTabbar />
     <wd-toast />
     <wd-message-box />

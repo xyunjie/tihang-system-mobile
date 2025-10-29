@@ -8,11 +8,34 @@
 </route>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import ApprovalSteps from '@/components/ApprovalSteps.vue'
 import LeaveApplication from '@/components/business-forms/LeaveApplication.vue'
+import ThemeCard from '@/components/ThemeCard.vue'
 import { submitBusinessForm } from '@/pages-sub/utils/businessApiConfig'
 import { getBusinessTitle } from '@/pages-sub/utils/businessComponentConfig'
+import { useAppStore } from '@/store/app'
+
+// 主题状态管理
+const appStore = useAppStore()
+const isDark = computed(() => appStore.theme === 'dark')
+
+const errorPageTextClass = computed(() => [
+  'mt-4 text-lg font-semibold',
+  isDark.value ? 'text-gray-100' : 'text-gray-800',
+])
+
+const errorPageSubTextClass = computed(() => [
+  'mt-2 text-sm',
+  isDark.value ? 'text-gray-400' : 'text-gray-500',
+])
+
+const bottomBarClass = computed(() => [
+  'fixed bottom-0 left-0 right-0 border-t px-4 py-3 backdrop-blur-sm rounded-t-lg',
+  isDark.value
+    ? 'border-gray-700 bg-gray-800/70'
+    : 'border-gray-200 bg-white/70',
+])
 
 // 页面参数
 const processDefinitionId = ref<string>('')
@@ -158,7 +181,7 @@ function handleGoBack() {
 </script>
 
 <template>
-  <view class="min-h-screen bg-gray-50">
+  <view>
     <!-- 加载状态 -->
     <view v-if="loading" class="min-h-screen flex items-center justify-center">
       <wd-loading />
@@ -166,62 +189,51 @@ function handleGoBack() {
 
     <!-- 不支持的业务类型 -->
     <view v-else-if="!isSupportedBusinessType" class="min-h-screen flex flex-col items-center justify-center px-4">
-      <view class="text-center">
+      <ThemeCard card-class="text-center w-full max-w-140">
         <text class="text-6xl">
           ❌
         </text>
-        <view class="mt-4 text-lg text-gray-800 font-semibold">
+        <view :class="errorPageTextClass">
           暂不支持此业务类型
         </view>
-        <view class="mt-2 text-sm text-gray-500">
+        <view :class="errorPageSubTextClass">
           业务类型：{{ processKey }}
         </view>
-        <wd-button
-          type="primary"
-          class="mt-6"
-          @click="handleGoBack"
-        >
+        <wd-button type="primary" class="mt-6" @click="handleGoBack">
           返回上一页
         </wd-button>
-      </view>
+      </ThemeCard>
     </view>
 
     <!-- 业务表单内容 -->
-    <view v-else class="pb-20">
+    <view v-else class="px-4 pb-20 space-y-4">
       <!-- 根据processKey静态渲染对应的业务组件 -->
 
       <!-- 请假申请组件 -->
-      <LeaveApplication
-        v-if="processKey === 'oa_leave'"
-        ref="businessFormRef"
-        :process-definition-id="processDefinitionId"
-        :process-key="processKey"
-        @form-data-change="handleFormDataChange"
-        @approval-update="handleApprovalUpdate"
-      />
-
-      <!-- 可以在这里添加更多业务组件的条件渲染 -->
-      <!--
-      <ExpenseReimbursement
-        v-else-if="processKey === 'expense_reimbursement'"
-        ref="businessFormRef"
-        :process-definition-id="processDefinitionId"
-        :process-key="processKey"
-        @form-data-change="handleFormDataChange"
-      />
-      -->
+      <ThemeCard>
+        <LeaveApplication
+          v-if="processKey === 'oa_leave'"
+          ref="businessFormRef"
+          :process-definition-id="processDefinitionId"
+          :process-key="processKey"
+          @form-data-change="handleFormDataChange"
+          @approval-update="handleApprovalUpdate"
+        />
+      </ThemeCard>
 
       <!-- 审批流程组件（统一在这里显示） -->
-      <ApprovalSteps
-        v-if="processDefinitionId"
-        ref="approvalStepsRef"
-        :process-definition-id="processDefinitionId"
-        :process-variables="processVariables"
-        activity-id="StartUserNode"
-      />
+      <ThemeCard>
+        <ApprovalSteps
+          v-if="processDefinitionId"
+          ref="approvalStepsRef"
+          :process-definition-id="processDefinitionId"
+          :process-variables="processVariables"
+          activity-id="StartUserNode"
+        />
+      </ThemeCard>
 
       <!-- 底部提交按钮区域（统一在这里显示） -->
-      <view class="fixed bottom-0 left-0 right-0 border-t border-gray-200 bg-white px-4 py-3" style="z-index: 2;">
+      <view :class="bottomBarClass" style="z-index: 2;">
         <wd-button
           type="primary"
           block

@@ -1,5 +1,6 @@
 <!-- 我的标签页 -->
-<route lang="jsonc" type="page">{
+<route lang="jsonc" type="page">
+{
   "layout": "tabbar",
   "style": {
     "navigationStyle": "default",
@@ -11,15 +12,16 @@
     "refresherBackground": "#f5f5f5",
     "backgroundTextStyle": "dark"
   }
-}</route>
+}
+</route>
 
 <script setup lang="ts">
 import type { ISystemUserInfoVo } from '@/api/types/user'
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 import { logout } from '@/api/login'
 import { getUserInfo as _getUserInfo } from '@/api/user'
-import { useUserStore } from '@/store'
 import ThemeCard from '@/components/ThemeCard.vue'
+import { useUserStore } from '@/store'
 import { useAppStore } from '@/store/app'
 
 defineOptions({
@@ -36,11 +38,11 @@ let systemInfo
 systemInfo = uni.getWindowInfo()
 safeAreaInsets = systemInfo.safeArea
   ? {
-    top: systemInfo.safeArea.top,
-    right: systemInfo.windowWidth - systemInfo.safeArea.right,
-    bottom: systemInfo.windowHeight - systemInfo.safeArea.bottom,
-    left: systemInfo.safeArea.left,
-  }
+      top: systemInfo.safeArea.top,
+      right: systemInfo.windowWidth - systemInfo.safeArea.right,
+      bottom: systemInfo.windowHeight - systemInfo.safeArea.bottom,
+      left: systemInfo.safeArea.left,
+    }
   : null
 // #endif
 
@@ -82,6 +84,13 @@ function gotoAttendance() {
 function gotoOJInfo() {
   uni.navigateTo({
     url: '/pages-sub/oj/index',
+  })
+}
+
+// 跳转到系统设置页面
+function gotoSettings() {
+  uni.navigateTo({
+    url: '/pages-sub/profile/settings',
   })
 }
 
@@ -220,7 +229,7 @@ function editProfile() {
 // 跳转到关于我们页面
 function gotoAboutStudio() {
   uni.navigateTo({
-    url: '/pages/about/studio',
+    url: '/pages-sub/about/studio',
   })
 }
 
@@ -237,6 +246,7 @@ const menuItems = [
   {
     category: '其他',
     items: [
+      { icon: '⚙', name: '系统设置', desc: '主题与通用设置', action: gotoSettings, iconColor: 'text-gray-500' },
       { icon: '■', name: '关于我们', desc: '工作室介绍与版本信息', action: gotoAboutStudio, iconColor: 'text-purple-500' },
       { icon: '▼', name: '退出登录', desc: '安全退出账号', action: handleLogout, danger: true, iconColor: 'text-red-500' },
     ],
@@ -253,7 +263,6 @@ const textSecondaryClass = computed(() => isDark.value ? 'text-white/70' : 'text
 const textMutedClass = computed(() => isDark.value ? 'text-white/50' : 'text-gray-400')
 const borderMutedClass = computed(() => isDark.value ? 'border-white/10' : 'border-gray-100')
 const activeRowBgClass = computed(() => isDark.value ? 'active:bg-white/6' : 'active:bg-gray-50')
-
 </script>
 
 <template>
@@ -265,8 +274,10 @@ const activeRowBgClass = computed(() => isDark.value ? 'active:bg-white/6' : 'ac
           <!-- 用户头像和基本信息 -->
           <view class="mb-6 flex items-center">
             <view class="relative">
-              <image :src="systemUserInfo?.avatar || '/static/images/default-avatar.png'"
-                class="h-16 w-16 border-2 border-white rounded-2xl shadow-md" mode="aspectFill" />
+              <image
+                :src="systemUserInfo?.avatar || '/static/images/default-avatar.png'"
+                class="h-16 w-16 border-2 border-white rounded-2xl shadow-md" mode="aspectFill"
+              />
               <view class="absolute h-5 w-5 border-2 border-white rounded-full bg-green-400 -bottom-1 -right-1" />
             </view>
 
@@ -288,8 +299,10 @@ const activeRowBgClass = computed(() => isDark.value ? 'active:bg-white/6' : 'ac
             <view class="rounded-full bg-green-100 px-3 py-1 text-xs text-green-700 font-medium">
               正常状态
             </view>
-            <view v-if="systemUserInfo?.roles && systemUserInfo.roles.length > 0"
-              class="rounded-full bg-purple-100 px-3 py-1 text-xs text-purple-700 font-medium">
+            <view
+              v-if="systemUserInfo?.roles && systemUserInfo.roles.length > 0"
+              class="rounded-full bg-purple-100 px-3 py-1 text-xs text-purple-700 font-medium"
+            >
               {{ systemUserInfo.roles.length }}个角色
             </view>
           </view>
@@ -300,11 +313,15 @@ const activeRowBgClass = computed(() => isDark.value ? 'active:bg-white/6' : 'ac
     <!-- 快捷操作 -->
     <view class="mx-4 mb-6">
       <view class="grid grid-cols-4 gap-3">
-        <ThemeCard v-for="(action, index) in quickActions" :key="index"
-          card-class="text-center transition-all active:scale-95" radius="rounded-2xl" padding="p-4">
+        <ThemeCard
+          v-for="(action, index) in quickActions" :key="index"
+          card-class="text-center transition-all active:scale-95" radius="rounded-2xl" padding="p-4"
+        >
           <view @click="action.handler">
-            <view class="mx-auto mb-2 h-10 w-10 flex items-center justify-center rounded-xl text-white"
-              :class="action.color">
+            <view
+              class="mx-auto mb-2 h-10 w-10 flex items-center justify-center rounded-xl text-white"
+              :class="action.color"
+            >
               <wd-icon :name="action.icon" size="20px" color="white" />
             </view>
             <!-- #ifdef H5 -->
@@ -324,8 +341,8 @@ const activeRowBgClass = computed(() => isDark.value ? 'active:bg-white/6' : 'ac
 
     <!-- 个人信息详情 -->
     <ThemeCard v-if="systemUserInfo" card-class="mx-4 mb-6" :padding="false" radius="rounded-2xl">
-      <view :class="['border-b', borderMutedClass, 'px-4 py-3']">
-        <view :class="['text-base font-semibold', textPrimaryClass]">
+      <view class="border-b px-4 py-3" :class="[borderMutedClass]">
+        <view class="text-base font-semibold" :class="[textPrimaryClass]">
           <text class="mr-2 text-blue-500">
             ●
           </text>个人信息
@@ -338,7 +355,7 @@ const activeRowBgClass = computed(() => isDark.value ? 'active:bg-white/6' : 'ac
             <view class="text-sm" :class="textSecondaryClass">
               学号/工号
             </view>
-            <view :class="['text-sm font-medium', textPrimaryClass]">
+            <view class="text-sm font-medium" :class="[textPrimaryClass]">
               {{ systemUserInfo.username }}
             </view>
           </view>
@@ -347,7 +364,7 @@ const activeRowBgClass = computed(() => isDark.value ? 'active:bg-white/6' : 'ac
             <view class="text-sm" :class="textSecondaryClass">
               姓名
             </view>
-            <view :class="['text-sm font-medium', textPrimaryClass]">
+            <view class="text-sm font-medium" :class="[textPrimaryClass]">
               {{ systemUserInfo.nickname || '未设置' }}
             </view>
           </view>
@@ -356,7 +373,7 @@ const activeRowBgClass = computed(() => isDark.value ? 'active:bg-white/6' : 'ac
             <view class="text-sm" :class="textSecondaryClass">
               性别
             </view>
-            <view :class="['text-sm font-medium', textPrimaryClass]">
+            <view class="text-sm font-medium" :class="[textPrimaryClass]">
               {{ formatSex(systemUserInfo.sex) }}
             </view>
           </view>
@@ -365,7 +382,7 @@ const activeRowBgClass = computed(() => isDark.value ? 'active:bg-white/6' : 'ac
             <view class="text-sm" :class="textSecondaryClass">
               手机号
             </view>
-            <view :class="['text-sm font-medium', textPrimaryClass]">
+            <view class="text-sm font-medium" :class="[textPrimaryClass]">
               {{ systemUserInfo.mobile }}
             </view>
           </view>
@@ -374,7 +391,7 @@ const activeRowBgClass = computed(() => isDark.value ? 'active:bg-white/6' : 'ac
             <view class="text-sm" :class="textSecondaryClass">
               邮箱
             </view>
-            <view :class="['break-all text-sm font-medium', textPrimaryClass]">
+            <view class="break-all text-sm font-medium" :class="[textPrimaryClass]">
               {{ systemUserInfo.email }}
             </view>
           </view>
@@ -383,23 +400,27 @@ const activeRowBgClass = computed(() => isDark.value ? 'active:bg-white/6' : 'ac
             <view class="text-sm" :class="textSecondaryClass">
               所属部门
             </view>
-            <view :class="['text-sm font-medium', textPrimaryClass]">
+            <view class="text-sm font-medium" :class="[textPrimaryClass]">
               {{ formatDept(systemUserInfo.dept) }}
             </view>
           </view>
 
-          <view v-if="systemUserInfo.roles && systemUserInfo.roles.length > 0"
-            class="flex items-start justify-between py-2">
+          <view
+            v-if="systemUserInfo.roles && systemUserInfo.roles.length > 0"
+            class="flex items-start justify-between py-2"
+          >
             <view class="pt-1 text-sm" :class="textSecondaryClass">
               用户角色
             </view>
-            <view :class="['ml-4 flex-1 text-right text-sm font-medium', textPrimaryClass]">
+            <view class="ml-4 flex-1 text-right text-sm font-medium" :class="[textPrimaryClass]">
               <view v-if="systemUserInfo.roles.length === 1" class="inline-block">
                 {{ systemUserInfo.roles[0].name }}
               </view>
               <view v-else class="space-y-1">
-                <view v-for="role in systemUserInfo.roles" :key="role.id"
-                  class="mb-1 mr-1 inline-block rounded-md bg-purple-50 px-2 py-1 text-xs text-purple-700">
+                <view
+                  v-for="role in systemUserInfo.roles" :key="role.id"
+                  class="mb-1 mr-1 inline-block rounded-md bg-purple-50 px-2 py-1 text-xs text-purple-700"
+                >
                   {{ role.name }}
                 </view>
               </view>
@@ -410,7 +431,7 @@ const activeRowBgClass = computed(() => isDark.value ? 'active:bg-white/6' : 'ac
             <view class="text-sm" :class="textSecondaryClass">
               最后登录IP
             </view>
-            <view :class="['text-sm font-medium', textPrimaryClass]">
+            <view class="text-sm font-medium" :class="[textPrimaryClass]">
               {{ systemUserInfo.loginIp }}
             </view>
           </view>
@@ -419,30 +440,34 @@ const activeRowBgClass = computed(() => isDark.value ? 'active:bg-white/6' : 'ac
     </ThemeCard>
 
     <!-- 功能菜单 -->
-    <ThemeCard v-for="(category, categoryIndex) in menuItems" :key="categoryIndex" card-class="mx-4 mb-4"
-      :padding="false" radius="rounded-2xl">
-      <view :class="['border-b', borderMutedClass, 'px-4 py-3']">
-        <view :class="['text-base font-semibold', textPrimaryClass]">
+    <ThemeCard
+      v-for="(category, categoryIndex) in menuItems" :key="categoryIndex" card-class="mx-4 mb-4"
+      :padding="false" radius="rounded-2xl"
+    >
+      <view class="border-b px-4 py-3" :class="[borderMutedClass]">
+        <view class="text-base font-semibold" :class="[textPrimaryClass]">
           {{ category.category }}
         </view>
       </view>
 
       <view class="p-2">
-        <view v-for="(item, index) in category.items" :key="index"
-          :class="['mx-1 my-1 flex items-center rounded-xl px-3 py-3 transition-colors', activeRowBgClass]"
-          @click="item.action">
+        <view
+          v-for="(item, index) in category.items" :key="index"
+          class="mx-1 my-1 flex items-center rounded-xl px-3 py-3 transition-colors" :class="[activeRowBgClass]"
+          @click="item.action"
+        >
           <view class="mr-3 text-lg" :class="item.iconColor || 'text-gray-500'">
             {{ item.icon }}
           </view>
           <view class="flex-1">
-            <view :class="['text-sm font-medium', textPrimaryClass, { 'text-red-500': item.danger }]">
+            <view class="text-sm font-medium" :class="[textPrimaryClass, { 'text-red-500': item.danger }]">
               {{ item.name }}
             </view>
-            <view v-if="item.desc" :class="['mt-1 text-xs', textSecondaryClass]">
+            <view v-if="item.desc" class="mt-1 text-xs" :class="[textSecondaryClass]">
               {{ item.desc }}
             </view>
           </view>
-          <view :class="['text-sm', textMutedClass]">
+          <view class="text-sm" :class="[textMutedClass]">
             ›
           </view>
         </view>

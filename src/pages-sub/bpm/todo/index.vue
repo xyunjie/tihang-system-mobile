@@ -9,11 +9,11 @@
 
 <script setup lang="ts">
 import type { BpmTaskRespVO, GetTaskTodoPageReqVO } from '@/api/types/bpm'
-import { reactive, ref, computed } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { getTaskTodoPage } from '@/api/bpm'
-import { formatStandardDateTime } from '@/utils'
-import { useAppStore } from '@/store/app'
 import ThemeCard from '@/components/ThemeCard.vue'
+import { useAppStore } from '@/store/app'
+import { formatStandardDateTime } from '@/utils'
 
 // 页面数据
 const taskList = ref<BpmTaskRespVO[]>([])
@@ -91,9 +91,9 @@ const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'tex
 
     <view>
       <z-paging
-        style="top: 0px"
         ref="pagingRef"
         v-model="taskList"
+        style="top: 0px"
         :refresher-enabled="true"
         :loading-more-enabled="true"
         :auto-show-back-to-top="true"
@@ -110,7 +110,7 @@ const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'tex
         empty-view-text="暂无待办任务"
         @query="queryList"
       >
-        <view class="p-4" v-if="firstLoad">
+        <view v-if="firstLoad" class="p-4">
           <!-- 骨架屏：匹配 ThemeCard 卡片结构与信息行 -->
           <view v-for="n in 3" :key="n" class="mb-4">
             <ThemeCard :padding="false">
@@ -144,45 +144,45 @@ const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'tex
             <!-- 任务卡片采用 ThemeCard，适配深色模式背景与阴影 -->
             <ThemeCard :padding="false">
               <view class="p-4">
-              <!-- 任务头部信息 -->
-              <view class="mb-3 flex items-center justify-between">
-                <view class="mr-3 flex-1 text-base font-semibold" :class="textPrimaryClass">
-                  {{ task.processInstance.name }}
-                </view>
-              </view>
-
-              <!-- 任务详情 -->
-              <view class="mb-4">
-                <view v-if="task.processInstance.summary" class="mb-1.5 flex flex-col items-start">
-                  <view v-for="item in task.processInstance.summary" :key="item.key">
-                    <div class="ml-1.5 text-xs" :class="textSecondaryClass">
-                      {{ item.key }}: {{ item.value }}
-                    </div>
+                <!-- 任务头部信息 -->
+                <view class="mb-3 flex items-center justify-between">
+                  <view class="mr-3 flex-1 text-base font-semibold" :class="textPrimaryClass">
+                    {{ task.processInstance.name }}
                   </view>
                 </view>
-                <view v-else>
-                <wd-icon name="user" size="12px" :class="textSecondaryClass" />
-                  <text class="ml-1.5 text-xs" :class="textSecondaryClass">
-                    申请人：{{ task.processInstance.startUser.nickname }}
-                  </text>
-                </view>
-                <view class="mb-1.5 flex items-center">
-                <wd-icon name="time" size="12px" :class="textSecondaryClass" />
-                  <text class="ml-1.5 text-xs" :class="textSecondaryClass">
-                    创建时间：{{ formatTime(task.createTime) }}
-                  </text>
-                </view>
-              </view>
 
-              <!-- 操作按钮 -->
-              <view class="flex justify-end gap-3">
-                <wd-button
-                  type="primary"
-                  @click.stop="handleApprove(task)"
-                >
-                  办理
-                </wd-button>
-              </view>
+                <!-- 任务详情 -->
+                <view class="mb-4">
+                  <view v-if="task.processInstance.summary" class="mb-1.5 flex flex-col items-start">
+                    <view v-for="item in task.processInstance.summary" :key="item.key">
+                      <div class="ml-1.5 text-xs" :class="textSecondaryClass">
+                        {{ item.key }}: {{ item.value }}
+                      </div>
+                    </view>
+                  </view>
+                  <view v-else>
+                    <wd-icon name="user" size="12px" :class="textSecondaryClass" />
+                    <text class="ml-1.5 text-xs" :class="textSecondaryClass">
+                      申请人：{{ task.processInstance.startUser.nickname }}
+                    </text>
+                  </view>
+                  <view class="mb-1.5 flex items-center">
+                    <wd-icon name="time" size="12px" :class="textSecondaryClass" />
+                    <text class="ml-1.5 text-xs" :class="textSecondaryClass">
+                      创建时间：{{ formatTime(task.createTime) }}
+                    </text>
+                  </view>
+                </view>
+
+                <!-- 操作按钮 -->
+                <view class="flex justify-end gap-3">
+                  <wd-button
+                    type="primary"
+                    @click.stop="handleApprove(task)"
+                  >
+                    办理
+                  </wd-button>
+                </view>
               </view>
             </ThemeCard>
           </view>

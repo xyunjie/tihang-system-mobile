@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import type { DeptSimpleRespVO } from '@/api/types/school-dept'
-
-import { onMounted, ref, watch } from 'vue'
-
+import { computed, onMounted, ref, watch } from 'vue'
 import { getSimpleDeptList } from '@/api/school-dept'
+import { useAppStore } from '@/store/app'
+
+// 主题状态管理
+const appStore = useAppStore()
+const isDark = computed(() => appStore.theme === 'dark')
 
 interface Props {
   modelValue?: number | number[] // 选中的部门ID

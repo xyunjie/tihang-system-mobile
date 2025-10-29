@@ -8,11 +8,11 @@
 
 <script lang="ts" setup>
 import type { NotifyMessageRespVO } from '@/api/types/notify-message'
-import { getNotifyMessageById } from '@/api/notify-message'
-import { formatStandardDateTime } from '@/utils'
 import { computed } from 'vue'
-import { useAppStore } from '@/store/app'
+import { getNotifyMessageById } from '@/api/notify-message'
 import ThemeCard from '@/components/ThemeCard.vue'
+import { useAppStore } from '@/store/app'
+import { formatStandardDateTime } from '@/utils'
 
 defineOptions({
   name: 'MessageDetail',
@@ -106,7 +106,9 @@ function getMessageTypeText(templateType: number): string {
     default: return '其他消息'
   }
 }
-
+// 主题适配：浅色/深色
+const appStore = useAppStore()
+const isDark = computed(() => appStore.theme === 'dark')
 // 获取消息类型颜色
 function getMessageTypeColor(templateType: number): string {
   if (isDark.value) {
@@ -134,9 +136,6 @@ function goBack() {
   uni.navigateBack()
 }
 
-// 主题适配：浅色/深色
-const appStore = useAppStore()
-const isDark = computed(() => appStore.theme === 'dark')
 const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-gray-800'))
 const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-gray-700'))
 const textMutedClass = computed(() => (isDark.value ? 'text-gray-500' : 'text-gray-400'))

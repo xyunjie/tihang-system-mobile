@@ -16,8 +16,8 @@
 <script setup lang="ts">
 import { onHide, onLoad, onPullDownRefresh, onShow } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
-import { useAppStore } from '@/store/app'
 import { getDeptTreeUsers } from '@/api/user'
+import { useAppStore } from '@/store/app'
 
 defineOptions({ name: 'Contact' })
 
@@ -104,45 +104,6 @@ const isSearching = ref(false)
 const searchLoading = ref(false)
 const searchResults = ref([])
 
-function enterSearchMode() {
-  isSearching.value = true
-}
-
-async function triggerSearch() {
-  const kw = searchKeyword.value.trim()
-  if (!kw)
-    return
-  searchLoading.value = true
-  try {
-    const res = await getDeptTreeUsers(0, { keyword: kw })
-    console.log(res)
-    searchResults.value = (res.data.users || []).map(u => ({
-      id: u.id,
-      nickname: u.nickname,
-      avatar: u.avatar,
-      roles: u.roles,
-    }))
-  }
-  catch (error) {
-    uni.showToast({ title: '搜索失败', icon: 'none' })
-  }
-  finally {
-    searchLoading.value = false
-  }
-}
-
-function handleClear() {
-  searchKeyword.value = ''
-  searchResults.value = []
-  searchLoading.value = false
-  isSearching.value = false
-}
-
-function handleBlur() {
-  if (!searchKeyword.value.trim())
-    isSearching.value = false
-}
-
 // 下拉刷新
 onPullDownRefresh(async () => {
   if (isRefreshing.value)
@@ -208,11 +169,10 @@ const isDark = computed(() => appStore.theme === 'dark')
 const cardBgClass = computed(() =>
   isDark.value
     ? 'bg-[#0b1220] border border-white/15 shadow-lg'
-    : 'bg-white border border-gray-100 shadow-sm'
+    : 'bg-white border border-gray-100 shadow-sm',
 )
 const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-gray-900'))
 const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-gray-600'))
-const textMutedClass = computed(() => (isDark.value ? 'text-gray-500' : 'text-gray-500'))
 const borderMutedClass = computed(() => (isDark.value ? 'divide-white/10' : 'divide-gray-100'))
 const iconMutedBgClass = computed(() => (isDark.value ? 'bg-white/20' : 'bg-gray-100'))
 const contactBottomStyle = computed(() => ({
@@ -223,21 +183,7 @@ const contactBottomStyle = computed(() => ({
 </script>
 
 <template>
-  <view class="min-h-screen contact-content">
-    <!-- 顶部搜索（仿钉钉） -->
-    <!-- <view class="px-4 pt-3">
-      <wd-search
-        v-model="searchKeyword"
-        placeholder="搜索联系人/部门"
-        clearable
-        :show-action="false"
-        @focus="enterSearchMode"
-        @search="triggerSearch"
-        @clear="handleClear"
-        @blur="handleBlur"
-      />
-    </view> -->
-
+  <view class="min-h-screen">
     <!-- 搜索模式：同页搜索结果视图 -->
     <view v-if="isSearching" class="px-4 pt-2">
       <view v-if="searchLoading" class="p-2">
@@ -247,8 +193,8 @@ const contactBottomStyle = computed(() => ({
         请输入关键词进行搜索
       </view>
       <view v-else-if="searchResults.length > 0" class="pt-2">
-        <view :class="[cardBgClass, 'overflow-hidden rounded-lg']">
-          <view :class="['divide-y', borderMutedClass]">
+        <view class="overflow-hidden rounded-lg" :class="[cardBgClass]">
+          <view class="divide-y" :class="[borderMutedClass]">
             <view
               v-for="user in searchResults"
               :key="`user-${user.id}`"
@@ -305,7 +251,7 @@ const contactBottomStyle = computed(() => ({
 
     <!-- 合并列表（部门 + 联系人，钉钉风格） -->
     <view v-if="!isSearching && !loading && (filteredChildren.length > 0 || filteredUsers.length > 0)" class="px-4 pt-2">
-      <view :class="[cardBgClass, 'overflow-hidden rounded-lg']">
+      <view class="overflow-hidden rounded-lg" :class="[cardBgClass]">
         <wd-cell-group>
           <!-- 部门项 -->
           <wd-cell
@@ -328,7 +274,7 @@ const contactBottomStyle = computed(() => ({
           </wd-cell>
         </wd-cell-group>
 
-        <view :class="['divide-y', borderMutedClass]">
+        <view class="divide-y" :class="[borderMutedClass]">
           <view
             v-for="user in filteredUsers"
             :key="`user-${user.id}`"
@@ -393,34 +339,11 @@ const contactBottomStyle = computed(() => ({
   </view>
   <!-- 底部覆盖层：避免 H5 TabBar 占位符白底影响整体背景 -->
   <view
-    class="contact-bottom-bg fixed left-0 right-0 bottom-0 z-0"
+    class="contact-bottom-bg fixed bottom-0 left-0 right-0 z-0"
     :style="contactBottomStyle"
     style="height: calc(env(safe-area-inset-bottom) + 100rpx);"
   />
 </template>
 
 <style lang="scss">
-/* 为通讯录所在的 page 元素设置整体背景（非 scoped，覆盖整页），与首页一致 */
-page {
-  /* 浅色主题下的整体背景（纯色或渐变） */
-  background: linear-gradient(180deg, #f6f8fc 0%, #eef2f7 35%, #eef2f7 100%);
-  min-height: 100vh;
-}
-
-/* 深色主题（跟随系统）下的整体背景 */
-@media (prefers-color-scheme: dark) {
-  page {
-    background: linear-gradient(180deg, #0b1220 0%, #0f172a 35%, #0f172a 100%);
-  }
-}
-
-/* 主内容容器底部留白，避免被 TabBar 遮挡 */
-.contact-content {
-  padding-bottom: calc(env(safe-area-inset-bottom) + 100rpx);
-}
-
-/* 底部覆盖层用于和整体背景平滑衔接 */
-.contact-bottom-bg {
-  pointer-events: none;
-}
 </style>

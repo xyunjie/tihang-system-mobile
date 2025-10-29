@@ -11,8 +11,8 @@
 import type { GetHydroOjRecordPageReqVO, HydroOjRecordRespVO } from '@/pages-sub/api/type/oj'
 import { computed, ref } from 'vue'
 import { getHydroOjRecordPage } from '@/pages-sub/api/oj'
-import { formatStandardDateTime } from '@/utils'
 import { useAppStore } from '@/store/app'
+import { formatStandardDateTime } from '@/utils'
 
 const appStore = useAppStore()
 
@@ -64,7 +64,8 @@ function getStatusStyle(statusMsg: string) {
     if (msg.includes('pending') || msg.includes('等待'))
       return 'text-blue-300 bg-blue-900/30'
     return 'text-gray-300 bg-gray-700'
-  } else {
+  }
+  else {
     if (msg.includes('accept') || msg.includes('通过'))
       return 'text-green-700 bg-green-100'
     if (msg.includes('wrong') || msg.includes('错误'))
@@ -83,12 +84,12 @@ function getStatusStyle(statusMsg: string) {
 function getLangMeta(lang: string | undefined) {
   const l = (lang || '').toLowerCase()
   if (!l) {
-    return { 
-      text: '未知', 
-      cls: appStore.theme === 'dark' ? 'text-gray-300 bg-gray-700' : 'text-gray-700 bg-gray-100' 
+    return {
+      text: '未知',
+      cls: appStore.theme === 'dark' ? 'text-gray-300 bg-gray-700' : 'text-gray-700 bg-gray-100',
     }
   }
-  
+
   if (appStore.theme === 'dark') {
     if (l.includes('cpp') || l === 'c++')
       return { text: 'C++', cls: 'text-blue-300 bg-blue-900/30' }
@@ -109,7 +110,8 @@ function getLangMeta(lang: string | undefined) {
     if (l.includes('swift'))
       return { text: 'Swift', cls: 'text-red-300 bg-red-900/30' }
     return { text: lang!, cls: 'text-gray-300 bg-gray-700' }
-  } else {
+  }
+  else {
     if (l.includes('cpp') || l === 'c++')
       return { text: 'C++', cls: 'text-blue-700 bg-blue-100' }
     if (l === 'c')
@@ -145,9 +147,9 @@ function onTapRecord(item: HydroOjRecordRespVO) {
 <template>
   <view class="min-h-screen">
     <z-paging
-      style="top: 0px"
       ref="pagingRef"
       v-model="records"
+      style="top: 0px"
       :refresher-enabled="true"
       :auto-show-back-to-top="true"
       :auto-clean-list-when-reload="true"

@@ -2,6 +2,7 @@
 import type { UserSimpleRespVO } from '@/api/types/user'
 import { computed, onMounted, ref, watch } from 'vue'
 import { getSimpleUserList } from '@/api/user'
+import { useAppStore } from '@/store/app'
 
 interface Props {
   modelValue?: number | number[]
@@ -30,6 +31,51 @@ const users = ref<UserSimpleRespVO[]>([])
 const selectedValue = ref<number[]>([])
 const searchKeyword = ref('')
 const loading = ref(false)
+
+// 主题状态管理与样式适配
+const appStore = useAppStore()
+const isDark = computed(() => appStore.theme === 'dark')
+
+const selectorContainerClass = computed(() => [
+  'flex items-center justify-between rounded-lg px-4 py-3 border',
+  isDark.value ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-300',
+])
+
+const filledTextClass = computed(() => (
+  isDark.value ? 'text-white' : 'text-gray-800'
+))
+const placeholderTextClass = computed(() => (
+  isDark.value ? 'text-gray-400' : 'text-gray-400'
+))
+const arrowColor = computed(() => (
+  isDark.value ? '#FFFFFF66' : '#00000040'
+))
+
+const overlayBgClass = computed(() => (
+  isDark.value ? 'bg-gray-800' : 'bg-white'
+))
+const borderBaseClass = computed(() => (
+  isDark.value ? 'border-gray-700' : 'border-gray-100'
+))
+const headerTitleClass = computed(() => (
+  isDark.value ? 'text-white' : 'text-gray-800'
+))
+const listItemBaseClass = 'flex cursor-pointer items-center justify-between border-b py-4 transition-colors'
+const listItemSelectedClass = computed(() => (
+  isDark.value ? 'border-blue-400 bg-blue-900/30' : 'border-blue-200 bg-blue-50'
+))
+const listItemHoverClass = computed(() => (
+  isDark.value ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
+))
+const userNameClass = computed(() => (
+  isDark.value ? 'mb-1 text-base text-white font-medium' : 'mb-1 text-base text-gray-800 font-medium'
+))
+const deptClass = computed(() => (
+  isDark.value ? 'text-sm text-gray-400' : 'text-sm text-gray-500'
+))
+const bottomBarClass = computed(() => (
+  isDark.value ? 'border-t border-gray-700 bg-gray-800 px-5 py-4' : 'border-t border-gray-100 bg-white px-5 py-4'
+))
 
 // 计算显示值
 const displayValue = computed(() => {
@@ -158,16 +204,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <view
-    class="flex items-center justify-between border border-gray-300 rounded-lg bg-white px-4 py-3"
-    @click="!disabled && (showPopup = true)"
-  >
-    <text
-      :class="displayValue ? 'text-gray-800' : 'text-gray-400'"
-    >
+  <view :class="selectorContainerClass" @click="!disabled && (showPopup = true)">
+    <text :class="displayValue ? filledTextClass : placeholderTextClass">
       {{ displayValue || '请选择用户' }}
     </text>
-    <wd-icon name="arrow-right" color="#00000040" size="16px" />
+    <wd-icon name="arrow-right" :color="arrowColor" size="16px" />
   </view>
 
   <!-- 用户选择弹窗 -->
@@ -178,9 +219,9 @@ onMounted(() => {
     :safe-area-inset-bottom="true"
     @close="handleClose"
   >
-    <div class="max-h-80vh flex flex-col rounded-t-4 bg-white">
-      <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-        <div class="text-lg text-gray-800 font-semibold">
+    <div class="max-h-80vh flex flex-col rounded-t-4" :class="overlayBgClass">
+      <div class="flex items-center justify-between border-b px-5 py-4" :class="borderBaseClass">
+        <div class="text-lg font-semibold" :class="headerTitleClass">
           {{ title }}
         </div>
         <wd-button type="text" @click="handleClose">
@@ -188,7 +229,7 @@ onMounted(() => {
         </wd-button>
       </div>
 
-      <div class="border-b border-gray-100 px-5 py-4">
+      <div class="border-b px-5 py-4" :class="borderBaseClass">
         <wd-search
           v-model="searchKeyword"
           placeholder="搜索用户姓名"
@@ -217,15 +258,14 @@ onMounted(() => {
           <div
             v-for="user in filteredUsers"
             :key="user.id"
-            class="flex cursor-pointer items-center justify-between border-b border-gray-50 py-4 transition-colors hover:bg-gray-50"
-            :class="{ 'bg-blue-50': isSelected(user) }"
+            :class="[listItemBaseClass, borderBaseClass, listItemHoverClass, isSelected(user) ? listItemSelectedClass : '']"
             @click="handleSelectUser(user)"
           >
             <div class="flex-1">
-              <div class="mb-1 text-base text-gray-800 font-medium">
+              <div :class="userNameClass">
                 {{ user.nickname }}
               </div>
-              <div v-if="user.deptName" class="text-sm text-gray-500">
+              <div v-if="user.deptName" :class="deptClass">
                 部门: {{ user.deptName }}
               </div>
             </div>
@@ -238,7 +278,7 @@ onMounted(() => {
         </div>
       </div>
 
-      <div class="border-t border-gray-100 bg-white px-5 py-4">
+      <div :class="bottomBarClass">
         <wd-button
           type="primary"
           block

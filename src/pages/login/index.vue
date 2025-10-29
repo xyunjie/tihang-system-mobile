@@ -1,5 +1,6 @@
 <!-- 使用 type="home" 属性设置首页，其他页面不需要设置，默认为page -->
-<route lang="jsonc" type="page">{
+<route lang="jsonc" type="page">
+{
   "layout": "default",
   "style": {
     // 'custom' 表示开启自定义导航栏，默认 'default'
@@ -9,16 +10,17 @@
     "disableScroll": true
   },
   "notLogin": true
-}</route>
+}
+</route>
 
 <script setup lang="ts">
 import type { ILoginForm } from '@/api/types/login'
-import { reactive, ref, computed, onMounted } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { getSocialAuthRedirect } from '@/api/login'
-import { useUserStore } from '@/store'
-import { currRoute } from '@/utils'
-import { useAppStore } from '@/store/app'
 import ThemeCard from '@/components/ThemeCard.vue'
+import { useUserStore } from '@/store'
+import { useAppStore } from '@/store/app'
+import { currRoute } from '@/utils'
 
 const userStore = useUserStore()
 const redirectUrl = ref('')
@@ -325,20 +327,20 @@ function goForgot() {
 </script>
 
 <template>
-  <view class="min-h-screen flex items-center justify-center p-4 mt--10">
-    <ThemeCard 
-      :padding="false" 
-      radius="rounded-3xl" 
+  <view class="mt--10 min-h-screen flex items-center justify-center p-4">
+    <ThemeCard
+      :padding="false"
+      radius="rounded-3xl"
       :shadow="true"
       card-class="w-full max-w-md mx-auto overflow-hidden"
     >
       <view class="p-8">
         <!-- 头部 -->
-        <view class="text-center mb-8">
-          <view :class="['text-3xl font-bold mb-2', headerTitleClass]">
+        <view class="mb-8 text-center">
+          <view class="mb-2 text-3xl font-bold" :class="[headerTitleClass]">
             欢迎登录
           </view>
-          <view :class="['text-sm', headerSubClass]">
+          <view class="text-sm" :class="[headerSubClass]">
             梯航小助手
           </view>
         </view>
@@ -347,24 +349,22 @@ function goForgot() {
         <!-- #ifdef MP-WEIXIN -->
         <view v-if="!userStore.userInfo.username" class="mb-6">
           <view class="flex items-center justify-center gap-3">
-            <view 
-              :class="[
-                'flex items-center justify-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all',
-                loginMode === 'wechat' 
+            <view
+              class="flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all" :class="[
+                loginMode === 'wechat'
                   ? (isDark ? 'bg-white/16 text-gray-100 shadow-lg' : 'bg-white text-gray-900 shadow-md')
-                  : (isDark ? 'bg-white/8 text-gray-400' : 'bg-gray-100 text-gray-600')
+                  : (isDark ? 'bg-white/8 text-gray-400' : 'bg-gray-100 text-gray-600'),
               ]"
               @click="loginMode = 'wechat'"
             >
               <text>🔸</text>
               <text>微信登录</text>
             </view>
-            <view 
-              :class="[
-                'flex items-center justify-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all',
-                loginMode === 'normal' 
+            <view
+              class="flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all" :class="[
+                loginMode === 'normal'
                   ? (isDark ? 'bg-white/16 text-gray-100 shadow-lg' : 'bg-white text-gray-900 shadow-md')
-                  : (isDark ? 'bg-white/8 text-gray-400' : 'bg-gray-100 text-gray-600')
+                  : (isDark ? 'bg-white/8 text-gray-400' : 'bg-gray-100 text-gray-600'),
               ]"
               @click="loginMode = 'normal'"
             >
@@ -378,8 +378,8 @@ function goForgot() {
         <!-- 登录内容容器 -->
         <view class="relative overflow-hidden" style="height: 500rpx;">
           <!-- 账号登录表单 -->
-          <view 
-            class="absolute top-0 left-0 w-full transition-all duration-300 ease-in-out"
+          <view
+            class="absolute left-0 top-0 w-full transition-all duration-300 ease-in-out"
             :style="{
               transform: loginMode === 'normal' ? 'translateX(0)' : 'translateX(100%)',
               opacity: loginMode === 'normal' ? 1 : 0,
@@ -387,43 +387,43 @@ function goForgot() {
           >
             <!-- 用户名输入框 -->
             <view class="mb-6">
-              <wd-input 
-                v-model="loginForm.username" 
-                label="账号" 
-                label-width="40px" 
-                placeholder="请输入账号" 
+              <wd-input
+                v-model="loginForm.username"
+                label="账号"
+                label-width="40px"
+                placeholder="请输入账号"
                 required
-                :maxlength="20" 
-                :disabled="isLoading" 
-                clearable 
+                :maxlength="20"
+                :disabled="isLoading"
+                clearable
               />
             </view>
 
             <!-- 密码输入框 -->
             <view class="mb-6">
-              <wd-input 
-                v-model="loginForm.password" 
-                label="密码" 
-                label-width="40px" 
-                placeholder="请输入密码" 
+              <wd-input
+                v-model="loginForm.password"
+                label="密码"
+                label-width="40px"
+                placeholder="请输入密码"
                 required
-                :maxlength="50" 
-                :disabled="isLoading" 
-                type="text" 
-                :show-password="true" 
-                clearable 
+                :maxlength="50"
+                :disabled="isLoading"
+                type="text"
+                :show-password="true"
+                clearable
               />
             </view>
 
             <!-- 登录按钮 -->
             <view class="mb-4">
-              <wd-button 
-                type="primary" 
-                size="large" 
-                block 
-                :loading="isLoading" 
+              <wd-button
+                type="primary"
+                size="large"
+                block
+                :loading="isLoading"
                 :disabled="isLoading"
-                custom-style="height: 48px; border-radius: 12px; font-size: 16px; font-weight: 600;" 
+                custom-style="height: 48px; border-radius: 12px; font-size: 16px; font-weight: 600;"
                 @click="handleLogin"
               >
                 {{ isLoading ? '登录中...' : '立即登录' }}
@@ -432,12 +432,12 @@ function goForgot() {
 
             <!-- 找回密码按钮 -->
             <view class="mb-4">
-              <wd-button 
-                type="primary" 
-                size="large" 
-                block 
-                plain
-                custom-style="height: 48px; border-radius: 12px; font-size: 16px; font-weight: 600;" 
+              <wd-button
+                type="primary"
+                size="large"
+
+                plain block
+                custom-style="height: 48px; border-radius: 12px; font-size: 16px; font-weight: 600;"
                 @click="goForgot"
               >
                 找回密码
@@ -447,29 +447,29 @@ function goForgot() {
 
           <!-- 微信登录 -->
           <!-- #ifdef MP-WEIXIN -->
-          <view 
-            class="absolute top-0 left-0 w-full text-center transition-all duration-300 ease-in-out"
+          <view
+            class="absolute left-0 top-0 w-full text-center transition-all duration-300 ease-in-out"
             :style="{
               transform: loginMode === 'wechat' ? 'translateX(0)' : 'translateX(-100%)',
               opacity: loginMode === 'wechat' ? 1 : 0,
             }"
           >
-            <view class="text-6xl mb-4">
+            <view class="mb-4 text-6xl">
               🔸
             </view>
-            <view :class="['text-base mb-8', headerSubClass]">
+            <view class="mb-8 text-base" :class="[headerSubClass]">
               使用微信账号快速登录
             </view>
 
             <!-- 一键登录按钮 -->
             <view class="mb-4">
-              <wd-button 
-                type="success" 
-                size="large" 
-                block 
-                :loading="wxLoading" 
+              <wd-button
+                type="success"
+                size="large"
+                block
+                :loading="wxLoading"
                 :disabled="wxLoading"
-                custom-style="height: 48px; border-radius: 12px; font-size: 16px; font-weight: 600;" 
+                custom-style="height: 48px; border-radius: 12px; font-size: 16px; font-weight: 600;"
                 @click="handleOneClickLogin"
               >
                 {{ wxLoading ? '登录中...' : '微信一键登录' }}

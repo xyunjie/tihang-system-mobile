@@ -8,9 +8,9 @@
 
 <script lang="ts" setup>
 import type { ArticleDetailRespVO } from '@/api/types/article'
+import { computed } from 'vue'
 import { getArticleDetail } from '@/api/article'
 import ThemeCard from '@/components/ThemeCard.vue'
-import { computed } from 'vue'
 import { useAppStore } from '@/store/app'
 import { formatStandardDateTime } from '@/utils'
 
@@ -105,7 +105,7 @@ function formatCount(count: number): string {
 </script>
 
 <template>
-  <view class="min-h-screen" :class="isDark ? 'bg-[#0f172a]' : 'bg-gray-50'">
+  <view class="min-h-screen">
     <!-- 加载中 -->
     <view v-if="loading" class="animate-pulse px-4 pt-4">
       <ThemeCard card-class="mb-4" padding="p-4">
@@ -141,7 +141,7 @@ function formatCount(count: number): string {
             <view
               v-for="tag in article.tagNames"
               :key="tag"
-              :class="['rounded-full px-3 py-1 text-xs font-medium border', isDark ? 'text-gray-300 bg-white/6 border-white/12' : 'text-gray-600 bg-gray-50 border-gray-200']"
+              class="border rounded-full px-3 py-1 text-xs font-medium" :class="[isDark ? 'text-gray-300 bg-white/6 border-white/12' : 'text-gray-600 bg-gray-50 border-gray-200']"
             >
               {{ tag }}
             </view>
@@ -183,7 +183,7 @@ function formatCount(count: number): string {
 
       <!-- 文章正文 -->
       <ThemeCard card-class="mb-4" :padding="false">
-        <view v-if="article.content" class="p-4 content-body">
+        <view v-if="article.content" class="content-body p-4">
           <!-- 使用 mp-html 渲染 HTML 内容 -->
           <HtmlContent :content="article.content" />
         </view>

@@ -10,8 +10,8 @@
 import type { GetHydroOjContestPageReqVO, HydroOjContestItemRespVO } from '@/pages-sub/api/type/oj'
 import { computed, ref } from 'vue'
 import { getHydroOjContestPage } from '@/pages-sub/api/oj'
-import { formatStandardDateTime } from '@/utils'
 import { useAppStore } from '@/store/app'
+import { formatStandardDateTime } from '@/utils'
 
 defineOptions({
   name: 'ContestList',
@@ -37,7 +37,8 @@ const getStatusClass = computed(() => (status: string) => {
       default:
         return 'bg-purple-900/30 text-purple-300'
     }
-  } else {
+  }
+  else {
     switch (status) {
       case 'running':
         return 'bg-green-50 text-green-700'
@@ -68,28 +69,28 @@ function contestStatus(item: HydroOjContestItemRespVO) {
   const now = Date.now()
   const s = toTimestamp(item.startAt)
   const e = toTimestamp(item.endAt)
-  
+
   if (!s && !e) {
-    return { 
-      text: '未知', 
-      cls: appStore.theme === 'dark' ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-600' 
+    return {
+      text: '未知',
+      cls: appStore.theme === 'dark' ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-600',
     }
   }
   if (now < s) {
-    return { 
-      text: '未开始', 
-      cls: appStore.theme === 'dark' ? 'bg-amber-900/30 text-amber-300' : 'bg-amber-50 text-amber-700' 
+    return {
+      text: '未开始',
+      cls: appStore.theme === 'dark' ? 'bg-amber-900/30 text-amber-300' : 'bg-amber-50 text-amber-700',
     }
   }
   if (e && now > e) {
-    return { 
-      text: '已结束', 
-      cls: appStore.theme === 'dark' ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-600' 
+    return {
+      text: '已结束',
+      cls: appStore.theme === 'dark' ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-600',
     }
   }
-  return { 
-    text: '进行中', 
-    cls: appStore.theme === 'dark' ? 'bg-green-900/30 text-green-300' : 'bg-green-50 text-green-700' 
+  return {
+    text: '进行中',
+    cls: appStore.theme === 'dark' ? 'bg-green-900/30 text-green-300' : 'bg-green-50 text-green-700',
   }
 }
 
@@ -124,9 +125,9 @@ function onTapContest(item: HydroOjContestItemRespVO) {
 <template>
   <view class="min-h-screen">
     <z-paging
-      style="top: 0px"
       ref="pagingRef"
       v-model="contests"
+      style="top: 0px"
       :refresher-enabled="true"
       :auto-show-back-to-top="true"
       :auto-clean-list-when-reload="true"

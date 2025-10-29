@@ -10,11 +10,14 @@
 <script setup lang="ts">
 import type { ApprovalDetailRespVO, BpmTaskApproveReqVO, BpmTaskCopyReqVO, BpmTaskDelegateReqVO, BpmTaskRejectReqVO, BpmTaskRespVO, BpmTaskReturnReqVO, BpmTaskSignCreateReqVO, BpmTaskTransferReqVO, FormField, GetApprovalDetailReqVO, GetTaskListByReturnReqVO } from '@/api/types/bpm'
 import type { UserSimpleRespVO } from '@/api/types/user'
+import { computed, ref } from 'vue'
 import { approveTask, copyTask, createSignTask, delegateTask, getApprovalDetail, getTaskListByReturn, rejectTask, returnTask, transferTask } from '@/api/bpm'
 import { getSimpleUserList } from '@/api/user'
 import ApprovalSteps from '@/components/ApprovalSteps.vue'
 import LeaveApplication from '@/components/business-forms/LeaveApplication.vue'
 import DynamicFormField from '@/components/DynamicFormField.vue'
+import ThemeCard from '@/components/ThemeCard.vue'
+import { useAppStore } from '@/store/app'
 import { formatStandardDateTime } from '@/utils'
 
 // 页面参数
@@ -47,6 +50,12 @@ const returnNodeList = ref<BpmTaskRespVO[]>([])
 const loadingReturnNodes = ref(false)
 const selectedReturnNode = ref<BpmTaskRespVO | null>(null)
 const returnReason = ref('')
+
+// 主题与样式（暗色模式适配）
+const appStore = useAppStore()
+const isDark = computed(() => appStore.theme === 'dark')
+const overlayBgClass = computed(() => (isDark.value ? 'bg-[#0f172a]' : 'bg-white'))
+const borderBaseClass = computed(() => (isDark.value ? 'border-white/10' : 'border-gray-100'))
 
 // 页面加载
 onLoad((options) => {
@@ -736,7 +745,7 @@ async function handleReturnConfirm() {
 </script>
 
 <template>
-  <view class="min-h-screen bg-gray-50">
+  <view class="min-h-screen">
     <!-- 加载状态 -->
     <view v-if="loading">
       <wd-skeleton theme="paragraph" />
@@ -745,8 +754,8 @@ async function handleReturnConfirm() {
     <!-- 主要内容 -->
     <view v-else class="pb-2">
       <!-- 流程信息 -->
-      <view class="mx-4 mt-4 rounded-lg bg-white shadow-sm">
-        <view class="relative border-b border-gray-100 p-4">
+      <ThemeCard class="mx-4 mt-4" :padding="false">
+        <view class="relative border-b p-4" :class="borderBaseClass">
           <!-- 右上角状态图标 -->
           <view class="absolute right-4 top-1">
             <image
@@ -756,14 +765,14 @@ async function handleReturnConfirm() {
             />
           </view>
 
-          <view class="mb-2 pr-12 text-lg text-gray-800 font-semibold">
+          <view class="mb-2 pr-12 text-lg font-semibold" :class="isDark ? 'text-gray-100' : 'text-gray-800'">
             {{ approvalDetail?.processInstance?.name || '流程办理' }}
           </view>
-          <view class="text-sm text-gray-500">
+          <view class="text-sm" :class="isDark ? 'text-gray-400' : 'text-gray-500'">
             编号: {{ approvalDetail?.processInstance?.id }}
           </view>
         </view>
-      </view>
+      </ThemeCard>
 
       <!-- 自定义表单字段 -->
       <view class="mx-4 mt-4">
@@ -783,7 +792,7 @@ async function handleReturnConfirm() {
             :model-value="getFieldValue(field)"
             readonly
           />
-          <view v-else class="mx-4 mt-4 overflow-hidden rounded-lg bg-white shadow-sm">
+          <ThemeCard v-else class="mx-4 mt-4" :padding="false">
             <view class="p-6 text-center">
               <view class="mb-4 text-6xl">
                 📝
@@ -795,7 +804,7 @@ async function handleReturnConfirm() {
                 该流程无需填写表单
               </view>
             </view>
-          </view>
+          </ThemeCard>
         </wd-cell-group>
       </view>
 
@@ -813,9 +822,9 @@ async function handleReturnConfirm() {
     </view>
 
     <!-- 底部操作区域 -->
-    <view v-if="approvalDetail?.status === 1 && isCurrentUserAssignee" class="mx-4 mt-4 rounded-lg bg-white shadow-sm">
+    <ThemeCard v-if="approvalDetail?.status === 1 && isCurrentUserAssignee" class="mx-4 mt-4" :padding="false">
       <!-- 审批意见输入区域 -->
-      <view class="border-b-1 border-gray-50 px-4 pb-3 pt-4">
+      <view class="border-b px-4 pb-3 pt-4" :class="borderBaseClass">
         <view class="mb-3 flex items-center">
           <wd-icon name="edit-outline" class="mr-2 text-blue-500" size="16px" />
           <text class="text-sm text-gray-700 font-medium">
@@ -867,12 +876,14 @@ async function handleReturnConfirm() {
 
         <!-- 更多操作折叠面板 -->
         <view class="mt-4">
-          <wd-collapse v-model="moreActionsCollapse" class="overflow-hidden rounded-3 bg-gray-50 shadow-sm">
+          <wd-collapse v-model="moreActionsCollapse" class="overflow-hidden rounded-3 shadow-sm" :class="isDark ? 'bg-white/6' : 'bg-gray-50'">
             <wd-collapse-item name="moreActions">
               <template #title="{ expanded }">
                 <view
-                  class="flex items-center justify-center border-1 border-gray-200 rounded-3 bg-gray-50 px-4 py-3 transition-all duration-300"
+                  class="flex items-center justify-center border-1 rounded-3 px-4 py-3 transition-all duration-300"
                   :class="{
+                    'border-white/10': isDark,
+                    'border-gray-200': !isDark,
                     'bg-blue-50 border-blue-200 rounded-b-0': expanded,
                   }"
                 >
@@ -902,7 +913,7 @@ async function handleReturnConfirm() {
               </template>
 
               <!-- 折叠面板内容 -->
-              <view class="border-1 border-t-0 border-blue-200 rounded-b-3 bg-white p-4">
+              <view class="border-1 border-t-0 border-blue-200 rounded-b-3 p-4" :class="isDark ? 'bg-white/6' : 'bg-white'">
                 <view class="flex flex-col gap-3">
                   <!-- 第一行：转办、委派 -->
                   <view class="flex gap-3">
@@ -966,7 +977,7 @@ async function handleReturnConfirm() {
           </wd-collapse>
         </view>
       </view>
-    </view>
+    </ThemeCard>
 
     <!-- 用户选择对话框（委派和转办共用） -->
     <wd-popup
@@ -976,9 +987,9 @@ async function handleReturnConfirm() {
       :close-on-click-modal="false"
       custom-style="border-radius: 20px 20px 0 0; max-height: 90vh; min-height: 60vh;"
     >
-      <view class="h-full flex flex-col bg-white">
+      <view class="h-full flex flex-col" :class="overlayBgClass">
         <!-- 头部 -->
-        <view class="flex-shrink-0 border-b border-gray-100 px-5 py-4">
+        <view class="flex-shrink-0 border-b px-5 py-4" :class="borderBaseClass">
           <view class="flex items-center justify-between">
             <view class="text-lg text-gray-800 font-semibold">
               {{ operationText }}任务
@@ -1212,7 +1223,7 @@ async function handleReturnConfirm() {
         </view>
 
         <!-- 底部按钮 -->
-        <view class="flex-shrink-0 border-t border-gray-100 bg-white px-5 py-4" style="position: sticky; bottom: 0; z-index: 10; box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);">
+        <view class="flex-shrink-0 border-t px-5 py-4" :class="[borderBaseClass, overlayBgClass]" style="position: sticky; bottom: 0; z-index: 10; box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);">
           <view class="flex justify-center gap-3">
             <wd-button
               size="large"
@@ -1243,9 +1254,9 @@ async function handleReturnConfirm() {
       :close-on-click-modal="false"
       custom-style="border-radius: 20px 20px 0 0; max-height: 85vh; min-height: 50vh;"
     >
-      <view class="h-full flex flex-col bg-white">
+      <view class="h-full flex flex-col" :class="overlayBgClass">
         <!-- 头部 -->
-        <view class="flex-shrink-0 border-b border-gray-100 px-5 py-4">
+        <view class="flex-shrink-0 border-b px-5 py-4" :class="borderBaseClass">
           <view class="flex items-center justify-between">
             <view class="text-lg text-gray-800 font-semibold">
               选择退回节点
@@ -1353,7 +1364,7 @@ async function handleReturnConfirm() {
         </view>
 
         <!-- 底部按钮 -->
-        <view class="flex-shrink-0 border-t border-gray-100 bg-white px-5 py-4" style="position: sticky; bottom: 0; z-index: 10; box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);">
+        <view class="flex-shrink-0 border-t px-5 py-4" :class="[borderBaseClass, overlayBgClass]" style="position: sticky; bottom: 0; z-index: 10; box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);">
           <view class="flex justify-center gap-3">
             <wd-button
               size="large"

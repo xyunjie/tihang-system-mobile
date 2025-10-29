@@ -8,11 +8,11 @@
 
 <script lang="ts" setup>
 import type { NoticeRespVO } from '@/api/types/notice'
-import { getNoticeById } from '@/api/notice'
-import { formatStandardDateTime } from '@/utils'
 import { computed } from 'vue'
-import { useAppStore } from '@/store/app'
+import { getNoticeById } from '@/api/notice'
 import ThemeCard from '@/components/ThemeCard.vue'
+import { useAppStore } from '@/store/app'
+import { formatStandardDateTime } from '@/utils'
 
 defineOptions({
   name: 'NotificationDetail',
@@ -109,7 +109,6 @@ const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-
 const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-gray-700'))
 const textMutedClass = computed(() => (isDark.value ? 'text-gray-500' : 'text-gray-400'))
 const borderMutedClass = computed(() => (isDark.value ? 'border-white/12' : 'border-gray-100'))
-
 </script>
 
 <template>

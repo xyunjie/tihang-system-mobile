@@ -64,13 +64,6 @@
       }
     },
     {
-      "path": "pages/about/studio",
-      "type": "page",
-      "style": {
-        "navigationBarTitleText": "关于我们"
-      }
-    },
-    {
       "path": "pages/bind/index",
       "type": "page",
       "layout": "default",
@@ -180,6 +173,13 @@
       "root": "pages-sub",
       "pages": [
         {
+          "path": "about/studio",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "关于我们"
+          }
+        },
+        {
           "path": "article/detail",
           "type": "page",
           "style": {
@@ -283,6 +283,13 @@
           "type": "page",
           "style": {
             "navigationBarTitleText": "账号安全"
+          }
+        },
+        {
+          "path": "profile/settings",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "系统设置"
           }
         },
         {

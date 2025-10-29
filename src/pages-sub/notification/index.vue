@@ -8,11 +8,11 @@
 
 <script lang="ts" setup>
 import type { NoticePageReqVO, NoticeRespVO } from '@/api/types/notice'
-import { getNoticePage } from '@/api/notice'
-import { formatStandardDateTime } from '@/utils'
 import { computed } from 'vue'
-import { useAppStore } from '@/store/app'
+import { getNoticePage } from '@/api/notice'
 import ThemeCard from '@/components/ThemeCard.vue'
+import { useAppStore } from '@/store/app'
+import { formatStandardDateTime } from '@/utils'
 
 defineOptions({
   name: 'NotificationList',
@@ -168,9 +168,9 @@ function getPlainTextContent(htmlContent: string): string {
   <view class="min-h-screen">
     <!-- 使用z-paging的全屏模式，搜索框放在slot="top"内 -->
     <z-paging
-      style="top: 0px"
       ref="pagingRef"
       v-model="notificationList"
+      style="top: 0px"
       :refresher-enabled="true"
       :loading-more-enabled="true"
       :auto-show-back-to-top="true"

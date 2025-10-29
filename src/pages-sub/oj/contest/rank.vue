@@ -121,7 +121,7 @@ onLoad((options) => {
               <text :class="titleClass" class="truncate text-sm font-medium">
                 {{ item.uname || '未知用户' }}
               </text>
-              <text v-if="item.rank === -1" :class="appStore.theme==='dark' ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-500'" class="ml-2 rounded-full px-1 py-0.5 text-10px">
+              <text v-if="item.rank === -1" :class="appStore.theme === 'dark' ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-500'" class="ml-2 rounded-full px-1 py-0.5 text-10px">
                 不参与排名
               </text>
             </view>

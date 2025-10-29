@@ -8,11 +8,11 @@
 
 <script lang="ts" setup>
 import type { ArticleSearchRespVO } from '@/api/types/article'
-import { getArticlePage } from '@/api/article'
-import { formatStandardDateTime } from '@/utils'
 import { computed } from 'vue'
-import { useAppStore } from '@/store/app'
+import { getArticlePage } from '@/api/article'
 import ThemeCard from '@/components/ThemeCard.vue'
+import { useAppStore } from '@/store/app'
+import { formatStandardDateTime } from '@/utils'
 
 defineOptions({
   name: 'ArticleList',
@@ -161,9 +161,9 @@ function highlightSearchKeywords(text: string | undefined): string {
   <view class="min-h-screen">
     <!-- 使用z-paging的全屏模式，搜索框放在slot="top"内 -->
     <z-paging
-      style="top: 0px"
       ref="pagingRef"
       v-model="articles"
+      style="top: 0px"
       :refresher-enabled="true"
       :loading-more-enabled="true"
       :auto-show-back-to-top="true"
@@ -224,7 +224,7 @@ function highlightSearchKeywords(text: string | undefined): string {
                     <rich-text :nodes="highlightSearchKeywords(article.title)" />
                   </view>
                 </view>
-                <view v-if="article.tagNames && article.tagNames.length > 0" class="ml-3 rounded-full px-3 py-1 text-xs font-medium border" :class="getCategoryColor(article.tagNames)">
+                <view v-if="article.tagNames && article.tagNames.length > 0" class="ml-3 border rounded-full px-3 py-1 text-xs font-medium" :class="getCategoryColor(article.tagNames)">
                   {{ article.tagNames[0] }}
                 </view>
               </view>
@@ -260,7 +260,7 @@ function highlightSearchKeywords(text: string | undefined): string {
                     <rich-text :nodes="highlightSearchKeywords(article.blogAbstract)" />
                   </view>
                 </view>
-                <view v-if="article.tagNames && article.tagNames.length > 0" class="ml-3 rounded-full px-3 py-1 text-xs font-medium border" :class="getCategoryColor(article.tagNames)">
+                <view v-if="article.tagNames && article.tagNames.length > 0" class="ml-3 border rounded-full px-3 py-1 text-xs font-medium" :class="getCategoryColor(article.tagNames)">
                   {{ article.tagNames[0] }}
                 </view>
               </view>

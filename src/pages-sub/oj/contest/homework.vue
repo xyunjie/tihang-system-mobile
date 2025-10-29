@@ -10,8 +10,8 @@
 import type { GetHydroOjHomeworkPageReqVO, HydroOjHomeworkItemRespVO } from '@/pages-sub/api/type/oj'
 import { computed, ref } from 'vue'
 import { getHydroOjHomeworkPage } from '@/pages-sub/api/oj'
-import { formatStandardDateTime } from '@/utils'
 import { useAppStore } from '@/store/app'
+import { formatStandardDateTime } from '@/utils'
 
 defineOptions({ name: 'HomeworkList' })
 
@@ -87,9 +87,9 @@ function onTapHomework(item: HydroOjHomeworkItemRespVO) {
 <template>
   <view class="min-h-screen">
     <z-paging
-      style="top: 0px"
       ref="pagingRef"
       v-model="homeworks"
+      style="top: 0px"
       :refresher-enabled="true"
       :auto-show-back-to-top="true"
       :auto-clean-list-when-reload="true"
@@ -148,9 +148,9 @@ function onTapHomework(item: HydroOjHomeworkItemRespVO) {
         <!-- 首屏骨架占位 -->
         <view v-if="firstLoad && homeworks.length === 0" class="space-y-3">
           <view v-for="n in 4" :key="n" :class="cardClass" class="rounded-2xl p-4 shadow-sm">
-            <view :class="appStore.theme==='dark' ? 'bg-gray-700' : 'bg-gray-200'" class="h-4 w-2/3 rounded" />
-            <view :class="appStore.theme==='dark' ? 'bg-gray-700' : 'bg-gray-200'" class="mt-2 h-3 w-1/3 rounded" />
-            <view :class="appStore.theme==='dark' ? 'bg-gray-700' : 'bg-gray-200'" class="mt-4 h-3 w-full rounded" />
+            <view :class="appStore.theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'" class="h-4 w-2/3 rounded" />
+            <view :class="appStore.theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'" class="mt-2 h-3 w-1/3 rounded" />
+            <view :class="appStore.theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'" class="mt-4 h-3 w-full rounded" />
           </view>
         </view>
       </view>

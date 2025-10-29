@@ -11,6 +11,8 @@
 import type { HydroProblemRespVO } from '@/pages-sub/api/type/oj'
 import { onLoad } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
+import HtmlContent from '@/components/HtmlContent.vue'
+import { getHydroOjProblemInfo } from '@/pages-sub/api/oj'
 import { useAppStore } from '@/store/app'
 
 defineOptions({
@@ -25,8 +27,6 @@ const cardClass = computed(() => appStore.theme === 'dark' ? 'bg-gray-800' : 'bg
 const titleClass = computed(() => appStore.theme === 'dark' ? 'text-gray-100' : 'text-gray-900')
 const textClass = computed(() => appStore.theme === 'dark' ? 'text-gray-300' : 'text-gray-500')
 const contentClass = computed(() => appStore.theme === 'dark' ? 'text-gray-200' : 'text-gray-700')
-import HtmlContent from '@/components/HtmlContent.vue'
-import { getHydroOjProblemInfo } from '@/pages-sub/api/oj'
 
 const loading = ref(true)
 const problem = ref<HydroProblemRespVO | null>(null)

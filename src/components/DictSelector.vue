@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import type { AppDictDataRespVO } from '@/api/types/dict'
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { getDictDataListByType } from '@/api/dict'
+import { useAppStore } from '@/store/app'
+
+// 主题状态管理
+const appStore = useAppStore()
+const isDark = computed(() => appStore.theme === 'dark')
 
 /**
  * Props

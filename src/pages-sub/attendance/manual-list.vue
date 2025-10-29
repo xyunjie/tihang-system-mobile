@@ -9,8 +9,8 @@
 
 <script setup lang="ts">
 import type { AttendanceManualRespVO } from '@/api/types/attendance'
-import { addManualAttendance, getManualAttendanceList } from '@/api/attendance'
 import { computed, ref } from 'vue'
+import { addManualAttendance, getManualAttendanceList } from '@/api/attendance'
 import { useAppStore } from '@/store/app'
 
 defineOptions({
@@ -157,7 +157,8 @@ function getStatusColor(status: number | null): string {
     absent: 'text-red-400 bg-red-900/30',
   }
   const m = isDark ? mapDark : mapLight
-  if (status === null || status === 0) return m.default
+  if (status === null || status === 0)
+    return m.default
   switch (status) {
     case 1: return m.normal
     case 2: return m.late
@@ -194,9 +195,9 @@ const titleClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-gray-8
   <view class="min-h-screen">
     <!-- 使用z-paging虚拟列表 -->
     <z-paging
-      style="top: 0px"
       ref="pagingRef"
       v-model="manualList"
+      style="top: 0px"
       :refresher-enabled="true"
       :loading-more-enabled="false"
       :auto-show-back-to-top="true"

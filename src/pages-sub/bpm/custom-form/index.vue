@@ -8,10 +8,13 @@
 </route>
 
 <script setup lang="ts">
-import type { ApprovalDetailRespVO, BpmCustomFormCreateReqVO, FormField, GetApprovalDetailReqVO } from '@/api/types/bpm'
-import { ref } from 'vue'
+import type { ActivityNode, ApprovalDetailRespVO, BpmCustomFormCreateReqVO, FormField, GetApprovalDetailReqVO } from '@/api/types/bpm'
+import { computed, ref } from 'vue'
 import { createCustomFormProcess, getApprovalDetail, getProcessDefinitionDetail } from '@/api/bpm'
+import ApprovalSteps from '@/components/ApprovalSteps.vue'
 import DynamicFormField from '@/components/DynamicFormField.vue'
+import ThemeCard from '@/components/ThemeCard.vue'
+import { useAppStore } from '@/store/app'
 
 const form = ref()
 // 页面参数
@@ -41,9 +44,35 @@ const approvalSteps = ref<Array<{
   status: 'finished' | 'process' | 'error'
 }>>([])
 
+// 审批节点（提供给 ApprovalSteps 组件使用）
+const approvalActivityNodes = ref<ActivityNode[]>([])
+
 // 加载状态
 const loading = ref(false)
 const submitting = ref(false)
+
+// 主题状态管理与深色模式样式
+const appStore = useAppStore()
+const isDark = computed(() => appStore?.theme === 'dark')
+
+const emptyCardMainTextClass = computed(() => (
+  isDark.value ? 'mb-2 text-lg text-gray-200 font-medium' : 'mb-2 text-lg text-gray-600 font-medium'
+))
+
+const emptyCardSubTextClass = computed(() => (
+  isDark.value ? 'text-sm text-gray-400' : 'text-sm text-gray-400'
+))
+
+const cellBorderClass = computed(() => (
+  isDark.value ? 'border-gray-700' : 'border-gray-100'
+))
+
+const bottomBarClass = computed(() => [
+  'fixed bottom-0 left-0 right-0 border-t px-4 py-3 backdrop-blur-sm rounded-t-lg',
+  isDark.value
+    ? 'border-gray-700 bg-gray-800/70'
+    : 'border-gray-200 bg-white/70',
+])
 
 // 页面加载
 onLoad((options) => {
@@ -70,6 +99,8 @@ async function loadApprovalDetail() {
 
     const response = await getApprovalDetail(requestData)
     if (response.data) {
+      // 缓存原始节点供 ApprovalSteps 使用
+      approvalActivityNodes.value = response.data.activityNodes || []
       // 更新审批步骤信息
       updateApprovalSteps(response.data)
     }
@@ -192,11 +223,11 @@ function updateFieldValue(fieldLabel: string, value: any) {
 </script>
 
 <template>
-  <view class="min-h-screen bg-gray-50 pb-5">
+  <view>
     <!-- 表单内容 -->
     <view class="px-4 py-3">
       <!-- 动态表单字段 -->
-      <view v-if="formFields.length > 0" class="mb-6">
+      <ThemeCard v-if="formFields.length > 0" card-class="mb-6">
         <wd-form ref="form" :model="formData">
           <wd-cell-group title="表单信息">
             <DynamicFormField
@@ -208,63 +239,34 @@ function updateFieldValue(fieldLabel: string, value: any) {
             />
           </wd-cell-group>
         </wd-form>
-      </view>
+      </ThemeCard>
 
       <!-- 无表单字段提示 -->
-      <view v-else class="mb-6 overflow-hidden rounded-2xl bg-white shadow-sm">
-        <view class="p-6 text-center">
-          <view class="mb-4 text-6xl">
-            📝
-          </view>
-          <view class="mb-2 text-lg text-gray-600 font-medium">
-            暂无表单字段
-          </view>
-          <view class="text-sm text-gray-400">
-            请配置表单字段后再使用
-          </view>
+      <ThemeCard v-else card-class="mb-6 text-center">
+        <view class="mb-4 text-6xl">
+          📝
         </view>
-      </view>
+        <view :class="emptyCardMainTextClass">
+          暂无表单字段
+        </view>
+        <view :class="emptyCardSubTextClass">
+          请配置表单字段后再使用
+        </view>
+      </ThemeCard>
 
-      <!-- 审批流程 -->
-      <view v-if="approvalSteps.length > 0">
-        <wd-divider>审批流程</wd-divider>
-        <wd-cell
-          vertical
-          class="mt-4 border-b border-gray-100 last:border-b-0"
-        >
-          <view class="py-2">
-            <wd-steps :active="0" vertical>
-              <wd-step
-                v-for="(step, index) in approvalSteps"
-                :key="index"
-                :title="step.name"
-              >
-                <template #description>
-                  <view class="flex flex-wrap gap-2">
-                    <view v-for="user in step.candidateUsers" :key="user.id" class="flex items-center">
-                      <template v-if="user.avatar">
-                        <image :src="user.avatar" class="h-6 w-6 rounded-full" />
-                      </template>
-                      <template v-else>
-                        <view class="h-6 w-6 flex items-center justify-center rounded-full bg-primary text-sm text-white">
-                          {{ user.nickname.charAt(0) }}
-                        </view>
-                      </template>
-                      <text class="ml-2">
-                        {{ user.nickname }}
-                      </text>
-                    </view>
-                  </view>
-                </template>
-              </wd-step>
-            </wd-steps>
-          </view>
-        </wd-cell>
-      </view>
+      <!-- 审批流程（统一使用 ApprovalSteps 组件，并传入已缓存的节点数据） -->
+      <ThemeCard v-if="processInfo.processDefinitionId" card-class="mt-4">
+        <ApprovalSteps
+          :process-definition-id="processInfo.processDefinitionId"
+          :process-variables="formData"
+          :activity-nodes="approvalActivityNodes"
+          activity-id="StartUserNode"
+        />
+      </ThemeCard>
     </view>
 
     <!-- 底部按钮 -->
-    <view class="fixed bottom-0 left-0 right-0 border-t border-gray-200 bg-white px-4 py-3" style="z-index: 2;">
+    <view :class="bottomBarClass" style="z-index: 2;">
       <wd-button
         type="primary"
         block

@@ -11,8 +11,8 @@ import type { HydroOjContestRecordItemRespVO } from '@/pages-sub/api/type/oj'
 import { onLoad } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 import { getHydroOjContestRecord } from '@/pages-sub/api/oj'
-import { formatStandardDateTime } from '@/utils'
 import { useAppStore } from '@/store/app'
+import { formatStandardDateTime } from '@/utils'
 
 const contestId = ref('')
 const records = ref<HydroOjContestRecordItemRespVO[]>([])
@@ -171,7 +171,7 @@ function onTapRecord(item: HydroOjContestRecordItemRespVO) {
 
         <view :class="subTextClass" class="mt-3 flex items-center justify-end text-xs">
           <text>点击查看详情</text>
-          <wd-icon name="arrow-right" size="12px" :class="['ml-1', iconClass]" />
+          <wd-icon name="arrow-right" size="12px" class="ml-1" :class="[iconClass]" />
         </view>
       </view>
     </view>

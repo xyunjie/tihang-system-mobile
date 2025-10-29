@@ -1,7 +1,18 @@
 <script setup lang="ts">
 import type { ActivityNode, ApprovalDetailRespVO, CandidateUserInfo, TaskInfo } from '@/api/types/bpm'
-import { ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { getApprovalDetail } from '@/api/bpm'
+import { useAppStore } from '@/store/app'
+
+const props = withDefaults(defineProps<Props>(), {
+  processVariables: () => ({}),
+  activityId: 'StartUserNode',
+  withVariables: true,
+  activityNodes: undefined,
+})
+// 主题状态管理
+const appStore = useAppStore()
+const isDark = computed(() => appStore.theme === 'dark')
 
 // 组件属性
 interface Props {
@@ -12,13 +23,6 @@ interface Props {
   withVariables?: boolean // 是否携带流程参数，默认true
   activityNodes?: ActivityNode[] // 外部传入的审批节点，如果传入则直接使用，不再调用接口
 }
-
-const props = withDefaults(defineProps<Props>(), {
-  processVariables: () => ({}),
-  activityId: 'StartUserNode',
-  withVariables: true,
-  activityNodes: undefined,
-})
 
 // 审批流程步骤
 const approvalSteps = ref<Array<{
@@ -244,32 +248,107 @@ function getTaskStatusText(status: number) {
 }
 
 /**
- * 获取任务状态颜色
+ * 获取任务状态颜色（适配深色模式）
  * @param status 任务状态
  * @returns CSS 颜色类
  */
 function getTaskStatusColor(status: number): string {
-  switch (status) {
-    case 0:
-      return '#f59e0b' // 待审批 - 黄色
-    case 1:
-      return '#3b82f6' // 审批中 - 蓝色
-    case 2:
-      return '#10b981' // 审批通过 - 绿色
-    case 3:
-      return '#ef4444' // 审批不通过 - 红色
-    case 4:
-      return '#6b7280' // 已取消 - 灰色
-    case 5:
-      return '#f97316' // 已退回 - 橙色
-    case 6:
-      return '#8b5cf6' // 委派中 - 紫色
-    case 7:
-      return '#22c55e' // 审批通过中 - 浅绿色
-    default:
-      return '#6b7280' // 默认灰色
+  if (isDark.value) {
+    // 深色模式下的颜色
+    switch (status) {
+      case 0:
+        return '#fbbf24' // 待审批 - 亮黄色
+      case 1:
+        return '#60a5fa' // 审批中 - 亮蓝色
+      case 2:
+        return '#34d399' // 审批通过 - 亮绿色
+      case 3:
+        return '#f87171' // 审批不通过 - 亮红色
+      case 4:
+        return '#9ca3af' // 已取消 - 亮灰色
+      case 5:
+        return '#fb923c' // 已退回 - 亮橙色
+      case 6:
+        return '#a78bfa' // 委派中 - 亮紫色
+      case 7:
+        return '#4ade80' // 审批通过中 - 亮浅绿色
+      default:
+        return '#9ca3af' // 默认亮灰色
+    }
+  }
+  else {
+    // 浅色模式下的颜色
+    switch (status) {
+      case 0:
+        return '#f59e0b' // 待审批 - 黄色
+      case 1:
+        return '#3b82f6' // 审批中 - 蓝色
+      case 2:
+        return '#10b981' // 审批通过 - 绿色
+      case 3:
+        return '#ef4444' // 审批不通过 - 红色
+      case 4:
+        return '#6b7280' // 已取消 - 灰色
+      case 5:
+        return '#f97316' // 已退回 - 橙色
+      case 6:
+        return '#8b5cf6' // 委派中 - 紫色
+      case 7:
+        return '#22c55e' // 审批通过中 - 浅绿色
+      default:
+        return '#6b7280' // 默认灰色
+    }
   }
 }
+
+// 动态样式计算
+const taskCardClass = computed(() => {
+  return isDark.value
+    ? 'mb-2 rounded bg-gray-800 p-2'
+    : 'mb-2 rounded bg-gray-50 p-2'
+})
+
+const taskTextClass = computed(() => {
+  return isDark.value
+    ? 'text-xs text-gray-300 leading-tight'
+    : 'text-xs text-gray-700 leading-tight'
+})
+
+const taskLabelClass = computed(() => {
+  return isDark.value
+    ? 'text-gray-400'
+    : 'text-gray-500'
+})
+
+const userNameClass = computed(() => {
+  return isDark.value
+    ? 'text-xs text-gray-300 font-medium'
+    : 'text-xs text-gray-700 font-medium'
+})
+
+const avatarPlaceholderClass = computed(() => {
+  return isDark.value
+    ? 'h-6 w-6 flex items-center justify-center rounded-full bg-gray-600 text-xs text-gray-200'
+    : 'h-6 w-6 flex items-center justify-center rounded-full bg-indigo-500 text-xs text-white'
+})
+
+const smallAvatarPlaceholderClass = computed(() => {
+  return isDark.value
+    ? 'mr-2 h-5 w-5 flex items-center justify-center rounded-full bg-gray-600 text-xs text-gray-200'
+    : 'mr-2 h-5 w-5 flex items-center justify-center rounded-full bg-gray-500 text-xs text-white'
+})
+
+const processStepClass = computed(() => {
+  return isDark.value
+    ? 'ml-2 h-4 w-4 rounded-full bg-blue-400'
+    : 'ml-2 h-4 w-4 rounded-full bg-blue-500'
+})
+
+const defaultStepClass = computed(() => {
+  return isDark.value
+    ? 'ml-2 h-4 w-4 rounded-full bg-gray-600'
+    : 'ml-2 h-4 w-4 rounded-full bg-gray-300'
+})
 
 /**
  * 判断是否显示 loading 效果
@@ -302,7 +381,7 @@ defineExpose({
 </script>
 
 <template>
-  <view class="approval-steps">
+  <view>
     <wd-divider>审批流程</wd-divider>
     <!-- 审批流程 -->
     <wd-cell vertical>
@@ -339,12 +418,12 @@ defineExpose({
 
               <view
                 v-else-if="step.status === 'process'"
-                class="ml-2 h-4 w-4 rounded-full bg-blue-500"
+                :class="processStepClass"
               />
               <!-- 其他状态显示默认图标 -->
               <view
                 v-else
-                class="ml-2 h-4 w-4 rounded-full bg-gray-300"
+                :class="defaultStepClass"
               />
             </template>
             <template #description>
@@ -355,7 +434,7 @@ defineExpose({
                     <image :src="user.avatar" class="h-6 w-6 rounded-full" />
                   </template>
                   <template v-else>
-                    <view class="h-6 w-6 flex items-center justify-center rounded-full bg-indigo-500 text-xs text-white">
+                    <view :class="avatarPlaceholderClass">
                       {{ user.nickname.charAt(0) }}
                     </view>
                   </template>
@@ -370,7 +449,7 @@ defineExpose({
                 <view
                   v-for="task in step.tasks"
                   :key="task.id"
-                  class="mb-2 rounded bg-gray-50 p-2"
+                  :class="taskCardClass"
                 >
                   <!-- 审批人信息 -->
                   <view v-if="task.assigneeUser" class="mb-1 flex items-center">
@@ -378,11 +457,11 @@ defineExpose({
                       <image :src="task.assigneeUser.avatar" class="mr-2 h-5 w-5 rounded-full" />
                     </template>
                     <template v-else>
-                      <view class="mr-2 h-5 w-5 flex items-center justify-center rounded-full bg-gray-500 text-xs text-white">
+                      <view :class="smallAvatarPlaceholderClass">
                         {{ task.assigneeUser?.nickname?.charAt(0) || '?' }}
                       </view>
                     </template>
-                    <text class="text-xs text-gray-700 font-medium">
+                    <text :class="userNameClass">
                       {{ task.assigneeUser?.nickname || '未知用户' }}
                     </text>
                     <text
@@ -395,8 +474,8 @@ defineExpose({
                   </view>
 
                   <!-- 审批意见 -->
-                  <view v-if="task.reason && step.id !== 'StartUserNode'" class="text-xs text-gray-700 leading-tight">
-                    <text class="text-gray-500">
+                  <view v-if="task.reason && step.id !== 'StartUserNode'" :class="taskTextClass">
+                    <text :class="taskLabelClass">
                       审批意见：
                     </text>
                     <text>{{ task.reason }}</text>
@@ -412,10 +491,6 @@ defineExpose({
 </template>
 
 <style scoped>
-.approval-steps {
-  /* 可以添加特定样式 */
-}
-
 /* 为 loading 图标添加自定义样式 */
 :deep(.wd-loading) {
   animation: spin 1s linear infinite;

@@ -3,9 +3,54 @@ import type { FormItemRule } from 'wot-design-uni/components/wd-form/types'
 import type { FormField } from '@/api/types/bpm'
 import { computed } from 'vue'
 import { uploadFile } from '@/api/user'
+import { useAppStore } from '@/store/app'
 import DeptSelector from './DeptSelector.vue'
 import DictSelector from './DictSelector.vue'
 import UserSelector from './UserSelector.vue'
+
+// 主题状态管理
+const appStore = useAppStore()
+const isDark = computed(() => appStore.theme === 'dark')
+
+// 动态样式类
+const uploadAreaClass = computed(() => [
+  'aspect-square flex items-center justify-center border-2 rounded-lg border-dashed',
+  isDark.value 
+    ? 'border-gray-600 bg-gray-800' 
+    : 'border-gray-300 bg-gray-50'
+])
+
+const uploadAreaTextClass = computed(() => [
+  'text-2xl',
+  isDark.value ? 'text-gray-500' : 'text-gray-400'
+])
+
+const uploadAreaLabelClass = computed(() => [
+  'mt-1 block text-xs',
+  isDark.value ? 'text-gray-500' : 'text-gray-400'
+])
+
+const imageBorderClass = computed(() => [
+  'h-full w-full border rounded-lg object-cover',
+  isDark.value ? 'border-gray-600' : 'border-gray-200'
+])
+
+const uploadingContainerClass = computed(() => [
+  'h-full w-full flex items-center justify-center border rounded-lg',
+  isDark.value 
+    ? 'border-gray-600 bg-gray-700' 
+    : 'border-gray-200 bg-gray-100'
+])
+
+const uploadingTextClass = computed(() => [
+  'text-xs',
+  isDark.value ? 'text-gray-400' : 'text-gray-500'
+])
+
+const unsupportedTextClass = computed(() => [
+  'text-sm',
+  isDark.value ? 'text-gray-400' : 'text-gray-500'
+])
 
 // 定义支持的modelValue类型
 const props = defineProps<Props>()
@@ -547,7 +592,7 @@ function handleDeleteAttachment(index: number) {
         >
           <image
             :src="imageUrl"
-            class="h-full w-full border border-gray-200 rounded-lg object-cover"
+            :class="imageBorderClass"
             mode="aspectFill"
             @click="handlePreviewImage(imageUrl, index)"
           />
@@ -568,8 +613,8 @@ function handleDeleteAttachment(index: number) {
           :key="uploadItem.id"
           class="relative aspect-square"
         >
-          <view class="h-full w-full flex items-center justify-center border border-gray-200 rounded-lg bg-gray-100">
-            <text class="text-xs text-gray-500">
+          <view :class="uploadingContainerClass">
+            <text :class="uploadingTextClass">
               上传中...
             </text>
           </view>
@@ -583,15 +628,15 @@ function handleDeleteAttachment(index: number) {
 
         <!-- 添加图片按钮 -->
         <view
-          v-if="uploadFinishList.length + uploadingImages.length < 1"
-          class="aspect-square flex items-center justify-center border-2 border-gray-300 rounded-lg border-dashed bg-gray-50"
-          @click="handleSelectImage(1, fieldProps?.fileSize ?? 5)"
+          v-if="uploadFinishList.length + uploadingImages.length < (fieldProps?.limit ?? 5)"
+          :class="uploadAreaClass"
+          @click="handleSelectImage(fieldProps?.limit ?? 5, fieldProps?.fileSize ?? 5)"
         >
           <view class="text-center">
-            <text class="text-2xl text-gray-400">
+            <text :class="uploadAreaTextClass">
               +
             </text>
-            <text class="mt-1 block text-xs text-gray-400">
+            <text :class="uploadAreaLabelClass">
               添加图片
             </text>
           </view>
@@ -616,7 +661,7 @@ function handleDeleteAttachment(index: number) {
         >
           <image
             :src="imageUrl"
-            class="h-full w-full border border-gray-200 rounded-lg object-cover"
+            :class="imageBorderClass"
             mode="aspectFill"
             @click="handlePreviewImage(imageUrl, index)"
           />
@@ -637,8 +682,8 @@ function handleDeleteAttachment(index: number) {
           :key="uploadItem.id"
           class="relative aspect-square"
         >
-          <view class="h-full w-full flex items-center justify-center border border-gray-200 rounded-lg bg-gray-100">
-            <text class="text-xs text-gray-500">
+          <view :class="uploadingContainerClass">
+            <text :class="uploadingTextClass">
               上传中...
             </text>
           </view>
@@ -653,14 +698,14 @@ function handleDeleteAttachment(index: number) {
         <!-- 添加图片按钮 -->
         <view
           v-if="uploadFinishList.length + uploadingImages.length < (fieldProps?.limit ?? 5)"
-          class="aspect-square flex items-center justify-center border-2 border-gray-300 rounded-lg border-dashed bg-gray-50"
+          :class="uploadAreaClass"
           @click="handleSelectImage(fieldProps?.limit ?? 5, fieldProps?.fileSize ?? 5)"
         >
           <view class="text-center">
-            <text class="text-2xl text-gray-400">
+            <text :class="uploadAreaTextClass">
               +
             </text>
-            <text class="mt-1 block text-xs text-gray-400">
+            <text :class="uploadAreaLabelClass">
               添加图片
             </text>
           </view>
@@ -802,7 +847,7 @@ function handleDeleteAttachment(index: number) {
       :required="isRequired"
       vertical
     >
-      <view class="text-sm text-gray-500">
+      <view :class="unsupportedTextClass">
         不支持的字段类型: {{ fieldType }}
       </view>
     </wd-cell>

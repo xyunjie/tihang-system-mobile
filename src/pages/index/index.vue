@@ -22,9 +22,9 @@ import { getArticlePage } from '@/api/article'
 import { getTodayAttendanceRecord } from '@/api/attendance'
 import { getNoticePage } from '@/api/notice'
 import { getMyNotifyMessagePage, getUnreadCount } from '@/api/notify-message'
-import { formatDateOnly, formatRelativeTime, formatStandardDateTime, formatTimeOnly, parseDateTime } from '@/utils'
-import { useAppStore } from '@/store/app'
 import ThemeCard from '@/components/ThemeCard.vue'
+import { useAppStore } from '@/store/app'
+import { formatDateOnly, formatRelativeTime, formatStandardDateTime, formatTimeOnly, parseDateTime } from '@/utils'
 
 defineOptions({
   name: 'Home',
@@ -33,7 +33,6 @@ defineOptions({
 // 主题适配：浅色/深色
 const appStore = useAppStore()
 const isDark = computed(() => appStore.theme === 'dark')
-const pageBgClass = computed(() => (isDark.value ? 'bg-[#0f172a]' : 'bg-gray-50'))
 // 底部覆盖层背景，叠在占位符之上但在 TabBar 之下
 const homeBottomStyle = computed(() => ({
   background: isDark.value
@@ -44,7 +43,7 @@ const homeBottomStyle = computed(() => ({
 const cardBgClass = computed(() =>
   isDark.value
     ? 'bg-[#0b1220] border border-white/15 shadow-lg'
-    : 'bg-white border border-gray-100 shadow-md'
+    : 'bg-white border border-gray-100 shadow-md',
 )
 const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-gray-800'))
 const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-gray-500'))
@@ -590,15 +589,15 @@ function formatCount(count: number) {
 </script>
 
 <template>
-  <view class="min-h-screen relative">
+  <view class="relative min-h-screen">
     <!-- 底部覆盖层：高度跟随 H5 TabBar 与安全区，避免白底 -->
     <view class="home-bottom-bg" :style="homeBottomStyle" />
     <!-- 页面初始加载骨架屏 -->
-    <view v-if="pageLoading" class="min-h-screen px-4 pt-1 home-content">
+    <view v-if="pageLoading" class="home-content min-h-screen px-4 pt-1">
       <view class="space-y-6">
         <!-- 考勤信息骨架屏 -->
         <ThemeCard card-class="mb-6 animate-pulse" :padding="false">
-          <view :class="[skStrongClass, 'px-4 py-3']">
+          <view class="px-4 py-3" :class="[skStrongClass]">
             <view class="flex items-center justify-between">
               <view class="h-6 w-32 rounded" :class="skStrongClass" />
               <view class="h-8 w-20 rounded-full" :class="skStrongClass" />
@@ -624,7 +623,7 @@ function formatCount(count: number) {
 
         <!-- 通知公告骨架屏 -->
         <ThemeCard card-class="mb-6 animate-pulse" :padding="false">
-          <view :class="['border-b', skBorderClass, 'px-4 py-3']">
+          <view class="border-b px-4 py-3" :class="[skBorderClass]">
             <view class="flex items-center justify-between">
               <view class="h-6 w-24 rounded" :class="skBaseClass" />
               <view class="h-4 w-16 rounded" :class="skBaseClass" />
@@ -647,7 +646,7 @@ function formatCount(count: number) {
 
         <!-- 消息提醒骨架屏 -->
         <ThemeCard card-class="mb-6 animate-pulse" :padding="false">
-          <view :class="['border-b', skBorderClass, 'px-4 py-3']">
+          <view class="border-b px-4 py-3" :class="[skBorderClass]">
             <view class="flex items-center justify-between">
               <view class="h-6 w-24 rounded" :class="skBaseClass" />
               <view class="h-4 w-16 rounded" :class="skBaseClass" />
@@ -674,7 +673,7 @@ function formatCount(count: number) {
 
         <!-- 文章列表骨架屏 -->
         <ThemeCard card-class="mb-6 animate-pulse" :padding="false">
-          <view :class="['border-b', skBorderClass, 'px-4 py-3']">
+          <view class="border-b px-4 py-3" :class="[skBorderClass]">
             <view class="flex items-center justify-between">
               <view class="h-6 w-24 rounded" :class="skBaseClass" />
               <view class="h-4 w-16 rounded" :class="skBaseClass" />
@@ -699,7 +698,9 @@ function formatCount(count: number) {
       </view>
     </view>
     <!-- 主要内容区域 -->
-    <view v-else class="px-4 pt-1 home-content">
+    <view
+      v-else class="home-content px-4 pt-1"
+    >
       <!-- 第一部分：今日考勤信息 -->
       <ThemeCard card-class="mb-6" :padding="false">
         <view class="bg-blue-500 px-4 py-3">
@@ -721,7 +722,7 @@ function formatCount(count: number) {
           <!-- 考勤机记录显示 -->
           <view class="grid grid-cols-2 mb-4 gap-4">
             <view class="text-center">
-              <view class="mb-2 text-2xl font-bold text-green-500">
+              <view class="mb-2 text-2xl text-green-500 font-bold">
                 {{ formatTimeDisplay(todayAttendance.clockInTime) }}
               </view>
               <view class="text-sm" :class="textSecondaryClass">
@@ -729,7 +730,7 @@ function formatCount(count: number) {
               </view>
             </view>
             <view class="text-center">
-              <view class="mb-2 text-2xl font-bold text-blue-500">
+              <view class="mb-2 text-2xl text-blue-500 font-bold">
                 {{ formatTimeDisplay(todayAttendance.clockOutTime) }}
               </view>
               <view class="text-sm" :class="textSecondaryClass">
@@ -758,9 +759,9 @@ function formatCount(count: number) {
 
       <!-- 第二部分：通知公告 -->
       <ThemeCard card-class="mb-6" :padding="false">
-        <view class="px-4 py-3" :class="['border-b', borderMutedClass]">
+        <view class="border-b px-4 py-3" :class="[borderMutedClass]">
           <view class="flex items-center justify-between">
-            <view :class="['text-lg font-semibold', textPrimaryClass]">
+            <view class="text-lg font-semibold" :class="[textPrimaryClass]">
               通知公告
             </view>
             <view class="flex items-center">
@@ -775,7 +776,7 @@ function formatCount(count: number) {
           <view
             v-for="(notification, index) in notificationList.slice(0, 3)"
             :key="notification.id"
-            :class="['border-b pb-3 transition-all last:border-b-0 last:pb-0', borderMutedClass, activeRowBgClass, { 'mb-3': index < notificationList.slice(0, 3).length - 1 }]"
+            class="border-b pb-3 transition-all last:border-b-0 last:pb-0" :class="[borderMutedClass, activeRowBgClass, { 'mb-3': index < notificationList.slice(0, 3).length - 1 }]"
             @click="navigateTo(`/pages-sub/notification/detail?id=${notification.id}`)"
           >
             <view class="mb-2 flex items-start justify-between">
@@ -815,9 +816,9 @@ function formatCount(count: number) {
 
       <!-- 第三部分：消息提醒 -->
       <ThemeCard card-class="mb-6" :padding="false">
-        <view class="px-4 py-3" :class="['border-b', borderMutedClass]">
+        <view class="border-b px-4 py-3" :class="[borderMutedClass]">
           <view class="flex items-center justify-between">
-            <view :class="['text-lg font-semibold', textPrimaryClass]">
+            <view class="text-lg font-semibold" :class="[textPrimaryClass]">
               消息提醒
             </view>
             <view class="flex items-center">
@@ -835,7 +836,7 @@ function formatCount(count: number) {
           <view
             v-for="(message, index) in messageList.slice(0, 3)"
             :key="message.id"
-            :class="['border-b pb-3 transition-all last:border-b-0 last:pb-0', borderMutedClass, activeRowBgClass, { 'mb-3': index < messageList.slice(0, 3).length - 1 }]"
+            class="border-b pb-3 transition-all last:border-b-0 last:pb-0" :class="[borderMutedClass, activeRowBgClass, { 'mb-3': index < messageList.slice(0, 3).length - 1 }]"
             @click="navigateTo(`/pages-sub/message/detail?id=${message.id}`)"
           >
             <view class="mb-2 flex items-start justify-between">
@@ -873,9 +874,9 @@ function formatCount(count: number) {
 
       <!-- 第四部分：文章列表 -->
       <ThemeCard card-class="mb-6" :padding="false">
-        <view class="px-4 py-3" :class="['border-b', borderMutedClass]">
+        <view class="border-b px-4 py-3" :class="[borderMutedClass]">
           <view class="flex items-center justify-between">
-            <view :class="['text-lg font-semibold', textPrimaryClass]">
+            <view class="text-lg font-semibold" :class="[textPrimaryClass]">
               最新文章
             </view>
             <view class="text-sm text-blue-500" @click="navigateTo('/pages-sub/article/index')">
@@ -890,7 +891,7 @@ function formatCount(count: number) {
             <view
               v-for="(article, index) in articleList.slice(0, 5)"
               :key="article.id"
-              :class="['border-b pb-4 transition-all last:border-b-0 last:pb-0', borderMutedClass, activeRowBgClass, { 'mb-4': index < articleList.slice(0, 5).length - 1 }]"
+              class="border-b pb-4 transition-all last:border-b-0 last:pb-0" :class="[borderMutedClass, activeRowBgClass, { 'mb-4': index < articleList.slice(0, 5).length - 1 }]"
               @click="navigateTo(`/pages-sub/article/detail?id=${article.id}`)"
             >
               <view class="mb-2 flex items-start justify-between">
@@ -959,7 +960,12 @@ function formatCount(count: number) {
 
 @media (prefers-color-scheme: dark) {
   .skeleton-shimmer {
-    background: linear-gradient(90deg, rgba(255,255,255,0.18) 25%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.18) 75%);
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.18) 25%,
+      rgba(255, 255, 255, 0.12) 50%,
+      rgba(255, 255, 255, 0.18) 75%
+    );
     background-size: 200px 100%;
   }
 }

@@ -9,10 +9,10 @@
 
 <script setup lang="ts">
 import type { GetProcessInstanceCopyPageReqVO, ProcessInstanceSimpleVO } from '@/api/types/bpm'
-import { reactive, ref, computed } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { getProcessInstanceCopyPage } from '@/api/bpm'
-import { formatStandardDateTime } from '@/utils'
 import { useAppStore } from '@/store/app'
+import { formatStandardDateTime } from '@/utils'
 
 // 页面数据
 const taskList = ref<ProcessInstanceSimpleVO[]>([])
@@ -91,9 +91,9 @@ const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'tex
 
     <view>
       <z-paging
-        style="top: 0px"
         ref="pagingRef"
         v-model="taskList"
+        style="top: 0px"
         :refresher-enabled="true"
         :loading-more-enabled="true"
         :auto-show-back-to-top="true"
@@ -152,7 +152,7 @@ const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'tex
               <view class="mb-4">
                 <!-- 始终显示发起人信息 -->
                 <view class="mb-1.5 flex items-center">
-                <wd-icon name="user" size="12px" :class="textSecondaryClass" />
+                  <wd-icon name="user" size="12px" :class="textSecondaryClass" />
                   <text class="ml-1.5 text-xs" :class="textSecondaryClass">
                     发起人：{{ task.createUser?.nickname }}
                   </text>
@@ -168,7 +168,7 @@ const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'tex
                 </view>
 
                 <view class="mb-1.5 flex items-center">
-                <wd-icon name="time" size="12px" :class="textSecondaryClass" />
+                  <wd-icon name="time" size="12px" :class="textSecondaryClass" />
                   <text class="ml-1.5 text-xs" :class="textSecondaryClass">
                     创建时间：{{ formatTime(task.createTime) }}
                   </text>

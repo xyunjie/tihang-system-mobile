@@ -12,11 +12,11 @@
 </route>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 import { sendScanMessage } from '@/api/login'
+import ThemeCard from '@/components/ThemeCard.vue'
 import { useUserStore } from '@/store'
 import { useAppStore } from '@/store/app'
-import ThemeCard from '@/components/ThemeCard.vue'
 import { formatStandardDateTime } from '@/utils'
 
 const userStore = useUserStore()
@@ -147,49 +147,61 @@ function cancelLogin() {
       :padding="false"
       radius="rounded-2xl"
       shadow
-      cardClass="w-full max-w-[600rpx] max-h-[calc(100vh-80rpx)] overflow-y-auto box-border p-[50rpx] px-[40rpx]"
+      card-class="w-full max-w-[600rpx] max-h-[calc(100vh-80rpx)] overflow-y-auto box-border p-[50rpx] px-[40rpx]"
     >
       <!-- 头部 -->
-      <view class="text-center mb-[50rpx]">
-        <view :class="['font-bold text-[46rpx] mb-[10rpx] leading-[1.2]', headerTitleClass]">
+      <view class="mb-[50rpx] text-center">
+        <view class="mb-[10rpx] text-[46rpx] font-bold leading-[1.2]" :class="[headerTitleClass]">
           扫码登录授权
         </view>
-        <view :class="['text-[24rpx] leading-[1.3]', headerSubClass]">
+        <view class="text-[24rpx] leading-[1.3]" :class="[headerSubClass]">
           梯航小助手
         </view>
       </view>
 
       <!-- 授权信息 -->
-      <view class="mb-[40rpx] p-[30rpx] rounded-[12rpx] bg-[#f8f9fa] dark:bg-white/6">
-        <view class="text-[28rpx] font-500 mb-[20rpx] text-center text-gray-700 dark:text-gray-200">
+      <view class="mb-[40rpx] rounded-[12rpx] bg-[#f8f9fa] p-[30rpx] dark:bg-white/6">
+        <view class="mb-[20rpx] text-center text-[28rpx] text-gray-700 font-500 dark:text-gray-200">
           PC端请求登录授权
         </view>
 
         <view class="mb-[15rpx]">
           <view class="text-[24rpx] text-gray-600 dark:text-gray-400">
-            <text class="text-gray-500 dark:text-gray-400">设备信息：</text>
-            <text class="text-gray-800 dark:text-gray-200">{{ deviceInfo }}</text>
+            <text class="text-gray-500 dark:text-gray-400">
+              设备信息：
+            </text>
+            <text class="text-gray-800 dark:text-gray-200">
+              {{ deviceInfo }}
+            </text>
           </view>
         </view>
 
         <view class="mb-[15rpx]">
           <view class="text-[24rpx] text-gray-600 dark:text-gray-400">
-            <text class="text-gray-500 dark:text-gray-400">请求时间：</text>
-            <text class="text-gray-800 dark:text-gray-200">{{ loginTime }}</text>
+            <text class="text-gray-500 dark:text-gray-400">
+              请求时间：
+            </text>
+            <text class="text-gray-800 dark:text-gray-200">
+              {{ loginTime }}
+            </text>
           </view>
         </view>
 
         <view v-if="userStore.userInfo.username">
           <view class="text-[24rpx] text-gray-600 dark:text-gray-400">
-            <text class="text-gray-500 dark:text-gray-400">登录账号：</text>
-            <text class="text-gray-800 dark:text-gray-200">{{ userStore.userInfo.username }}</text>
+            <text class="text-gray-500 dark:text-gray-400">
+              登录账号：
+            </text>
+            <text class="text-gray-800 dark:text-gray-200">
+              {{ userStore.userInfo.username }}
+            </text>
           </view>
         </view>
       </view>
 
       <!-- 授权提示 -->
-      <view class="mb-[40rpx] p-[20rpx] rounded-[12rpx] border-l-[4rpx] border-[#ffc107] bg-amber-50/80 dark:bg-amber-500/10">
-        <view class="text-[26rpx] leading-[1.5] text-amber-800 dark:text-amber-300">
+      <view class="mb-[40rpx] border-l-[4rpx] border-[#ffc107] rounded-[12rpx] bg-amber-50/80 p-[20rpx] dark:bg-amber-500/10">
+        <view class="text-[26rpx] text-amber-800 leading-[1.5] dark:text-amber-300">
           确认授权后，PC端将使用您的账号登录系统
         </view>
       </view>
@@ -228,8 +240,8 @@ function cancelLogin() {
       </view>
 
       <!-- 安全提示 -->
-      <view class="p-[20rpx] rounded-[12rpx] text-center bg-[#e8f4fd] dark:bg-blue-500/10">
-        <view class="text-[24rpx] leading-[1.5] text-blue-700 dark:text-blue-300">
+      <view class="rounded-[12rpx] bg-[#e8f4fd] p-[20rpx] text-center dark:bg-blue-500/10">
+        <view class="text-[24rpx] text-blue-700 leading-[1.5] dark:text-blue-300">
           为了您的账号安全，请确认是否为本人操作
         </view>
       </view>

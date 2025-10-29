@@ -12,8 +12,8 @@ import { computed, ref } from 'vue'
 import { resetFace as resetFaceApi } from '@/api/attendance'
 import { getUserExtra } from '@/api/user'
 import { useUserStore } from '@/store'
-import { compressImage } from '@/utils'
 import { useAppStore } from '@/store/app'
+import { compressImage } from '@/utils'
 
 // 页面状态
 const attendancePhotoUrl = ref<string>('')

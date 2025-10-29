@@ -12,14 +12,24 @@
 <script setup lang="ts">
 import type { ISystemUserInfoVo } from '@/api/types/user'
 import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { getUserProfile } from '@/api/user'
+import ThemeCard from '@/components/ThemeCard.vue'
+import { useAppStore } from '@/store/app'
 
 defineOptions({ name: 'ContactUserProfile' })
 
 const loading = ref(false)
 const userId = ref<number | null>(null)
 const profile = ref<ISystemUserInfoVo | null>(null)
+
+// 深色模式适配
+const appStore = useAppStore()
+const isDark = computed(() => appStore.theme === 'dark')
+const pageClass = computed(() => (isDark.value ? 'bg-gray-900' : 'bg-gray-50'))
+const titleClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-gray-900'))
+const subTextClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-gray-500'))
+const avatarBgClass = computed(() => (isDark.value ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'))
 
 function sexLabel(v?: number) {
   if (v === 1)
@@ -61,36 +71,36 @@ onPullDownRefresh(async () => {
 </script>
 
 <template>
-  <view class="min-h-screen bg-gray-50">
+  <view class="min-h-screen" :class="pageClass">
     <view v-if="loading" class="px-4 py-4">
       <wd-skeleton theme="paragraph" />
     </view>
 
     <view v-else-if="profile" class="px-4 pb-20 pt-4">
-      <!-- 顶部信息卡 -->
-      <view class="rounded-xl bg-white p-4 shadow-sm">
+      <!-- 顶部信息卡：采用全局 ThemeCard -->
+      <ThemeCard padding="p-4">
         <view class="flex items-center gap-3">
-          <view class="h-14 w-14 flex items-center justify-center overflow-hidden rounded-full bg-gray-100">
+          <view class="h-14 w-14 flex items-center justify-center overflow-hidden rounded-full" :class="avatarBgClass">
             <image v-if="profile.avatar" :src="profile.avatar" mode="aspectFill" class="h-full w-full" />
-            <view v-else class="h-full w-full flex items-center justify-center text-base text-gray-700">
+            <view v-else class="h-full w-full flex items-center justify-center text-base">
               {{ (profile.nickname || profile.username || '用户').slice(-2) }}
             </view>
           </view>
           <view class="min-w-0 flex-1">
             <view class="flex items-center gap-2">
-              <text class="truncate text-base text-gray-900">
+              <text class="truncate text-base" :class="titleClass">
                 {{ profile.nickname || profile.username }}
               </text>
             </view>
-            <view class="mt-1 text-xs text-gray-500">
-              {{ profile.schoolDeptName || '—' }}
+            <view class="mt-1 text-xs" :class="subTextClass">
+              {{ profile.schoolDeptName || '' }}
             </view>
           </view>
         </view>
-      </view>
+      </ThemeCard>
 
-      <!-- 详细信息 -->
-      <view class="mt-4 rounded-xl bg-white p-2">
+      <!-- 详细信息：采用全局 ThemeCard -->
+      <ThemeCard card-class="mt-4" padding="p-2">
         <wd-cell-group>
           <wd-cell title="账号" :value="profile.username" center />
           <wd-cell title="姓名" :value="profile.nickname" center />
@@ -117,17 +127,17 @@ onPullDownRefresh(async () => {
                 >
                   {{ role?.name }}
                 </wd-tag>
-                <text v-if="!profile.roles || profile.roles.length === 0" class="text-gray-500">
+                <text v-if="!profile.roles || profile.roles.length === 0" :class="subTextClass">
                   —
                 </text>
               </view>
             </template>
           </wd-cell>
         </wd-cell-group>
-      </view>
+      </ThemeCard>
     </view>
 
-    <view v-else class="px-4 py-8 text-center text-gray-500">
+    <view v-else class="px-4 py-8 text-center" :class="subTextClass">
       暂无数据
     </view>
   </view>

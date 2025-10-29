@@ -8,11 +8,11 @@
 
 <script lang="ts" setup>
 import type { NotifyMessagePageReqVO, NotifyMessageRespVO } from '@/api/types/notify-message'
-import { getMyNotifyMessagePage, getUnreadCount } from '@/api/notify-message'
-import { formatRelativeTime } from '@/utils'
 import { computed } from 'vue'
-import { useAppStore } from '@/store/app'
+import { getMyNotifyMessagePage, getUnreadCount } from '@/api/notify-message'
 import ThemeCard from '@/components/ThemeCard.vue'
+import { useAppStore } from '@/store/app'
+import { formatRelativeTime } from '@/utils'
 
 defineOptions({
   name: 'MessageList',
@@ -194,9 +194,9 @@ function getPlainTextContent(htmlContent: string): string {
   <view class="min-h-screen">
     <!-- 使用z-paging的全屏模式，筛选标签放在slot="top"内 -->
     <z-paging
-      style="top: 0px"
       ref="pagingRef"
       v-model="messageList"
+      style="top: 0px"
       :refresher-enabled="true"
       :loading-more-enabled="true"
       :auto-show-back-to-top="true"
@@ -277,7 +277,7 @@ function getPlainTextContent(htmlContent: string): string {
           <view class="p-4" :class="!message.readStatus ? (isDark ? 'bg-white/6' : 'bg-blue-50/30') : ''">
             <view class="mb-3 flex items-start justify-between">
               <view class="flex flex-1 items-start">
-                <view class="mr-3 h-10 w-10 flex flex-shrink-0 items-center justify-center rounded-full border" :class="getMessageTypeColor(message.templateType)">
+                <view class="mr-3 h-10 w-10 flex flex-shrink-0 items-center justify-center border rounded-full" :class="getMessageTypeColor(message.templateType)">
                   <view class="h-5 w-5 rounded bg-current" />
                 </view>
                 <view class="min-w-0 flex-1">
@@ -291,7 +291,7 @@ function getPlainTextContent(htmlContent: string): string {
                     {{ getPlainTextContent(message.templateContent) }}
                   </view>
                   <view class="flex items-center justify-between">
-                    <view class="rounded-full px-2 py-1 text-xs font-medium border" :class="getMessageTypeColor(message.templateType)">
+                    <view class="border rounded-full px-2 py-1 text-xs font-medium" :class="getMessageTypeColor(message.templateType)">
                       {{ getMessageTypeText(message.templateType) }}
                     </view>
                     <view class="text-xs" :class="textMutedClass">

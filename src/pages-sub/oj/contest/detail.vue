@@ -12,8 +12,8 @@ import { onLoad } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 import HtmlContent from '@/components/HtmlContent.vue'
 import { getHydroOjContestInfo } from '@/pages-sub/api/oj'
-import { formatStandardDateTime } from '@/utils'
 import { useAppStore } from '@/store/app'
+import { formatStandardDateTime } from '@/utils'
 
 const loading = ref(true)
 const detail = ref<HydroOjContestDetailRespVO | null>(null)

@@ -12,12 +12,12 @@
 </route>
 
 <script setup lang="ts">
-import { reactive, ref, computed } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { resetPasswordByEmail, sendEmailCode } from '@/api/login'
-import { toast } from '@/utils/toast'
-import { currRoute } from '@/utils'
-import { useAppStore } from '@/store/app'
 import ThemeCard from '@/components/ThemeCard.vue'
+import { useAppStore } from '@/store/app'
+import { currRoute } from '@/utils'
+import { toast } from '@/utils/toast'
 
 const form = reactive({
   username: '',
@@ -67,7 +67,7 @@ function handleSendCode() {
     toast.info('请先填写用户名和邮箱')
     return
   }
-  const emailReg = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  const emailReg = /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/
   if (!emailReg.test(form.email)) {
     toast.info('邮箱格式不正确')
     return
@@ -96,7 +96,7 @@ function handleSubmit() {
     toast.info('请完整填写表单')
     return
   }
-  const emailReg = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  const emailReg = /^[^\s@]+@[^\s@][^\s.@]*\.[^\s@]+$/
   if (!emailReg.test(form.email)) {
     toast.info('邮箱格式不正确')
     return
@@ -152,11 +152,11 @@ function handleSubmit() {
     >
       <view class="p-8">
         <!-- 头部 -->
-        <view class="text-center mb-8">
-          <view :class="['text-3xl font-bold mb-2', headerTitleClass]">
+        <view class="mb-8 text-center">
+          <view class="mb-2 text-3xl font-bold" :class="[headerTitleClass]">
             找回密码
           </view>
-          <view :class="['text-sm', headerSubClass]">
+          <view class="text-sm" :class="[headerSubClass]">
             梯航小助手
           </view>
         </view>
@@ -211,7 +211,7 @@ function handleSubmit() {
             <wd-input
               v-model="form.password"
               label="密码"
-              label-width="40px"  
+              label-width="40px"
               type="text"
               :show-password="true"
               placeholder="请输入新密码"
@@ -226,7 +226,7 @@ function handleSubmit() {
             <wd-input
               v-model="form.confirmPassword"
               label="确认"
-              label-width="40px"  
+              label-width="40px"
               type="text"
               :show-password="true"
               placeholder="请再次输入密码"
@@ -253,7 +253,6 @@ function handleSubmit() {
     </ThemeCard>
   </view>
 </template>
-
 
 <style lang='scss' scoped>
 /* #ifdef MP-WEIXIN */

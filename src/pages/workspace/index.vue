@@ -14,8 +14,8 @@
 import type { BpmCategoryRespVO, BpmTaskStatisticsRespVO, ProcessDefinitionRespVO } from '@/api/types/bpm'
 import { computed, reactive, ref } from 'vue'
 import { getCategorySimpleList, getProcessDefinitionList, getTaskStatistics } from '@/api/bpm'
-import { useAppStore } from '@/store/app'
 import ThemeCard from '@/components/ThemeCard.vue'
+import { useAppStore } from '@/store/app'
 
 defineOptions({
   name: 'Workspace',
@@ -77,7 +77,7 @@ const wsBottomStyle = computed(() => ({
 const cardBgClass = computed(() =>
   isDark.value
     ? 'bg-[#0b1220] border border-white/15 shadow-lg'
-    : 'bg-white border border-gray-100 shadow-md'
+    : 'bg-white border border-gray-100 shadow-md',
 )
 const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-gray-800'))
 const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-gray-500'))
@@ -453,7 +453,7 @@ onPullDownRefresh(() => {
           <!-- 分类卡片 -->
           <ThemeCard :padding="false">
             <!-- 卡片标题 -->
-            <view class="flex items-center justify-between px-4 py-3" :class="['border-b', borderMutedClass, subTileBgClass]">
+            <view class="flex items-center justify-between border-b px-4 py-3" :class="[borderMutedClass, subTileBgClass]">
               <view class="flex items-center">
                 <view class="text-base font-bold" :class="textPrimaryClass">
                   {{ categoryData.name }}
@@ -470,7 +470,7 @@ onPullDownRefresh(() => {
                 @click="startProcess(process)"
               >
                 <!-- 图标容器 -->
-                <view :class="['mb-2 h-16 w-16 flex items-center justify-center overflow-hidden rounded-2xl', subTileBgClass]">
+                <view class="mb-2 h-16 w-16 flex items-center justify-center overflow-hidden rounded-2xl" :class="[subTileBgClass]">
                   <view class="h-14 w-14 flex items-center justify-center rounded-xl bg-blue-500 shadow-md">
                     <template v-if="process.icon">
                       <image
@@ -488,7 +488,7 @@ onPullDownRefresh(() => {
                 </view>
 
                 <!-- 流程名称 -->
-                <view :class="['line-clamp-2 w-full text-center text-sm font-medium leading-tight', textPrimaryClass]">
+                <view class="line-clamp-2 w-full text-center text-sm font-medium leading-tight" :class="[textPrimaryClass]">
                   {{ process.name }}
                 </view>
               </view>
@@ -500,7 +500,7 @@ onPullDownRefresh(() => {
 
     <!-- 底部覆盖层：避免 H5 TabBar 占位符白底影响整体背景 -->
     <view
-      class="ws-bottom-bg fixed left-0 right-0 bottom-0 z-0"
+      class="ws-bottom-bg fixed bottom-0 left-0 right-0 z-0"
       :style="wsBottomStyle"
       style="height: calc(env(safe-area-inset-bottom) + 100rpx);"
     />

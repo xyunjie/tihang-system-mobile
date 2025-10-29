@@ -11,8 +11,8 @@ import type { HydroOjRecordInfoRespVO } from '@/pages-sub/api/type/oj'
 import { computed, ref } from 'vue'
 import HtmlContent from '@/components/HtmlContent.vue'
 import { getHydroOjRecordInfo } from '@/pages-sub/api/oj'
-import { formatStandardDateTime } from '@/utils'
 import { useAppStore } from '@/store/app'
+import { formatStandardDateTime } from '@/utils'
 
 defineOptions({ name: 'OjRecordInfo' })
 
