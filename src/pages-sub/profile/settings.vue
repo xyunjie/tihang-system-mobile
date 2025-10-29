@@ -16,7 +16,6 @@ defineOptions({ name: 'SystemSettings' })
 const appStore = useAppStore()
 const isDark = computed(() => appStore.theme === 'dark')
 
-const pageClass = computed(() => isDark.value ? 'bg-[#0b1220]' : 'bg-gray-50')
 const titleClass = computed(() => isDark.value ? 'text-white/95' : 'text-gray-900')
 const textClass = computed(() => isDark.value ? 'text-white/70' : 'text-gray-600')
 
@@ -52,7 +51,7 @@ function handlePrefChange(val: Pref) {
 </script>
 
 <template>
-  <view :class="pageClass" class="min-h-screen">
+  <view class="min-h-screen">
     <view class="p-4 space-y-4">
       <!-- 显示与主题 -->
       <ThemeCard radius="rounded-2xl" padding="p-4">
@@ -64,7 +63,7 @@ function handlePrefChange(val: Pref) {
             当前：{{ prefList.find(i => i.key === currentPref)?.label }}
           </view>
         </view>
-        <view class="mt-3">
+        <view class="mt-3 w-full">
           <wd-radio-group :model-value="currentPref" shape="button" @change="handlePrefChange">
             <wd-radio v-for="opt in prefList" :key="opt.key" :value="opt.key">
               {{ opt.label }}

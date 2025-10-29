@@ -71,37 +71,6 @@ const showConfirmPassword = ref(false)
 const loginRecords = ref<IUserProfileLoginLogRespVO[]>([])
 const loadingLogs = ref(false)
 
-// 假数据作为备用（当接口失败时使用）
-const mockLoginRecords: IUserProfileLoginLogRespVO[] = [
-  {
-    deviceType: 'Mobile',
-    browserType: 'Safari',
-    userArea: '北京市',
-    createTime: Date.now() - 1000 * 60 * 60 * 24, // 1天前
-    result: 0,
-    userIp: '192.168.1.100',
-    os: 'iOS',
-  },
-  {
-    deviceType: 'Desktop',
-    browserType: 'Chrome',
-    userArea: '上海市',
-    createTime: Date.now() - 1000 * 60 * 60 * 48, // 2天前
-    result: 0,
-    userIp: '192.168.1.101',
-    os: 'macOS',
-  },
-  {
-    deviceType: 'Mobile',
-    browserType: 'WeChat',
-    userArea: '广州市',
-    createTime: Date.now() - 1000 * 60 * 60 * 72, // 3天前
-    result: 1, // 失败
-    userIp: '192.168.3.88',
-    os: 'Android',
-  },
-]
-
 // 修改密码
 async function handleUpdatePassword() {
   // 表单验证
@@ -273,19 +242,16 @@ async function fetchLoginLogs() {
 
     if (res && res.data && Array.isArray(res.data)) {
       loginRecords.value = res.data
-      console.log('📋 获取登录日志成功:', res.data.length, '条记录')
     }
     else {
-      console.log('⚠️ 接口返回数据格式异常，使用假数据')
-      loginRecords.value = mockLoginRecords
+      loginRecords.value = []
     }
   }
   catch (error: any) {
     console.error('❗ 获取登录日志失败:', error)
 
-    // 如果接口失败，使用假数据作为备用
-    loginRecords.value = mockLoginRecords
-    console.log('📋 使用假数据，共', mockLoginRecords.length, '条记录')
+    // 如果接口失败，使用空数组作为备用
+    loginRecords.value = []
 
     // 只在非超时错误时显示提示
     if (!error.message.includes('超时') && !error.message.includes('timeout')) {
@@ -307,7 +273,7 @@ onMounted(() => {
   console.log('📋 页面加载，开始获取登录日志')
 
   // 先显示假数据，然后尝试加载真实数据
-  loginRecords.value = mockLoginRecords
+  loginRecords.value = []
 
   // 延迟100ms再调用API，确保页面已经渲染
   setTimeout(() => {
@@ -377,10 +343,8 @@ function getLoginResultColor(result: number) {
 
 // 页面加载时获取登录日志
 onMounted(() => {
-  console.log('📋 页面加载，开始获取登录日志')
-
   // 先显示假数据，然后尝试加载真实数据
-  loginRecords.value = mockLoginRecords
+  loginRecords.value = []
 
   // 延迟100ms再调用API，确保页面已经渲染
   setTimeout(() => {
@@ -390,9 +354,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <view class="min-h-screen" :style="{ paddingBottom: `${(safeAreaInsets?.bottom || 0) + 32}px` }">
+  <view class="min-h-screen">
     <!-- 修改密码区域 -->
-    <view id="password-section" class="mx-4 mt-4 overflow-hidden rounded-2xl shadow-sm" :class="cardClass">
+    <ThemeCard id="password-section" card-class="mx-4" :padding="false" radius="rounded-2xl">
       <view class="border-b px-4 py-4" :class="borderClass">
         <view class="flex items-center">
           <view class="mr-3 h-10 w-10 flex items-center justify-center rounded-xl bg-blue-500">
@@ -539,10 +503,10 @@ onMounted(() => {
           </wd-button>
         </view>
       </view>
-    </view>
+    </ThemeCard>
 
     <!-- 安全建议 -->
-    <view class="mx-4 mt-2 overflow-hidden rounded-2xl shadow-sm" :class="cardClass">
+    <ThemeCard card-class="mx-4 mt-2" :padding="false" radius="rounded-2xl">
       <view class="border-b px-4 py-4" :class="borderClass">
         <view class="flex items-center">
           <view class="mr-3 h-10 w-10 flex items-center justify-center rounded-xl bg-green-500">
@@ -590,10 +554,10 @@ onMounted(() => {
           </view>
         </view>
       </view>
-    </view>
+    </ThemeCard>
 
     <!-- 登录记录 -->
-    <view class="mx-4 mt-2 overflow-hidden rounded-2xl shadow-sm" :class="cardClass">
+    <ThemeCard card-class="mx-4 mt-2" :padding="false" radius="rounded-2xl">
       <view class="border-b px-4 py-4" :class="borderClass">
         <view class="flex items-center">
           <view class="mr-3 h-10 w-10 flex items-center justify-center rounded-xl bg-purple-500">
@@ -673,7 +637,7 @@ onMounted(() => {
           </view>
         </view>
       </view>
-    </view>
+    </ThemeCard>
   </view>
 </template>
 

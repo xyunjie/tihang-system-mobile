@@ -1,14 +1,14 @@
 {
   "light": {
+    "backgroundTextStyle": "dark",
     "bar-bg-color": "#ffffff",
-    "text-color": "black",
     "bg-color": "#F7F7F9",
-    "backgroundTextStyle": "dark"
+    "text-color": "black"
   },
   "dark": {
+    "backgroundTextStyle": "light",
     "bar-bg-color": "#0b1220",
-    "text-color": "white",
     "bg-color": "#0f172a",
-    "backgroundTextStyle": "light"
+    "text-color": "white"
   }
 }

@@ -754,7 +754,7 @@ async function handleReturnConfirm() {
     <!-- 主要内容 -->
     <view v-else class="pb-2">
       <!-- 流程信息 -->
-      <ThemeCard class="mx-4 mt-4" :padding="false">
+      <ThemeCard class="mx-4 mt-4" padding="p-2">
         <view class="relative border-b p-4" :class="borderBaseClass">
           <!-- 右上角状态图标 -->
           <view class="absolute right-4 top-1">
@@ -774,11 +774,18 @@ async function handleReturnConfirm() {
         </view>
       </ThemeCard>
 
-      <!-- 自定义表单字段 -->
-      <view class="mx-4 mt-4">
+      <!-- 自定义表单字段（对齐 business-process 的卡片样式） -->
+      <ThemeCard class="mx-4 mt-4">
         <wd-cell-group title="表单信息">
           <LeaveApplication
             v-if="businessFormType === 'oa_leave'"
+            :process-definition-id="approvalDetail?.processDefinition?.id || ''"
+            :process-key="businessFormType"
+            :business-key="approvalDetail?.processInstance?.businessKey"
+            :readonly="true"
+          />
+          <CourseScheduleApplication
+            v-else-if="businessFormType === 'oa_class'"
             :process-definition-id="approvalDetail?.processDefinition?.id || ''"
             :process-key="businessFormType"
             :business-key="approvalDetail?.processInstance?.businessKey"
@@ -792,24 +799,22 @@ async function handleReturnConfirm() {
             :model-value="getFieldValue(field)"
             readonly
           />
-          <ThemeCard v-else class="mx-4 mt-4" :padding="false">
-            <view class="p-6 text-center">
-              <view class="mb-4 text-6xl">
-                📝
-              </view>
-              <view class="mb-2 text-lg text-gray-600 font-medium">
-                暂无表单字段
-              </view>
-              <view class="text-sm text-gray-400">
-                该流程无需填写表单
-              </view>
+          <view v-else class="p-6 text-center">
+            <view class="mb-4 text-6xl">
+              📝
             </view>
-          </ThemeCard>
+            <view class="mb-2 text-lg text-gray-600 font-medium">
+              暂无表单字段
+            </view>
+            <view class="text-sm text-gray-400">
+              该流程无需填写表单
+            </view>
+          </view>
         </wd-cell-group>
-      </view>
+      </ThemeCard>
 
-      <!-- 审批流程 -->
-      <view v-if="approvalDetail?.processDefinition?.id || (approvalDetail?.activityNodes && approvalDetail.activityNodes.length > 0)" class="mx-4 mt-4">
+      <!-- 审批流程（对齐 business-process 的卡片样式） -->
+      <ThemeCard v-if="approvalDetail?.processDefinition?.id || (approvalDetail?.activityNodes && approvalDetail.activityNodes.length > 0)" class="mx-4 mt-4">
         <ApprovalSteps
           :process-definition-id="approvalDetail?.processDefinition?.id"
           :process-instance-id="processInstanceId"
@@ -818,19 +823,19 @@ async function handleReturnConfirm() {
           :with-variables="false"
           :activity-nodes="approvalDetail?.activityNodes"
         />
-      </view>
+      </ThemeCard>
     </view>
 
     <!-- 底部操作区域 -->
-    <ThemeCard v-if="approvalDetail?.status === 1 && isCurrentUserAssignee" class="mx-4 mt-4" :padding="false">
+    <ThemeCard v-if="approvalDetail?.status === 1 && isCurrentUserAssignee" class="mx-4 mt-4" padding="p-1">
       <!-- 审批意见输入区域 -->
       <view class="border-b px-4 pb-3 pt-4" :class="borderBaseClass">
         <view class="mb-3 flex items-center">
           <wd-icon name="edit-outline" class="mr-2 text-blue-500" size="16px" />
-          <text class="text-sm text-gray-700 font-medium">
+          <text class="text-sm font-medium" :class="isDark ? 'text-gray-300' : 'text-gray-700'">
             审批意见
           </text>
-          <text class="ml-1 text-xs text-gray-400">
+          <text class="ml-1 text-xs" :class="isDark ? 'text-gray-500' : 'text-gray-400'">
             （选填）
           </text>
         </view>
@@ -841,7 +846,7 @@ async function handleReturnConfirm() {
           :show-word-limit="true"
           :auto-height="true"
           :min-height="60"
-          class="border-gray-200 rounded-3 bg-gray-50 focus:border-blue-500 focus:bg-white"
+          :class="[isDark ? 'border-white/12 bg-white/6 text-gray-100 placeholder:text-gray-400' : 'border-gray-200 bg-gray-50 text-gray-800 placeholder:text-gray-500', 'rounded-1 focus:border-blue-500 focus:bg-transparent']"
         />
       </view>
 
@@ -881,39 +886,31 @@ async function handleReturnConfirm() {
               <template #title="{ expanded }">
                 <view
                   class="flex items-center justify-center border-1 rounded-3 px-4 py-3 transition-all duration-300"
-                  :class="{
-                    'border-white/10': isDark,
-                    'border-gray-200': !isDark,
-                    'bg-blue-50 border-blue-200 rounded-b-0': expanded,
-                  }"
+                  :class="[isDark ? 'border-white/10' : 'border-gray-200', expanded ? (isDark ? 'bg-blue-500/10 border-blue-400/40 rounded-b-0' : 'bg-blue-50 border-blue-200 rounded-b-0') : '']"
                 >
                   <wd-icon
                     name="more-2"
-                    class="mr-2 text-gray-500 transition-all duration-300"
-                    :class="{
-                      'text-blue-500 rotate-90': expanded,
-                    }"
+                    class="mr-2 transition-all duration-300"
+                    :class="[isDark ? 'text-gray-400' : 'text-gray-500', { 'text-blue-500 rotate-90': expanded }]"
                     size="16px"
                   />
                   <text
                     class="text-sm font-medium transition-colors duration-300"
-                    :class="expanded ? 'text-blue-500' : 'text-gray-600'"
+                    :class="expanded ? (isDark ? 'text-blue-400' : 'text-blue-500') : (isDark ? 'text-gray-300' : 'text-gray-600')"
                   >
                     {{ expanded ? '收起更多操作' : '更多操作' }}
                   </text>
                   <wd-icon
                     :name="expanded ? 'arrow-up' : 'arrow-down'"
-                    class="ml-auto text-gray-400 transition-all duration-300"
-                    :class="{
-                      'text-blue-500 rotate-180': expanded,
-                    }"
+                    class="ml-auto transition-all duration-300"
+                    :class="[isDark ? 'text-gray-500' : 'text-gray-400', expanded ? (isDark ? 'text-blue-400 rotate-180' : 'text-blue-500 rotate-180') : '']"
                     size="14px"
                   />
                 </view>
               </template>
 
               <!-- 折叠面板内容 -->
-              <view class="border-1 border-t-0 border-blue-200 rounded-b-3 p-4" :class="isDark ? 'bg-white/6' : 'bg-white'">
+              <view class="border-1 border-t-0 rounded-b-3 p-4" :class="[isDark ? 'border-white/10 bg-white/6' : 'border-blue-200 bg-white']">
                 <view class="flex flex-col gap-3">
                   <!-- 第一行：转办、委派 -->
                   <view class="flex gap-3">

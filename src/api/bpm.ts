@@ -4,6 +4,8 @@ import type {
   BpmCustomFormCreateReqVO,
   BpmOALeaveCreateReqVO,
   BpmOALeaveRespVO,
+  BpmOAClassRespVO,
+  BpmOAClassSaveReqVO,
   BpmTaskApproveReqVO,
   BpmTaskCopyReqVO,
   BpmTaskDelegateReqVO,
@@ -29,11 +31,6 @@ import type {
 import { http } from '@/http/http'
 
 /**
- * BPM 业务流程管理相关 API
- * 包含流程分类、流程定义等相关接口
- */
-
-/**
  * 获取流程分类的精简信息列表
  * @description 只包含被开启的分类，主要用于前端的下拉选项
  * @returns Promise<CommonResultListBpmCategoryRespVO> 流程分类列表
@@ -41,10 +38,6 @@ import { http } from '@/http/http'
 export function getCategorySimpleList() {
   return http.get<BpmCategoryRespVO[]>('/admin-api/bpm/category/simple-list')
 }
-
-/**
- * BPM 流程定义相关 API
- */
 
 /**
  * 获取流程定义列表
@@ -78,10 +71,6 @@ export function getProcessDefinitionDetail(params: GetProcessDefinitionReqVO) {
 }
 
 /**
- * OA 请假申请相关 API
- */
-
-/**
  * 创建请假申请
  * @description 创建一个新的请假申请
  * @param data 请假申请数据
@@ -102,8 +91,17 @@ export function getLeave(id: number) {
 }
 
 /**
- * 自定义表单流程相关 API
+ * 获取课表申报详情
+ * @description 根据编号获取课表申报详情
+ * @param id 课表申报编号
+ * @returns Promise<BpmOAClassRespVO> 课表申报详情
  */
+export function getClass(id: number) {
+  const headers: Record<string, any> = {
+    'tenant-id': 1,
+  }
+  return http.get<BpmOAClassRespVO>('/admin-api/bpm/oa/class/get', { id }, headers)
+}
 
 /**
  * 创建自定义表单流程
@@ -116,10 +114,6 @@ export function createCustomFormProcess(data: BpmCustomFormCreateReqVO) {
 }
 
 /**
- * 任务统计相关 API
- */
-
-/**
  * 获取任务统计信息
  * @description 获取待办、已办、抄送和今日新增任务的统计数据
  * @returns Promise<BpmTaskStatisticsRespVO> 任务统计数据
@@ -127,10 +121,6 @@ export function createCustomFormProcess(data: BpmCustomFormCreateReqVO) {
 export function getTaskStatistics() {
   return http.get<BpmTaskStatisticsRespVO>('/admin-api/bpm/task/statistics')
 }
-
-/**
- * 待办任务相关 API
- */
 
 /**
  * 获取待办任务分页列表
@@ -143,10 +133,6 @@ export function getTaskTodoPage(params: GetTaskTodoPageReqVO) {
 }
 
 /**
- * 已办任务相关 API
- */
-
-/**
  * 获取已办任务分页列表
  * @description 获取当前用户的已办任务分页数据
  * @param params 查询参数
@@ -157,8 +143,13 @@ export function getTaskDonePage(params: GetTaskDonePageReqVO) {
 }
 
 /**
- * 抄送列表相关 API
+ * 创建 OA 课表申报
+ * @param data 课表申报数据
+ * @returns Promise<CommonResultLong> 新建的流程实例ID
  */
+export function createClass(data: BpmOAClassSaveReqVO) {
+  return http.post<CommonResultLong>('/admin-api/bpm/oa/class/create', data)
+}
 
 /**
  * 获取抄送列表分页数据
@@ -179,10 +170,6 @@ export function getProcessInstanceCopyPage(params: GetProcessInstanceCopyPageReq
 export function getProcessInstanceMyPage(params: GetProcessInstanceMyPageReqVO) {
   return http.get<PageResultBpmProcessInstanceMyRespVO>('/admin-api/bpm/process-instance/my-page', { ...params })
 }
-
-/**
- * 任务审批相关 API
- */
 
 /**
  * 通过任务

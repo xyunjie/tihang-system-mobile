@@ -167,6 +167,13 @@ export const useAppStore = defineStore('app', {
     toggleTheme() {
       const next = this.theme === 'dark' ? 'light' : 'dark'
       this.setTheme(next)
+      // 根据切换后的主题设置导航栏颜色
+      // #ifdef MP-WEIXIN
+      uni.setNavigationBarColor({
+        frontColor: next === 'dark' ? '#ffffff' : '#000000',
+        backgroundColor: next === 'dark' ? '#1a1a1a' : '#ffffff',
+      })
+      // #endif
     },
   },
 })

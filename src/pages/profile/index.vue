@@ -246,7 +246,9 @@ const menuItems = [
   {
     category: '其他',
     items: [
+      // #ifndef MP-WEIXIN
       { icon: '⚙', name: '系统设置', desc: '主题与通用设置', action: gotoSettings, iconColor: 'text-gray-500' },
+      // #endif
       { icon: '■', name: '关于我们', desc: '工作室介绍与版本信息', action: gotoAboutStudio, iconColor: 'text-purple-500' },
       { icon: '▼', name: '退出登录', desc: '安全退出账号', action: handleLogout, danger: true, iconColor: 'text-red-500' },
     ],

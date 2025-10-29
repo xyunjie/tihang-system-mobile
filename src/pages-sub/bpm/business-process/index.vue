@@ -11,10 +11,12 @@
 import { computed, ref } from 'vue'
 import ApprovalSteps from '@/components/ApprovalSteps.vue'
 import LeaveApplication from '@/components/business-forms/LeaveApplication.vue'
+import CourseScheduleApplication from '@/components/business-forms/CourseScheduleApplication.vue'
 import ThemeCard from '@/components/ThemeCard.vue'
 import { submitBusinessForm } from '@/pages-sub/utils/businessApiConfig'
 import { getBusinessTitle } from '@/pages-sub/utils/businessComponentConfig'
 import { useAppStore } from '@/store/app'
+import { getProcessDefinitionList } from '@/api/bpm'
 
 // 主题状态管理
 const appStore = useAppStore()
@@ -67,6 +69,11 @@ onLoad((options) => {
 
   // 检查业务类型支持
   checkBusinessTypeSupport()
+
+  // 若无流程定义ID但有key，尝试根据key自动匹配流程定义
+  if (!processDefinitionId.value && processKey.value) {
+    tryAutoResolveProcessDefinitionId()
+  }
 })
 
 // 设置导航栏标题
@@ -81,7 +88,7 @@ function checkBusinessTypeSupport() {
 
   try {
     // 检查是否支持当前业务类型
-    const supportedTypes = ['oa_leave'] // 可以在这里添加更多支持的类型
+    const supportedTypes = ['oa_leave', 'oa_class'] // 扩展支持
 
     if (supportedTypes.includes(processKey.value)) {
       isSupportedBusinessType.value = true
@@ -107,6 +114,22 @@ function checkBusinessTypeSupport() {
   }
   finally {
     loading.value = false
+  }
+}
+
+// 根据 processKey 自动匹配流程定义ID
+async function tryAutoResolveProcessDefinitionId() {
+  try {
+    const listResp = await getProcessDefinitionList()
+    const defs = listResp?.data || []
+    const matched = defs.find((d: any) => d?.key === processKey.value)
+    if (matched?.id) {
+      processDefinitionId.value = matched.id
+      console.log('匹配到流程定义ID:', matched.id)
+    }
+  }
+  catch (e) {
+    console.warn('根据key匹配流程定义ID失败:', e)
   }
 }
 
@@ -163,8 +186,6 @@ async function handleSubmit() {
 // 处理表单数据变化（用于更新审批流程变量）
 function handleFormDataChange(formData: Record<string, any>) {
   processVariables.value = formData
-  console.log('表单数据变化:', formData)
-  console.log('更新后的 processVariables:', processVariables.value)
 }
 
 // 处理审批更新通知（仅在业务组件通知时才更新）
@@ -213,6 +234,14 @@ function handleGoBack() {
       <ThemeCard>
         <LeaveApplication
           v-if="processKey === 'oa_leave'"
+          ref="businessFormRef"
+          :process-definition-id="processDefinitionId"
+          :process-key="processKey"
+          @form-data-change="handleFormDataChange"
+          @approval-update="handleApprovalUpdate"
+        />
+        <CourseScheduleApplication
+          v-else-if="processKey === 'oa_class'"
           ref="businessFormRef"
           :process-definition-id="processDefinitionId"
           :process-key="processKey"

@@ -137,7 +137,7 @@ onMounted(async () => {
   }
 
   // 发送初始表单数据（即使是空数据）
-  emitFormDataChange()
+  triggerApprovalUpdate()
   console.log('请假申请组件初始化完成，发送初始表单数据')
 })
 
@@ -210,6 +210,7 @@ function handleLeaveTypeConfirm(value: any) {
   selectedLeaveTypeIndex.value = selectValue
   formData.value.type = selectValue
   showLeaveTypePicker.value = false
+  triggerApprovalUpdate()
 }
 
 // 开始日期确认时触发更新

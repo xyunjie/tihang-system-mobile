@@ -56,13 +56,6 @@ watch(
       updateApprovalStepsFromNodes(newActivityNodes)
       return
     }
-
-    // 检查是否有有效的表单数据（不是空对象）
-    const hasValidData = newVariables && Object.keys(newVariables).length > 0
-
-    if (hasValidData && props.processDefinitionId) {
-      loadApprovalDetail()
-    }
   },
   { deep: true, immediate: true },
 )
@@ -211,102 +204,17 @@ function calculateStepStatus(
 function getApprovalMethodName(method: number | null) {
   switch (method) {
     case 1:
-      return ' (顺序审批)'
+      return ' (随机)'
     case 2:
       return ' (会签)'
     case 3:
       return ' (或签)'
     case 4:
-      return ' (随机)'
+      return ' (依次审批)'
     default:
       return ''
   }
 }
-
-// 获取任务状态文本
-function getTaskStatusText(status: number) {
-  switch (status) {
-    case 0:
-      return '待审批'
-    case 1:
-      return '审批中'
-    case 2:
-      return '审批通过'
-    case 3:
-      return '审批不通过'
-    case 4:
-      return '已取消'
-    case 5:
-      return '已退回'
-    case 6:
-      return '委派中'
-    case 7:
-      return '审批通过中'
-    default:
-      return '未知状态'
-  }
-}
-
-/**
- * 获取任务状态颜色（适配深色模式）
- * @param status 任务状态
- * @returns CSS 颜色类
- */
-function getTaskStatusColor(status: number): string {
-  if (isDark.value) {
-    // 深色模式下的颜色
-    switch (status) {
-      case 0:
-        return '#fbbf24' // 待审批 - 亮黄色
-      case 1:
-        return '#60a5fa' // 审批中 - 亮蓝色
-      case 2:
-        return '#34d399' // 审批通过 - 亮绿色
-      case 3:
-        return '#f87171' // 审批不通过 - 亮红色
-      case 4:
-        return '#9ca3af' // 已取消 - 亮灰色
-      case 5:
-        return '#fb923c' // 已退回 - 亮橙色
-      case 6:
-        return '#a78bfa' // 委派中 - 亮紫色
-      case 7:
-        return '#4ade80' // 审批通过中 - 亮浅绿色
-      default:
-        return '#9ca3af' // 默认亮灰色
-    }
-  }
-  else {
-    // 浅色模式下的颜色
-    switch (status) {
-      case 0:
-        return '#f59e0b' // 待审批 - 黄色
-      case 1:
-        return '#3b82f6' // 审批中 - 蓝色
-      case 2:
-        return '#10b981' // 审批通过 - 绿色
-      case 3:
-        return '#ef4444' // 审批不通过 - 红色
-      case 4:
-        return '#6b7280' // 已取消 - 灰色
-      case 5:
-        return '#f97316' // 已退回 - 橙色
-      case 6:
-        return '#8b5cf6' // 委派中 - 紫色
-      case 7:
-        return '#22c55e' // 审批通过中 - 浅绿色
-      default:
-        return '#6b7280' // 默认灰色
-    }
-  }
-}
-
-// 动态样式计算
-const taskCardClass = computed(() => {
-  return isDark.value
-    ? 'mb-2 rounded bg-gray-800 p-2'
-    : 'mb-2 rounded bg-gray-50 p-2'
-})
 
 const taskTextClass = computed(() => {
   return isDark.value
@@ -314,23 +222,101 @@ const taskTextClass = computed(() => {
     : 'text-xs text-gray-700 leading-tight'
 })
 
-const taskLabelClass = computed(() => {
+const candidateItemClass = computed(() => {
   return isDark.value
-    ? 'text-gray-400'
-    : 'text-gray-500'
+    ? 'rounded bg-gray-800 px-3 py-2'
+    : 'rounded bg-gray-50 px-3 py-2'
 })
 
-const userNameClass = computed(() => {
+const candidateItemNameClass = computed(() => {
   return isDark.value
-    ? 'text-xs text-gray-300 font-medium'
-    : 'text-xs text-gray-700 font-medium'
+    ? 'text-xs text-gray-200'
+    : 'text-xs text-gray-700'
 })
 
-const avatarPlaceholderClass = computed(() => {
-  return isDark.value
-    ? 'h-6 w-6 flex items-center justify-center rounded-full bg-gray-600 text-xs text-gray-200'
-    : 'h-6 w-6 flex items-center justify-center rounded-full bg-indigo-500 text-xs text-white'
-})
+// 获取用户在该步骤的任务状态（无任务则视为待审批）
+function getUserTaskStatus(step: any, userId: number): number {
+  if (!step || !step.tasks || step.tasks.length === 0) return 0
+  const task = step.tasks.find((t: any) => t.assigneeUser && t.assigneeUser.id === userId)
+  return task ? Number(task.status ?? 0) : 0
+}
+
+function getUserStatusText(status: number): string {
+  switch (status) {
+    case 1: return '审批中'
+    case 2: return '已通过'
+    case 3: return '已拒绝'
+    case 5: return '已退回'
+    case 6: return '委派中'
+    default: return '待审批'
+  }
+}
+
+// 合并审批人与候选人，生成参与者列表（带状态与意见）
+function getParticipants(step: any): Array<{ id: number; nickname: string; avatar?: string; status?: number; reason?: string }> {
+  const approverMap = new Map<number, { id: number; nickname: string; avatar?: string; status?: number; reason?: string }>()
+  const candidateMap = new Map<number, { id: number; nickname: string; avatar?: string; status?: number }>()
+
+  // 先收集审批人（来源于任务），保留任务出现顺序
+  if (step?.tasks && step.tasks.length > 0) {
+    step.tasks.forEach((t: any) => {
+      const uid = t.assigneeUser?.id
+      approverMap.set(uid, {
+        id: uid,
+        nickname: t.assigneeUser?.nickname,
+        avatar: t.assigneeUser?.avatar,
+        status: Number(t.status ?? 0),
+        reason: t.reason || '',
+      })
+    })
+  }
+
+  // 再收集候选人（不覆盖审批人），按候选人原始顺序
+  if (step?.candidateUsers && step.candidateUsers.length > 0) {
+    step.candidateUsers.forEach((u: any) => {
+      if (!approverMap.has(u.id)) {
+        candidateMap.set(u.id, {
+          id: u.id,
+          nickname: u.nickname,
+          avatar: u.avatar,
+          status: getUserTaskStatus(step, u.id),
+        })
+      }
+    })
+  }
+
+  // 返回时确保“审批人优先，候选人随后”
+  return [...Array.from(approverMap.values()), ...Array.from(candidateMap.values())]
+}
+
+function isStartNode(step: any): boolean {
+  return !!(step?.id && String(step.id).includes('Start'))
+}
+
+function getUserStatusClass(status: number): string {
+  // 主题感知的小徽标样式
+  const base = 'ml-2 rounded-full px-2 py-0.5 text-11px'
+  if (isDark.value) {
+    switch (status) {
+      case 1: return base + ' bg-blue-900/40 text-blue-300 border border-blue-700'
+      case 2: return base + ' bg-green-900/40 text-green-300 border border-green-700'
+      case 3: return base + ' bg-red-900/40 text-red-300 border border-red-700'
+      case 5: return base + ' bg-orange-900/40 text-orange-300 border border-orange-700'
+      case 6: return base + ' bg-violet-900/40 text-violet-300 border border-violet-700'
+      default: return base + ' bg-gray-800 text-gray-300 border border-gray-700'
+    }
+  }
+  else {
+    switch (status) {
+      case 1: return base + ' bg-blue-50 text-blue-700 border border-blue-200'
+      case 2: return base + ' bg-green-50 text-green-700 border border-green-200'
+      case 3: return base + ' bg-red-50 text-red-700 border border-red-200'
+      case 5: return base + ' bg-orange-50 text-orange-700 border border-orange-200'
+      case 6: return base + ' bg-violet-50 text-violet-700 border border-violet-200'
+      default: return base + ' bg-gray-50 text-gray-700 border border-gray-200'
+    }
+  }
+}
 
 const smallAvatarPlaceholderClass = computed(() => {
   return isDark.value
@@ -427,58 +413,32 @@ defineExpose({
               />
             </template>
             <template #description>
-              <!-- 候选用户信息 -->
-              <view class="mb-2 flex flex-wrap gap-2">
-                <view v-for="user in step.candidateUsers" :key="user.id" class="flex items-center">
-                  <template v-if="user.avatar">
-                    <image :src="user.avatar" class="h-6 w-6 rounded-full" />
-                  </template>
-                  <template v-else>
-                    <view :class="avatarPlaceholderClass">
-                      {{ user.nickname.charAt(0) }}
+              <!-- 参与者（审批人 + 候选人合并） -->
+              <view v-if="(step.candidateUsers && step.candidateUsers.length) || (step.tasks && step.tasks.length)" class="mt-3 mb-2">
+                <view class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
+                  <view
+                    v-for="p in getParticipants(step)"
+                    :key="p.id"
+                    :class="candidateItemClass"
+                  >
+                    <view v-if="p.id" class="flex items-center gap-2">
+                      <template v-if="p.avatar">
+                        <image :src="p.avatar" class="h-6 w-6 rounded-full" />
+                      </template>
+                      <template v-else>
+                        <view :class="smallAvatarPlaceholderClass">
+                          {{ p.nickname.charAt(0) }}
+                        </view>
+                      </template>
+                      <text :class="candidateItemNameClass">{{ p.nickname }}</text>
+                      <text v-if="!isStartNode(step) && p.status" :class="getUserStatusClass(p.status)">
+                        {{ getUserStatusText(p.status) }}
+                      </text>
                     </view>
-                  </template>
-                  <text class="ml-2 text-sm">
-                    {{ user.nickname }}
-                  </text>
-                </view>
-              </view>
-
-              <!-- 审批意见显示 -->
-              <view v-if="step.tasks && step.tasks.length > 0">
-                <view
-                  v-for="task in step.tasks"
-                  :key="task.id"
-                  :class="taskCardClass"
-                >
-                  <!-- 审批人信息 -->
-                  <view v-if="task.assigneeUser" class="mb-1 flex items-center">
-                    <template v-if="task.assigneeUser?.avatar">
-                      <image :src="task.assigneeUser.avatar" class="mr-2 h-5 w-5 rounded-full" />
-                    </template>
-                    <template v-else>
-                      <view :class="smallAvatarPlaceholderClass">
-                        {{ task.assigneeUser?.nickname?.charAt(0) || '?' }}
-                      </view>
-                    </template>
-                    <text :class="userNameClass">
-                      {{ task.assigneeUser?.nickname || '未知用户' }}
-                    </text>
-                    <text
-                      v-if="step.id !== 'StartUserNode'"
-                      class="ml-2 text-xs"
-                      :style="{ color: getTaskStatusColor(task.status) }"
-                    >
-                      {{ getTaskStatusText(task.status) }}
-                    </text>
-                  </view>
-
-                  <!-- 审批意见 -->
-                  <view v-if="task.reason && step.id !== 'StartUserNode'" :class="taskTextClass">
-                    <text :class="taskLabelClass">
-                      审批意见：
-                    </text>
-                    <text>{{ task.reason }}</text>
+                    <!-- 驳回原因单独一行展示（仅在被拒绝时显示），带前缀 -->
+                    <view v-if="!isStartNode(step) && p.status && p.reason" :class="p.id ? 'mt-2' : ''">
+                      <text :class="taskTextClass">审批意见：{{ p.reason }}</text>
+                    </view>
                   </view>
                 </view>
               </view>

@@ -5,6 +5,7 @@ import type { Component } from 'vue'
  */
 export const supportedBusinessTypes = [
   'oa_leave',
+  'oa_class',
   // 可以在这里添加更多支持的业务类型
   // 'expense_reimbursement',
   // 'purchase_request',
@@ -15,6 +16,7 @@ export const supportedBusinessTypes = [
  */
 export const businessTitleMap: Record<string, string> = {
   oa_leave: '请假申请',
+  oa_class: '课表申报',
   // 'expense_reimbursement': '报销申请',
   // 'purchase_request': '采购申请',
   // 'asset_application': '资产申请',

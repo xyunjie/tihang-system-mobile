@@ -13,7 +13,13 @@ const appStore = useAppStore()
 
 <template>
   <wd-config-provider :theme-vars="themeVars" :theme="appStore.theme">
+    <!-- #ifndef MP-WEIXIN -->
+    <view class="h-5" />
+    <!-- #endif -->
     <slot />
+    <!-- #ifndef MP-WEIXIN -->
+    <view class="h-5" />
+    <!-- #endif -->
     <wd-toast />
     <wd-message-box />
   </wd-config-provider>

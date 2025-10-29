@@ -729,6 +729,18 @@ export interface BpmOALeaveCreateReqVO {
 }
 
 /**
+ * 管理后台 - OA课表申报新增/修改 Request VO
+ */
+export interface BpmOAClassSaveReqVO {
+  /** 学期ID */
+  termId: number
+  /** 课程信息：day -> section -> weeks[] */
+  course: Record<string, Record<string, number[]>>
+  /** 发起人自选审批人 Map（可选） */
+  startUserSelectAssignees?: Record<string, number[]>
+}
+
+/**
  * OA 请假申请响应 VO
  */
 export interface BpmOALeaveRespVO {
@@ -901,6 +913,22 @@ export interface BpmTaskReturnRespVO {
   reasonRequire?: boolean
   /** 节点类型 */
   nodeType?: number
+}
+
+/**
+ * 管理后台 - OA课表申报 Response VO
+ */
+export interface BpmOAClassRespVO {
+  /** 课表申报主键 */
+  id: number
+  /** 申请人的用户编号 */
+  userId: number
+  /** 学期ID */
+  termId: number
+  /** 课程信息（JSON 字符串） */
+  course: string
+  /** 创建时间 */
+  createTime: string
 }
 
 /**

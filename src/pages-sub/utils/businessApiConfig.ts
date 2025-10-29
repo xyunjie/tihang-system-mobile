@@ -3,8 +3,7 @@
  * 管理不同业务类型的提交方法
  */
 
-import type { Component } from 'vue'
-import { createLeave } from '@/api/bpm'
+import { createClass, createLeave } from '@/api/bpm'
 
 /**
  * 业务表单提交方法类型定义
@@ -18,6 +17,11 @@ export const businessApiMap: Record<string, BusinessFormSubmitFn> = {
   // 请假申请
   oa_leave: async (formData) => {
     return createLeave(formData)
+  },
+
+  // 课程表申请（直接调用专用创建接口）
+  oa_class: async (formData) => {
+    return createClass(formData)
   },
 
   // 可以在这里添加更多业务API配置

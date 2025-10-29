@@ -31,6 +31,14 @@ const textClass = computed(() => isDark.value ? 'text-gray-300' : 'text-gray-600
 const inputClass = computed(() => isDark.value ? 'bg-gray-700 text-gray-100' : 'bg-gray-50 text-gray-800')
 const borderClass = computed(() => isDark.value ? 'border-gray-600' : 'border-gray-100')
 
+// 参考业务流程页统一底栏样式
+const bottomBarClass = computed(() => [
+  'fixed bottom-0 left-0 right-0 border-t px-4 py-3 backdrop-blur-sm rounded-t-lg',
+  isDark.value
+    ? 'border-gray-700 bg-gray-800/70'
+    : 'border-gray-200 bg-white/70',
+])
+
 // 用户信息
 const userInfo = ref<ISystemUserInfoVo | null>(null)
 const loading = ref(false)
@@ -488,15 +496,18 @@ onLoad(() => {
     </view>
 
     <!-- 底部操作栏 -->
-    <view class="pb-safe-h5 fixed bottom-0 left-0 right-0 border-t p-4 pb-safe" :class="[cardClass, borderClass]">
-      <button
-        class="w-full rounded-xl py-3 text-base font-medium transition-colors"
-        :class="submitting ? (isDark ? 'bg-gray-600 text-gray-400' : 'bg-gray-300 text-gray-500') : 'bg-blue-500 text-white active:bg-blue-600'"
+    <view class="pb-safe-h5 pb-safe" :class="bottomBarClass" style="z-index: 2;">
+      <wd-button
+        type="primary"
+        block
+        size="large"
+        class="rounded-lg"
+        :loading="submitting"
         :disabled="submitting"
         @click="handleSubmit"
       >
-        {{ submitting ? '保存中...' : '保存修改' }}
-      </button>
+        保存修改
+      </wd-button>
     </view>
   </view>
 

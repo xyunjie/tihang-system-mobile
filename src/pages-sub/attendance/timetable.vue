@@ -1,8 +1,8 @@
-<!-- 课程表管理 -->
+<!-- 课程表展示（只读） -->
 <route lang="jsonc" type="page">
 {
   "style": {
-    "navigationBarTitleText": "课程表管理",
+    "navigationBarTitleText": "课程表",
     "navigationStyle": "default",
     "enablePullDownRefresh": false,
     "backgroundTextStyle": "dark"
@@ -14,7 +14,7 @@
 import type { EduScheduleRespVO } from '@/api/types/attendance'
 import { onLoad } from '@dcloudio/uni-app'
 import { computed, reactive, ref } from 'vue'
-import { createEduSchedule, getEduSchedule } from '@/api/attendance'
+import { getEduSchedule } from '@/api/attendance'
 import { useAppStore } from '@/store/app'
 
 defineOptions({ name: 'AttendanceTimetable' })
@@ -36,16 +36,7 @@ const eveningDividerIndex = slots.length >= 8 ? 5 : 3
 // 课程表选择数据：key = `${dayIndex}-${slotIndex}` -> 选中的周次数组
 const tableData = reactive<Record<string, number[]>>({})
 
-// 编辑弹窗状态
-const editor = reactive({
-  visible: false,
-  dayIndex: 0,
-  slotIndex: 0,
-})
-
-// 临时选择的周次（1-20周）
-const weeksOptions = Array.from({ length: 20 }, (_, i) => i + 1)
-const tempWeeks = ref<number[]>([])
+// 只读页面：去除所有编辑状态与临时选择
 
 // 深色模式样式
 const appStore = useAppStore()
@@ -80,43 +71,7 @@ function splitTime(time: string) {
   }
 }
 
-function openEdit(dayIndex: number, slotIndex: number) {
-  editor.dayIndex = dayIndex
-  editor.slotIndex = slotIndex
-  const key = getKey(dayIndex, slotIndex)
-  tempWeeks.value = [...(tableData[key] || [])]
-  editor.visible = true
-}
-
-function closeEdit() {
-  editor.visible = false
-}
-
-async function saveEdit() {
-  const key = getKey(editor.dayIndex, editor.slotIndex)
-  const weeks = [...tempWeeks.value]
-
-  try {
-    const resp = await createEduSchedule({
-      week: weeks,
-      weekday: editor.dayIndex + 1,
-      section: editor.slotIndex + 1,
-      remark: '',
-    })
-    if (resp.code === 0) {
-      tableData[key] = weeks
-      uni.setStorageSync('simple_timetable', JSON.stringify(tableData))
-      uni.showToast({ title: '已保存课表', icon: 'success', duration: 1500 })
-      editor.visible = false
-    }
-    else {
-      uni.showToast({ title: resp.msg || '保存失败', icon: 'none' })
-    }
-  }
-  catch (e) {
-    uni.showToast({ title: '网络错误，请重试', icon: 'none' })
-  }
-}
+// 去除编辑相关方法
 
 function getCellClass(dayIndex: number, slotIndex: number) {
   const key = getKey(dayIndex, slotIndex)
@@ -144,6 +99,28 @@ function getCellCount(dayIndex: number, slotIndex: number) {
 // 页面状态：加载中 & 未配置学期信息
 const loading = ref(true)
 const emptyTerm = ref(false)
+
+// 查看弹窗（只读）
+const viewerVisible = ref(false)
+const viewerDayIndex = ref<number>(0)
+const viewerSlotIndex = ref<number>(0)
+const viewerWeeks = computed<number[]>(() => {
+  const key = getKey(viewerDayIndex.value, viewerSlotIndex.value)
+  return tableData[key] || []
+})
+const viewerTitle = computed(() => {
+  const slot = slots[viewerSlotIndex.value]
+  return `${days[viewerDayIndex.value]} · ${slot.label}`
+})
+
+function openView(dayIndex: number, slotIndex: number) {
+  viewerDayIndex.value = dayIndex
+  viewerSlotIndex.value = slotIndex
+  viewerVisible.value = true
+}
+function closeView() {
+  viewerVisible.value = false
+}
 
 // 加载本地存储
 onLoad(async () => {
@@ -256,7 +233,7 @@ function applyServerSchedules(list: EduScheduleRespVO[]) {
                 :key="di"
                 class="relative h-16 overflow-hidden px-2 py-2 transition-all active:scale-98" :style="(si === lunchDividerIndex || si === eveningDividerIndex) ? 'border-top: 1px solid #E5E7EB; border-left: 1px solid #E5E7EB; border-bottom: 1px solid #E5E7EB;' : 'border-top: 1px solid #E5E7EB; border-left: 1px solid #E5E7EB;'"
                 :class="[{ [isDark ? 'bg-sky-900/30' : 'bg-sky-50']: hasCourse(di, si) }, getCellClass(di, si)]"
-                @tap="openEdit(di, si)"
+                @tap="openView(di, si)"
               >
                 <view class="h-full w-full flex flex-col items-center justify-center gap-1">
                   <view v-if="hasCourse(di, si)" class="inline-flex items-center rounded-full px-2 py-0.5 text-11px" :class="isDark ? 'bg-sky-900/40 text-sky-300' : 'bg-sky-100 text-sky-700'">
@@ -285,41 +262,31 @@ function applyServerSchedules(list: EduScheduleRespVO[]) {
       </view>
     </view>
 
-    <!-- 编辑弹窗 -->
-    <wd-popup v-model="editor.visible" position="bottom" :safe-area-inset-bottom="true">
-      <view class="max-h-80vh flex flex-col rounded-t-4" :class="cardClass">
-        <!-- 头部 -->
-        <view class="flex items-center justify-between border-b px-5 py-4" :class="borderClass">
-          <view class="text-lg font-semibold" :class="titleClass">
-            {{ days[editor.dayIndex] }} · {{ slots[editor.slotIndex].label }}
-          </view>
-          <wd-button type="text" @click="closeEdit">
-            取消
-          </wd-button>
+    <!-- 只读查看弹窗：仅关闭，无提交按钮 -->
+    <wd-popup v-model="viewerVisible" position="bottom" :mask-closable="true">
+      <view class="p-4" :class="cardClass">
+        <view class="mb-2 text-base font-semibold" :class="titleClass">
+          {{ viewerTitle }}
         </view>
-
-        <!-- 周次多选 -->
-        <view class="flex-1 overflow-auto px-5 py-4">
-          <view class="mb-3 text-sm" :class="titleClass">
-            选择有课的周次（1-20周）
-          </view>
-          <wd-checkbox-group v-model="tempWeeks" shape="button" checked-color="#4D7FFF">
-            <view class="grid grid-cols-4 gap-2">
-              <wd-checkbox v-for="w in weeksOptions" :key="w" :model-value="w" class="w-full text-center">
-                第{{ w }}周
-              </wd-checkbox>
+        <view class="text-xs" :class="textClass">
+          时间：{{ splitTime(slots[viewerSlotIndex].time).start }} - {{ splitTime(slots[viewerSlotIndex].time).end }}
+        </view>
+        <view class="mt-3">
+          <view v-if="viewerWeeks.length > 0" class="flex flex-wrap gap-2">
+            <view v-for="w in viewerWeeks" :key="w" class="rounded-full px-2 py-0.5 text-11px" :class="isDark ? 'bg-sky-900/40 text-sky-300' : 'bg-sky-100 text-sky-700'">
+              第{{ w }}周
             </view>
-          </wd-checkbox-group>
+          </view>
+          <view v-else class="text-sm" :class="textClass">
+            当前为空闲，无课程安排
+          </view>
         </view>
-
-        <!-- 底部确认 -->
-        <view class="border-t px-5 py-4" :class="[cardClass, borderClass]">
-          <wd-button type="primary" block @click="saveEdit">
-            确定
-          </wd-button>
+        <view class="mt-4 flex justify-end">
+          <wd-button type="primary" size="small" @click="closeView">关闭</wd-button>
         </view>
       </view>
     </wd-popup>
+  
   </view>
 </template>
 
