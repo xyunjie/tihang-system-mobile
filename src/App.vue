@@ -5,7 +5,6 @@ import { usePageAuth } from '@/hooks/usePageAuth'
 import { useUserStore } from '@/store'
 import { useAppStore } from '@/store/app'
 import { notLoginPages as _notLoginPages, getNotLoginPages } from '@/utils'
-import { tabbarList as _tabBarList } from './layouts/fg-tabbar/tabbarList'
 import 'abortcontroller-polyfill/dist/abortcontroller-polyfill-only'
 
 const appStore = useAppStore()
@@ -95,23 +94,6 @@ function checkInitialAuth() {
 usePageAuth()
 
 onLaunch(() => {
-  // 初始化主题为系统主题，并订阅系统主题变化
-  // #ifdef MP-WEIXIN
-  appStore.initThemeFromSystem()
-  checkInitialAuth()
-  // 从缓存中获取app-tabbar-index，进行跳转
-  const tabIndex = uni.getStorageSync('app-tabbar-index')
-  console.log('APP TABBAR INDEX:', tabIndex)
-  if (!tabIndex) {
-    return
-  }
-  console.log('APP TABBAR INDEX:', tabIndex)
-  // 存在
-  const tabbarList = _tabBarList.map(item => ({ ...item, path: `/${item.pagePath}` }))
-  const url = tabbarList[tabIndex].path
-  uni.switchTab({ url })
-  // #endif
-
   // #ifdef H5
   // H5 端：根据用户偏好给 html 根元素添加主题类，覆盖媒体查询
   const updateGlobalThemeClass = () => {

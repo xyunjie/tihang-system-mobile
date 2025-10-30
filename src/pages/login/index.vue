@@ -101,15 +101,13 @@ async function initH5OnLoad() {
   }
 
   // 构造通用回调地址，使用 callback 页面处理 type/code/state
-  const base = `${location.origin}${location.pathname}${location.search || ''}#`
   const callbackPath = '/pages/login/callback'
   const queryParts = [`type=31`]
   if (redirectUrl.value) {
     queryParts.push(`redirect=${encodeURIComponent(redirectUrl.value)}`)
   }
   const callbackQuery = `?${queryParts.join('&')}`
-  const redirectUri = `${base}${callbackPath}${callbackQuery}`
-  console.log('redirectUri:', redirectUri)
+  const redirectUri = `${location.origin}${callbackPath}${callbackQuery}`
   const res = await getSocialAuthRedirect({ type: 31, redirectUri })
   if (res.code !== 0) {
     uni.showToast({ icon: 'none', title: res.msg || '授权链接获取失败' })

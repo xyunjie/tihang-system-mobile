@@ -16,7 +16,6 @@ import { useUserStore } from '@/store'
 import { currRoute } from '@/utils'
 
 const userStore = useUserStore()
-const loginRoute = import.meta.env.VITE_LOGIN_URL
 
 function redirectToTarget(target?: string) {
   const dest = target || '/pages/index/index'
@@ -46,22 +45,14 @@ function redirectToTarget(target?: string) {
 }
 
 onLoad(async (options) => {
+  console.log('options:', options)
   const query = currRoute().query as any
   console.log('query:', query)
   console.log('options:', options)
 
-  // 兼容 hash 路由：微信把 code/state 放在搜索参数（# 之前）
-  let code = query?.code as string
-  let state = query?.state as string
-  if (!code || !state) {
-    try {
-      const search = typeof window !== 'undefined' ? window.location.search : ''
-      const sp = new URLSearchParams(search)
-      code = code || (sp.get('code') || '')
-      state = state || (sp.get('state') || '')
-    }
-    catch {}
-  }
+  // 仅支持 history 模式，直接从 query 中取值
+  const code = query?.code as string
+  const state = query?.state as string
   const typeParam = Number(query?.type)
   const type = Number.isFinite(typeParam) ? typeParam : 31 // 默认微信H5
   const redirect = query?.redirect as string | undefined
@@ -103,8 +94,7 @@ onLoad(async (options) => {
 <template>
   <view
     class="h-full w-full flex items-center justify-center"
-  >
-  </view>
+  />
 </template>
 
 <style scoped>

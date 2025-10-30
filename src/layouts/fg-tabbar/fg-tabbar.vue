@@ -10,7 +10,6 @@ const customTabbarEnable
 /** tabbarList 里面的 path 从 pages.config.ts 得到 */
 const tabbarList = _tabBarList.map(item => ({ ...item, path: `/${item.pagePath}` })) as any
 function selectTabBar({ value: index }: { value: number }) {
-  console.log('selectTabBar: ', index)
   const url = tabbarList[index].path
   tabbarStore.setCurIdx(index)
 
@@ -24,14 +23,15 @@ function selectTabBar({ value: index }: { value: number }) {
   }
 }
 onLoad(() => {
-  uni.hideTabBar({
-    fail(err) {
-      console.log('hideTabBar fail: ', err)
-    },
-    success(res) {
-      console.log('hideTabBar success: ', res)
-    },
-  })
+  // 隐藏底部导航
+  uni.hideTabBar()
+  // 初次显示时根据当前路由同步高亮，避免缓存造成错位
+  tabbarStore.syncWithRoute()
+})
+
+// 每次页面显示时，与当前路由同步一次 TabBar 高亮
+onShow(() => {
+  tabbarStore.syncWithRoute()
 })
 </script>
 
