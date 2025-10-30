@@ -18,7 +18,6 @@ const {
   VITE_WX_APPID,
   VITE_APP_PUBLIC_BASE,
   VITE_FALLBACK_LOCALE,
-  VITE_H5_ROUTER_MODE,
 } = env
 
 export default defineManifestConfig({

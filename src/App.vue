@@ -1,13 +1,9 @@
 <script setup lang="ts">
 import { onHide, onLaunch, onShow } from '@dcloudio/uni-app'
-import { watch } from 'vue'
 import { usePageAuth } from '@/hooks/usePageAuth'
 import { useUserStore } from '@/store'
-import { useAppStore } from '@/store/app'
 import { notLoginPages as _notLoginPages, getNotLoginPages } from '@/utils'
 import 'abortcontroller-polyfill/dist/abortcontroller-polyfill-only'
-
-const appStore = useAppStore()
 
 const isDev = import.meta.env.DEV
 const loginRoute = import.meta.env.VITE_LOGIN_URL
@@ -94,25 +90,6 @@ function checkInitialAuth() {
 usePageAuth()
 
 onLaunch(() => {
-  // #ifdef H5
-  // H5 端：根据用户偏好给 html 根元素添加主题类，覆盖媒体查询
-  const updateGlobalThemeClass = () => {
-    const el = document.documentElement
-    if (!el)
-      return
-    el.classList.remove('theme-dark', 'theme-light')
-    if (appStore.themePreference === 'system') {
-      // 跟随系统：不加类，继续用 prefers-color-scheme
-      return
-    }
-    el.classList.add(appStore.theme === 'dark' ? 'theme-dark' : 'theme-light')
-  }
-  // 首次应用
-  updateGlobalThemeClass()
-  // 监听偏好或主题变化
-  watch(() => appStore.themePreference, updateGlobalThemeClass)
-  watch(() => appStore.theme, updateGlobalThemeClass)
-  // #endif
 })
 onShow(() => {
   checkInitialAuth()
@@ -143,7 +120,7 @@ page {
 
   /* #ifndef MP-WEIXIN */
   /* 标准版本 */
-  background: linear-gradient(135deg, #f3f7ff 0%, #f0f4ff 20%, #e8edff 45%, #e2e8ff 70%, #dde5ff 100%);
+  background: -webkit-linear-gradient(135deg, #f3f7ff 0%, #f0f4ff 20%, #e8edff 45%, #e2e8ff 70%, #dde5ff 100%);
   /* #endif */
 
   min-height: 100vh;
@@ -159,25 +136,14 @@ page {
     background: #0b1220;
     /* #endif */
     /* #ifndef MP-WEIXIN */
-    background: linear-gradient(135deg, #0b1220 0%, #0d1426 20%, #0f182e 45%, #101a33 70%, #12203b 100%);
+    background: -webkit-linear-gradient(135deg, #0b1220 0%, #0d1426 20%, #0f182e 45%, #101a33 70%, #12203b 100%);
     /* #endif */
   }
 }
 
 /* #ifdef H5 */
-/* 用户偏好覆盖（当 html 上存在主题类时，优先使用下列样式） */
-.theme-light page {
-  background: linear-gradient(135deg, #f3f7ff 0%, #f0f4ff 20%, #e8edff 45%, #e2e8ff 70%, #dde5ff 100%);
-}
-.theme-dark page {
-  background: linear-gradient(135deg, #0b1220 0%, #0d1426 20%, #0f182e 45%, #101a33 70%, #12203b 100%);
-}
-/* #endif */
-
-/* #ifdef H5 */
 uni-page-head {
   display: none;
 }
-
 /* #endif */
 </style>
