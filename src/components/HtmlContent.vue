@@ -18,15 +18,33 @@ const containerStyle = computed(() => {
   return `padding: 6px 0; font-size: 15px; line-height: 1.8; color: ${textColor}; word-break: break-word; overflow-wrap: break-word; overflow: hidden;`
 })
 
-const defaultTagStyle: Record<string, string> = {
-  table: 'border-collapse: collapse; width: 100%; border: 1px solid #d1d5db;',
-  th: 'border: 1px solid #d1d5db; padding: 6px; background-color: #f9fafb; text-align: left; box-sizing: border-box;',
-  td: 'border: 1px solid #d1d5db; padding: 6px; text-align: left; box-sizing: border-box;',
-  pre: 'font-size: 13px;',
-  code: 'font-size: 13px;',
-}
+const defaultTagStyle = computed<Record<string, string>>(() => {
+  if (isDark.value) {
+    const borderColor = 'rgba(255,255,255,0.12)'
+    const headerBg = 'rgba(255,255,255,0.06)'
+    const cellBg = 'transparent'
+    return {
+      table: `border-collapse: collapse; table-layout: auto; width: auto; max-width: 100%; border: 1px solid ${borderColor};`,
+      thead: `background-color: ${headerBg};`,
+      th: `border: 1px solid ${borderColor}; padding: 6px; background-color: ${headerBg}; text-align: left; box-sizing: border-box; white-space: nowrap;`,
+      td: `border: 1px solid ${borderColor}; padding: 6px; background-color: ${cellBg}; text-align: left; box-sizing: border-box;`,
+      pre: 'font-size: 13px; background-color: #111827; color: #e5e7eb; border-radius: 8px; padding: 10px;',
+      code: 'font-size: 13px; background-color: rgba(255,255,255,0.06); color: #e5e7eb; border-radius: 4px; padding: 0 4px;',
+    }
+  }
+  else {
+    return {
+      table: 'border-collapse: collapse; table-layout: auto; width: auto; max-width: 100%; border: 1px solid #d1d5db;',
+      thead: 'background-color: #f9fafb;',
+      th: 'border: 1px solid #d1d5db; padding: 6px; background-color: #f9fafb; text-align: left; box-sizing: border-box; white-space: nowrap;',
+      td: 'border: 1px solid #d1d5db; padding: 6px; text-align: left; box-sizing: border-box;',
+      pre: 'font-size: 13px; background-color: #f7fafc; color: #374151; border-radius: 8px; padding: 10px;',
+      code: 'font-size: 13px; background-color: rgba(0,0,0,0.04); color: #374151; border-radius: 4px; padding: 0 4px;',
+    }
+  }
+})
 
-const tagStyle = computed(() => ({ ...defaultTagStyle, ...(props.tagStyle || {}) }))
+const tagStyle = computed(() => ({ ...defaultTagStyle.value, ...(props.tagStyle || {}) }))
 
 const scrollTable = computed(() => props.scrollTable ?? true)
 </script>
@@ -59,13 +77,12 @@ const scrollTable = computed(() => props.scrollTable ?? true)
   line-height: 1.6;
   padding: 10px;
   border-radius: 8px;
-  background: #f7fafc;
+  /* 背景颜色改为在 tagStyle 中动态控制 */
 }
 
 .content-body :deep(._code) {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
   font-size: 13px;
-  background: rgba(0, 0, 0, 0.04);
   padding: 0 4px;
   border-radius: 4px;
 }
