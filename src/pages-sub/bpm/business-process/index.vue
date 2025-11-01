@@ -231,7 +231,7 @@ function handleGoBack() {
       <!-- 根据processKey静态渲染对应的业务组件 -->
 
       <!-- 请假申请组件 -->
-      <ThemeCard card-class="mx-4 mt-4">
+      <ThemeCard card-class="mb-4 mt-2">
         <LeaveApplication
           v-if="processKey === 'oa_leave'"
           ref="businessFormRef"
@@ -251,7 +251,7 @@ function handleGoBack() {
       </ThemeCard>
 
       <!-- 审批流程组件（统一在这里显示） -->
-      <ThemeCard card-class="mx-4 mt-4">
+      <ThemeCard>
         <ApprovalSteps
           v-if="processDefinitionId"
           ref="approvalStepsRef"

@@ -227,7 +227,7 @@ function updateFieldValue(fieldLabel: string, value: any) {
     <!-- 表单内容 -->
     <view class="px-4 py-3">
       <!-- 动态表单字段 -->
-      <ThemeCard v-if="formFields.length > 0" card-class="mb-6">
+      <ThemeCard v-if="formFields.length > 0" card-class="mb-4 mt-2">
         <wd-form ref="form" :model="formData">
           <wd-cell-group title="表单信息">
             <DynamicFormField
@@ -255,7 +255,7 @@ function updateFieldValue(fieldLabel: string, value: any) {
       </ThemeCard>
 
       <!-- 审批流程（统一使用 ApprovalSteps 组件，并传入已缓存的节点数据） -->
-      <ThemeCard v-if="processInfo.processDefinitionId" card-class="mt-4">
+      <ThemeCard v-if="processInfo.processDefinitionId">
         <ApprovalSteps
           :process-definition-id="processInfo.processDefinitionId"
           :process-variables="formData"

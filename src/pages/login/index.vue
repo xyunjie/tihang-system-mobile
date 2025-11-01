@@ -345,7 +345,7 @@ function goForgot() {
 
         <!-- 登录模式切换（小程序端） -->
         <!-- #ifdef MP-WEIXIN -->
-        <view v-if="!userStore.userInfo.username" class="mb-6">
+        <view class="mb-6">
           <view class="flex items-center justify-center gap-3">
             <view
               class="flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all" :class="[
