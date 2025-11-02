@@ -6,9 +6,7 @@
     // 'custom' 表示开启自定义导航栏，默认 'default'
     "navigationStyle": "default",
     "navigationBarTitleText": "梯航小助手",
-    "enablePullDownRefresh": true,
-    "refresherEnabled": true,
-    "refresherThreshold": 80
+    "enablePullDownRefresh": true
   }
 }
 </route>
@@ -23,6 +21,7 @@ import { getTodayAttendanceRecord } from '@/api/attendance'
 import { getNoticePage } from '@/api/notice'
 import { getMyNotifyMessagePage, getUnreadCount } from '@/api/notify-message'
 import ThemeCard from '@/components/ThemeCard.vue'
+import { WECHAT_SHARE_IMAGE_URL } from '@/config/share'
 import { useAppStore } from '@/store/app'
 import { formatDateOnly, formatRelativeTime, formatStandardDateTime, formatTimeOnly, parseDateTime } from '@/utils'
 
@@ -122,6 +121,21 @@ onShow(() => {
   // 加载消息提醒数据
   loadMessageList()
 })
+
+// #ifdef MP-WEIXIN
+
+onShareAppMessage(() => ({
+  title: '梯航小助手',
+  path: '/pages/index/index',
+  imageUrl: WECHAT_SHARE_IMAGE_URL,
+}))
+
+onShareTimeline(() => ({
+  title: '梯航小助手',
+  query: '',
+  imageUrl: WECHAT_SHARE_IMAGE_URL,
+}))
+// #endif
 
 // 下拉刷新处理
 async function handlePullDownRefresh() {

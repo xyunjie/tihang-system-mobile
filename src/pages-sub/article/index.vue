@@ -11,6 +11,7 @@ import type { ArticleSearchRespVO } from '@/api/types/article'
 import { computed } from 'vue'
 import { getArticlePage } from '@/api/article'
 import ThemeCard from '@/components/ThemeCard.vue'
+import { WECHAT_SHARE_IMAGE_URL } from '@/config/share'
 import { useAppStore } from '@/store/app'
 import { formatStandardDateTime } from '@/utils'
 
@@ -155,6 +156,30 @@ function highlightSearchKeywords(text: string | undefined): string {
     '<span style="color: #ff0000; font-weight: bold;">$1</span>',
   )
 }
+
+// #ifdef MP-WEIXIN
+// 开启分享菜单，避免按钮灰色
+try {
+  uni.showShareMenu({
+    withShareTicket: true,
+    menus: ['shareAppMessage', 'shareTimeline'],
+  })
+}
+catch (e) {}
+
+// 文章列表分享：静态路径
+onShareAppMessage(() => ({
+  title: '文章列表',
+  path: '/pages-sub/article/index',
+  imageUrl: WECHAT_SHARE_IMAGE_URL,
+}))
+
+onShareTimeline(() => ({
+  title: '文章列表',
+  query: '',
+  imageUrl: WECHAT_SHARE_IMAGE_URL,
+}))
+// #endif
 </script>
 
 <template>
@@ -210,7 +235,7 @@ function highlightSearchKeywords(text: string | undefined): string {
         <ThemeCard
           v-for="article in articles"
           :key="article.id"
-          class="mb-4 transition-all active:scale-98"
+          card-class="mb-4 transition-all active:scale-98"
           :padding="false"
           @click="goToArticleDetail(article.id)"
         >

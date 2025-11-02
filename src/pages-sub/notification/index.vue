@@ -42,9 +42,6 @@ const isDark = computed(() => appStore.theme === 'dark')
 const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-gray-800'))
 const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-gray-600'))
 const textMutedClass = computed(() => (isDark.value ? 'text-gray-500' : 'text-gray-400'))
-const borderMutedClass = computed(() => (isDark.value ? 'border-white/10' : 'border-gray-100'))
-const activeRowBgClass = computed(() => (isDark.value ? 'active:bg-white/5' : 'active:bg-gray-50'))
-
 // 加载通知公告列表
 async function queryList(pageNo: number, pageSize: number) {
   try {
@@ -218,7 +215,7 @@ function getPlainTextContent(htmlContent: string): string {
         <ThemeCard
           v-for="notification in notificationList"
           :key="notification.id"
-          class="mb-4 transition-all active:scale-98"
+          card-class="mb-4 transition-all active:scale-98"
           :padding="false"
           @click="navigateToDetail(notification)"
         >

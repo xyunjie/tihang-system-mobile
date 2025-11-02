@@ -5,22 +5,19 @@
   "style": {
     "navigationStyle": "default",
     "navigationBarTitleText": "个人中心",
-    "enablePullDownRefresh": true,
-    "refresherEnabled": true,
-    "refresherThreshold": 80,
-    "refresherDefaultStyle": "black",
-    "refresherBackground": "#f5f5f5",
-    "backgroundTextStyle": "dark"
+    "enablePullDownRefresh": true
   }
 }
 </route>
 
 <script setup lang="ts">
 import type { ISystemUserInfoVo } from '@/api/types/user'
+import { onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 import { logout } from '@/api/login'
 import { getUserInfo as _getUserInfo } from '@/api/user'
 import ThemeCard from '@/components/ThemeCard.vue'
+import { WECHAT_SHARE_IMAGE_URL } from '@/config/share'
 import { useUserStore } from '@/store'
 import { useAppStore } from '@/store/app'
 
@@ -265,6 +262,31 @@ const textSecondaryClass = computed(() => isDark.value ? 'text-white/70' : 'text
 const textMutedClass = computed(() => isDark.value ? 'text-white/50' : 'text-gray-400')
 const borderMutedClass = computed(() => isDark.value ? 'border-white/10' : 'border-gray-100')
 const activeRowBgClass = computed(() => isDark.value ? 'active:bg-white/6' : 'active:bg-gray-50')
+
+// #ifdef MP-WEIXIN
+
+// 分享标题与图片
+const shareTitle = computed(() => {
+  return `个人中心`
+})
+const shareImageUrl = computed(() => {
+  return systemUserInfo.value?.avatar || WECHAT_SHARE_IMAGE_URL
+})
+
+// 分享到好友消息
+onShareAppMessage(() => ({
+  title: shareTitle.value,
+  path: '/pages/profile/index',
+  imageUrl: shareImageUrl.value,
+}))
+
+// 分享到朋友圈
+onShareTimeline(() => ({
+  title: shareTitle.value,
+  query: '',
+  imageUrl: shareImageUrl.value,
+}))
+// #endif
 </script>
 
 <template>

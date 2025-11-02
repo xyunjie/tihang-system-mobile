@@ -3,18 +3,18 @@
   "style": {
     "navigationBarTitleText": "个人主页",
     "navigationStyle": "default",
-    "enablePullDownRefresh": true,
-    "backgroundTextStyle": "dark"
+    "enablePullDownRefresh": true
   }
 }
 </route>
 
 <script setup lang="ts">
 import type { ISystemUserInfoVo } from '@/api/types/user'
-import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app'
+import { onLoad, onPullDownRefresh, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 import { getUserProfile } from '@/api/user'
 import ThemeCard from '@/components/ThemeCard.vue'
+import { WECHAT_SHARE_IMAGE_URL } from '@/config/share'
 import { useAppStore } from '@/store/app'
 
 defineOptions({ name: 'ContactUserProfile' })
@@ -46,6 +46,7 @@ async function fetchProfile(id?: number) {
   try {
     const res = await getUserProfile(targetId)
     profile.value = res.data ?? null
+    uni.setNavigationBarTitle({ title: `${profile.value?.nickname}的个人主页` })
   }
   catch (e) {
     uni.showToast({ title: '加载失败', icon: 'none' })
@@ -66,6 +67,44 @@ onLoad((query) => {
 onPullDownRefresh(async () => {
   await fetchProfile()
   uni.stopPullDownRefresh()
+})
+
+// 分享菜单开启（小程序）
+// #ifdef MP-WEIXIN
+uni.showShareMenu({ withShareTicket: true, menus: ['shareAppMessage', 'shareTimeline'] })
+// #endif
+
+// 分享标题与图片
+const shareTitle = computed(() => {
+  const name = profile.value?.nickname || profile.value?.username || '个人主页'
+  // 显示为 “XXX的个人主页”
+  return `${name}的个人主页`
+})
+const shareImageUrl = computed(() => {
+  // 优先使用用户头像，其次使用全局分享图片配置
+  return profile.value?.avatar || WECHAT_SHARE_IMAGE_URL
+})
+
+// 分享到会话
+onShareAppMessage(() => {
+  const id = userId.value
+  const path = `/pages-sub/contact/profile${id ? `?id=${id}` : ''}`
+  return {
+    title: shareTitle.value,
+    path,
+    imageUrl: shareImageUrl.value,
+  }
+})
+
+// 分享到朋友圈
+onShareTimeline(() => {
+  const id = userId.value
+  const query = id ? `id=${id}` : ''
+  return {
+    title: shareTitle.value,
+    query,
+    imageUrl: shareImageUrl.value,
+  }
 })
 </script>
 
@@ -107,21 +146,14 @@ onPullDownRefresh(async () => {
           <wd-cell title="手机号" :value="profile.mobile || '—'" center />
           <wd-cell title="邮箱" :value="profile.email || '—'" center />
           <wd-cell title="所属部门" :value="profile.dept?.name || '—'" center />
-          <wd-cell
-            :use-title-slot="true"
-            :use-value-slot="true"
-            center
-          >
+          <wd-cell :use-title-slot="true" :use-value-slot="true" center>
             <template #title>
               角色
             </template>
             <template #default>
               <view class="flex flex-wrap justify-end gap-2">
                 <wd-tag
-                  v-for="(role, idx) in (profile.roles || []).slice(0, 3)"
-                  :key="idx"
-                  type="primary"
-                  plain
+                  v-for="(role, idx) in (profile.roles || []).slice(0, 3)" :key="idx" type="primary" plain
                   size="small"
                 >
                   {{ role?.name }}

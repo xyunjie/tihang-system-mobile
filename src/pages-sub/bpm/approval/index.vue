@@ -10,6 +10,7 @@
 <script setup lang="ts">
 import type { ApprovalDetailRespVO, BpmTaskApproveReqVO, BpmTaskCopyReqVO, BpmTaskDelegateReqVO, BpmTaskRejectReqVO, BpmTaskRespVO, BpmTaskReturnReqVO, BpmTaskSignCreateReqVO, BpmTaskTransferReqVO, FormField, GetApprovalDetailReqVO, GetTaskListByReturnReqVO } from '@/api/types/bpm'
 import type { UserSimpleRespVO } from '@/api/types/user'
+import { onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 import { approveTask, copyTask, createSignTask, delegateTask, getApprovalDetail, getTaskListByReturn, rejectTask, returnTask, transferTask } from '@/api/bpm'
 import { getSimpleUserList } from '@/api/user'
@@ -17,6 +18,7 @@ import ApprovalSteps from '@/components/ApprovalSteps.vue'
 import LeaveApplication from '@/components/business-forms/LeaveApplication.vue'
 import DynamicFormField from '@/components/DynamicFormField.vue'
 import ThemeCard from '@/components/ThemeCard.vue'
+import { WECHAT_SHARE_IMAGE_URL } from '@/config/share'
 import { useAppStore } from '@/store/app'
 import { formatStandardDateTime } from '@/utils'
 
@@ -63,6 +65,47 @@ onLoad((options) => {
   processInstanceId.value = options.processInstanceId || ''
   activityId.value = options.activityId || ''
   loadApprovalDetail()
+})
+// 分享给好友
+onShareAppMessage(() => {
+  const processName = approvalDetail.value?.processInstance?.name || ''
+  const imageUrl = WECHAT_SHARE_IMAGE_URL
+
+  const queryParams: string[] = []
+  if (processInstanceId.value)
+    queryParams.push(`processInstanceId=${encodeURIComponent(processInstanceId.value)}`)
+  if (taskId.value)
+    queryParams.push(`taskId=${encodeURIComponent(taskId.value)}`)
+  if (activityId.value)
+    queryParams.push(`activityId=${encodeURIComponent(activityId.value)}`)
+  const path = `/pages-sub/bpm/approval/index${queryParams.length ? `?${queryParams.join('&')}` : ''}`
+
+  return {
+    title: processName,
+    path,
+    imageUrl,
+  }
+})
+
+// 分享到朋友圈
+onShareTimeline(() => {
+  const processName = approvalDetail.value?.processInstance?.name || ''
+  console.log('processName', processName)
+  const imageUrl = WECHAT_SHARE_IMAGE_URL
+
+  const queryParams: string[] = []
+  if (processInstanceId.value)
+    queryParams.push(`processInstanceId=${encodeURIComponent(processInstanceId.value)}`)
+  if (taskId.value)
+    queryParams.push(`taskId=${encodeURIComponent(taskId.value)}`)
+  if (activityId.value)
+    queryParams.push(`activityId=${encodeURIComponent(activityId.value)}`)
+
+  return {
+    title: processName,
+    query: queryParams.join('&'),
+    imageUrl,
+  }
 })
 
 // 获取流程详情

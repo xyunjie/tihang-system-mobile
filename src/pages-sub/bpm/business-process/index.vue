@@ -8,12 +8,14 @@
 </route>
 
 <script setup lang="ts">
+import { onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 import { getProcessDefinitionList } from '@/api/bpm'
 import ApprovalSteps from '@/components/ApprovalSteps.vue'
 import CourseScheduleApplication from '@/components/business-forms/CourseScheduleApplication.vue'
 import LeaveApplication from '@/components/business-forms/LeaveApplication.vue'
 import ThemeCard from '@/components/ThemeCard.vue'
+import { WECHAT_SHARE_IMAGE_URL } from '@/config/share'
 import { submitBusinessForm } from '@/pages-sub/utils/businessApiConfig'
 import { getBusinessTitle } from '@/pages-sub/utils/businessComponentConfig'
 import { useAppStore } from '@/store/app'
@@ -73,6 +75,47 @@ onLoad((options) => {
   // 若无流程定义ID但有key，尝试根据key自动匹配流程定义
   if (!processDefinitionId.value && processKey.value) {
     tryAutoResolveProcessDefinitionId()
+  }
+})
+
+// 分享给好友
+onShareAppMessage(() => {
+  const baseTitle = getBusinessTitle(processKey.value) || '业务申请'
+  const title = baseTitle
+
+  const imageUrl = WECHAT_SHARE_IMAGE_URL
+
+  const queryParams: string[] = []
+  if (processDefinitionId.value)
+    queryParams.push(`processDefinitionId=${encodeURIComponent(processDefinitionId.value)}`)
+  if (processKey.value)
+    queryParams.push(`processKey=${encodeURIComponent(processKey.value)}`)
+  const path = `/pages-sub/bpm/business-process/index${queryParams.length ? `?${queryParams.join('&')}` : ''}`
+
+  return {
+    title,
+    path,
+    imageUrl,
+  }
+})
+
+// 分享到朋友圈
+onShareTimeline(() => {
+  const baseTitle = getBusinessTitle(processKey.value) || '业务申请'
+  const title = baseTitle
+
+  const imageUrl = WECHAT_SHARE_IMAGE_URL
+
+  const queryParams: string[] = []
+  if (processDefinitionId.value)
+    queryParams.push(`processDefinitionId=${encodeURIComponent(processDefinitionId.value)}`)
+  if (processKey.value)
+    queryParams.push(`processKey=${encodeURIComponent(processKey.value)}`)
+
+  return {
+    title,
+    query: queryParams.join('&'),
+    imageUrl,
   }
 })
 

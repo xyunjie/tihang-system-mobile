@@ -5,10 +5,7 @@
   "style": {
     "navigationStyle": "default",
     "navigationBarTitleText": "通讯录",
-    "enablePullDownRefresh": true,
-    "refresherEnabled": true,
-    "refresherThreshold": 80,
-    "backgroundTextStyle": "dark"
+    "enablePullDownRefresh": true
   }
 }
 </route>

@@ -58,9 +58,7 @@
       "style": {
         "navigationStyle": "default",
         "navigationBarTitleText": "梯航小助手",
-        "enablePullDownRefresh": true,
-        "refresherEnabled": true,
-        "refresherThreshold": 80
+        "enablePullDownRefresh": true
       }
     },
     {
@@ -80,10 +78,7 @@
       "style": {
         "navigationStyle": "default",
         "navigationBarTitleText": "通讯录",
-        "enablePullDownRefresh": true,
-        "refresherEnabled": true,
-        "refresherThreshold": 80,
-        "backgroundTextStyle": "dark"
+        "enablePullDownRefresh": true
       }
     },
     {
@@ -140,12 +135,7 @@
       "style": {
         "navigationStyle": "default",
         "navigationBarTitleText": "个人中心",
-        "enablePullDownRefresh": true,
-        "refresherEnabled": true,
-        "refresherThreshold": 80,
-        "refresherDefaultStyle": "black",
-        "refresherBackground": "#f5f5f5",
-        "backgroundTextStyle": "dark"
+        "enablePullDownRefresh": true
       }
     },
     {
@@ -230,8 +220,7 @@
           "style": {
             "navigationBarTitleText": "个人主页",
             "navigationStyle": "default",
-            "enablePullDownRefresh": true,
-            "backgroundTextStyle": "dark"
+            "enablePullDownRefresh": true
           }
         },
         {

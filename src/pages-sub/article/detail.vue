@@ -11,6 +11,7 @@ import type { ArticleDetailRespVO } from '@/api/types/article'
 import { computed } from 'vue'
 import { getArticleDetail } from '@/api/article'
 import ThemeCard from '@/components/ThemeCard.vue'
+import { WECHAT_SHARE_IMAGE_URL } from '@/config/share'
 import { useAppStore } from '@/store/app'
 import { formatStandardDateTime } from '@/utils'
 
@@ -59,17 +60,17 @@ async function loadArticleDetail() {
 
   try {
     const response = await getArticleDetail(articleId.value)
-
-    console.log('文章详情查询响应:', response)
-
     if (response.code === 0 && response.data) {
       article.value = response.data
       isLoved.value = response.data.isLove
       isStarred.value = response.data.isStar
+
+      uni.setNavigationBarTitle({
+        title: article.value?.title || '文章详情',
+      })
     }
     else {
       uni.showToast({
-        title: response.msg || '获取文章详情失败',
         icon: 'none',
         duration: 2000,
       })
@@ -102,6 +103,30 @@ function formatCount(count: number): string {
   }
   return count.toString()
 }
+
+// #ifdef MP-WEIXIN
+// 开启分享菜单，避免按钮灰色
+try {
+  uni.showShareMenu({
+    withShareTicket: true,
+    menus: ['shareAppMessage', 'shareTimeline'],
+  })
+}
+catch (e) {}
+
+// 详情页分享：携带文章ID参数
+onShareAppMessage(() => ({
+  title: article.value?.title || '文章详情',
+  path: `/pages-sub/article/detail?id=${articleId.value}`,
+  imageUrl: article.value?.coverImage || WECHAT_SHARE_IMAGE_URL,
+}))
+
+onShareTimeline(() => ({
+  title: article.value?.title || '文章详情',
+  query: `id=${articleId.value}`,
+  imageUrl: article.value?.coverImage || WECHAT_SHARE_IMAGE_URL,
+}))
+// #endif
 </script>
 
 <template>

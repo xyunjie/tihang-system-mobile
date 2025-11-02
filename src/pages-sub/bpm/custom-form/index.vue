@@ -8,12 +8,14 @@
 </route>
 
 <script setup lang="ts">
-import type { ActivityNode, ApprovalDetailRespVO, BpmCustomFormCreateReqVO, FormField, GetApprovalDetailReqVO } from '@/api/types/bpm'
+import type { ActivityNode, ApprovalDetailRespVO, BpmCustomFormCreateReqVO, FormField, GetApprovalDetailReqVO, ProcessDefinitionRespVO } from '@/api/types/bpm'
+import { onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import { computed, ref } from 'vue'
 import { createCustomFormProcess, getApprovalDetail, getProcessDefinitionDetail } from '@/api/bpm'
 import ApprovalSteps from '@/components/ApprovalSteps.vue'
 import DynamicFormField from '@/components/DynamicFormField.vue'
 import ThemeCard from '@/components/ThemeCard.vue'
+import { WECHAT_SHARE_IMAGE_URL } from '@/config/share'
 import { useAppStore } from '@/store/app'
 
 const form = ref()
@@ -25,6 +27,8 @@ const processInfo = ref<{
   processDefinitionId: '',
   processKey: '',
 })
+
+const processDetail = ref<ProcessDefinitionRespVO>()
 
 // 表单数据
 const formData = ref<Record<string, any>>({})
@@ -63,10 +67,6 @@ const emptyCardSubTextClass = computed(() => (
   isDark.value ? 'text-sm text-gray-400' : 'text-sm text-gray-400'
 ))
 
-const cellBorderClass = computed(() => (
-  isDark.value ? 'border-gray-700' : 'border-gray-100'
-))
-
 const bottomBarClass = computed(() => [
   'fixed bottom-0 left-0 right-0 border-t px-4 py-3 backdrop-blur-sm rounded-t-lg',
   isDark.value
@@ -82,6 +82,56 @@ onLoad((options) => {
   // 加载流程定义详情
   loadApprovalDetail()
   getProcessDefinition()
+
+  // 开启分享菜单（好友消息与朋友圈）
+  try {
+    uni.showShareMenu({
+      withShareTicket: true,
+      menus: ['shareAppMessage', 'shareTimeline'],
+    })
+  }
+  catch (e) {
+    console.warn('开启分享菜单失败：', e)
+  }
+})
+
+// 分享给好友
+onShareAppMessage(() => {
+  const title = processDetail.value?.name
+
+  const imageUrl = processDetail.value?.icon || WECHAT_SHARE_IMAGE_URL
+
+  const queryParams: string[] = []
+  if (processInfo.value.processDefinitionId)
+    queryParams.push(`processDefinitionId=${encodeURIComponent(processInfo.value.processDefinitionId)}`)
+  if (processInfo.value.processKey)
+    queryParams.push(`processKey=${encodeURIComponent(processInfo.value.processKey)}`)
+  const path = `/pages-sub/bpm/custom-form/index${queryParams.length ? `?${queryParams.join('&')}` : ''}`
+
+  return {
+    title,
+    path,
+    imageUrl,
+  }
+})
+
+// 分享到朋友圈
+onShareTimeline(() => {
+  const title = processDetail.value?.name
+
+  const imageUrl = processDetail.value?.icon || WECHAT_SHARE_IMAGE_URL
+
+  const queryParams: string[] = []
+  if (processInfo.value.processDefinitionId)
+    queryParams.push(`processDefinitionId=${encodeURIComponent(processInfo.value.processDefinitionId)}`)
+  if (processInfo.value.processKey)
+    queryParams.push(`processKey=${encodeURIComponent(processInfo.value.processKey)}`)
+
+  return {
+    title,
+    query: queryParams.join('&'),
+    imageUrl,
+  }
 })
 
 // 加载流程定义详情
@@ -123,6 +173,7 @@ async function getProcessDefinition() {
       id: processInfo.value.processDefinitionId,
     })
     if (response.data) {
+      processDetail.value = response.data
       // 设置标题为name
       uni.setNavigationBarTitle({ title: response.data.name || '自定义表单' })
       formFields.value = (response.data.formFields || []).map((field) => {

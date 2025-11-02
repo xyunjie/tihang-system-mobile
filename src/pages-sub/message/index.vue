@@ -270,7 +270,7 @@ function getPlainTextContent(htmlContent: string): string {
         <ThemeCard
           v-for="message in messageList"
           :key="message.id"
-          class="mb-4 transition-all active:scale-98"
+          card-class="mb-4 transition-all active:scale-98"
           :padding="false"
           @click="navigateToDetail(message)"
         >

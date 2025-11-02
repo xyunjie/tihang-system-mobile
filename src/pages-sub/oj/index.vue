@@ -10,8 +10,9 @@
 </route>
 
 <script setup lang="ts">
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import { computed, reactive, ref } from 'vue'
+import { WECHAT_SHARE_IMAGE_URL } from '@/config/share'
 import { getHydroOjCount } from '@/pages-sub/api/oj'
 import { useAppStore } from '@/store/app'
 
@@ -87,6 +88,24 @@ onLoad(async () => {
   }
   finally {
     loading.value = false
+  }
+})
+
+// 好友分享
+onShareAppMessage(() => {
+  return {
+    title: '在线评测系统信息',
+    path: '/pages-sub/oj/index',
+    imageUrl: WECHAT_SHARE_IMAGE_URL,
+  }
+})
+
+// 朋友圈分享
+onShareTimeline(() => {
+  return {
+    title: '在线评测系统信息',
+    query: '',
+    imageUrl: WECHAT_SHARE_IMAGE_URL,
   }
 })
 </script>

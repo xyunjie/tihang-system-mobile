@@ -11,6 +11,7 @@ import type { NoticeRespVO } from '@/api/types/notice'
 import { computed } from 'vue'
 import { getNoticeById } from '@/api/notice'
 import ThemeCard from '@/components/ThemeCard.vue'
+import { WECHAT_SHARE_IMAGE_URL } from '@/config/share'
 import { useAppStore } from '@/store/app'
 import { formatStandardDateTime } from '@/utils'
 
@@ -41,6 +42,30 @@ onLoad((options) => {
     }, 2000)
   }
 })
+
+// #ifdef MP-WEIXIN
+// 开启分享菜单，避免按钮灰色
+try {
+  uni.showShareMenu({
+    withShareTicket: true,
+    menus: ['shareAppMessage', 'shareTimeline'],
+  })
+}
+catch (e) {}
+
+// 详情页分享：携带通知ID参数
+onShareAppMessage(() => ({
+  title: notification.value?.title || '通知详情',
+  path: `/pages-sub/notification/detail?id=${notificationId.value}`,
+  imageUrl: WECHAT_SHARE_IMAGE_URL,
+}))
+
+onShareTimeline(() => ({
+  title: notification.value?.title || '通知详情',
+  query: `id=${notificationId.value}`,
+  imageUrl: WECHAT_SHARE_IMAGE_URL,
+}))
+// #endif
 
 // 加载通知公告详情
 async function loadNotificationDetail() {
