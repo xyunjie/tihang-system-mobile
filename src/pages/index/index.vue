@@ -68,7 +68,7 @@ const todayAttendance = reactive({
   clockInTime: '--:--',
   clockOutTime: '--:--',
   workDuration: '暂无数据',
-  attendanceStatus: '暨无记录',
+  attendanceStatus: '暂无数据',
   location: '考勤机：暂无数据',
   loading: false,
   result: 0,
@@ -221,12 +221,15 @@ async function loadTodayAttendance() {
       }
     }
     else {
-      todayAttendance.attendanceStatus = '未打卡'
+      // 无数据：统一显示“暂无数据”并将结果置为 0（未知）
+      todayAttendance.attendanceStatus = '暂无数据'
+      todayAttendance.result = 0
     }
   }
   catch (error) {
     console.error('加载考勤数据错误:', error) // 改进错误日志
     todayAttendance.attendanceStatus = '加载失败'
+    todayAttendance.result = 0
   }
   finally {
     todayAttendance.loading = false
@@ -311,7 +314,8 @@ function getAttendanceStatusText(result: number): string {
 
 function getAttendanceStatusTextBackground(result: number): string {
   // 使用统一配置的徽标背景颜色映射
-  return getAttendanceBadgeBgClass(result)
+  const res = getAttendanceBadgeBgClass(result)
+  return res
 }
 
 // 获取考勤结果的数值，用于背景样式判断
@@ -322,7 +326,7 @@ function getAttendanceResultValue(): number {
   }
 
   // 如果没有result值，根据状态文本反推
-  if (todayAttendance.attendanceStatus !== '暨无记录' && todayAttendance.attendanceStatus !== '加载失败') {
+  if (todayAttendance.attendanceStatus !== '暂无数据' && todayAttendance.attendanceStatus !== '加载失败') {
     switch (todayAttendance.attendanceStatus) {
       case '考勤正常': return 1
       case '迟到': return 2

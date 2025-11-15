@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { onHide, onLaunch, onShow } from '@dcloudio/uni-app'
+import { watch } from 'vue'
 import { usePageAuth } from '@/hooks/usePageAuth'
 import { useUserStore } from '@/store'
+import { useAppStore } from '@/store/app'
 import { notLoginPages as _notLoginPages, getNotLoginPages } from '@/utils'
 import 'abortcontroller-polyfill/dist/abortcontroller-polyfill-only'
 
@@ -90,6 +92,41 @@ function checkInitialAuth() {
 usePageAuth()
 
 onLaunch(() => {
+  // 初始化系统主题，并在 H5 下将主题同步到根节点，避免仅依赖 prefers-color-scheme 导致 H5 切换不生效
+  const appStore = useAppStore()
+  try {
+    appStore.initThemeFromSystem()
+  }
+  catch (e) {
+    // ignore
+  }
+
+  // #ifdef H5
+  const applyH5Theme = (mode: 'light' | 'dark') => {
+    const el = document.documentElement
+    el.setAttribute('data-theme', mode)
+  }
+  applyH5Theme(appStore.theme)
+  watch(() => appStore.theme, t => applyH5Theme(t))
+  // #endif
+
+  // #ifdef MP-WEIXIN
+  // 微信端：主动设置导航栏与页面背景，确保深色模式下显示正确
+  const applyMpTheme = (mode: 'light' | 'dark') => {
+    const isDark = mode === 'dark'
+    uni.setNavigationBarColor({
+      frontColor: isDark ? '#ffffff' : '#000000',
+      backgroundColor: isDark ? '#0f182e' : '#ffffff',
+    })
+    uni.setBackgroundColor({
+      backgroundColor: isDark ? '#0b1220' : '#ecf1f9',
+      backgroundColorTop: isDark ? '#0b1220' : '#ecf1f9',
+      backgroundColorBottom: isDark ? '#0b1220' : '#ecf1f9',
+    })
+  }
+  applyMpTheme(appStore.theme)
+  watch(() => appStore.theme, t => applyMpTheme(t))
+  // #endif
 })
 onShow(() => {
   checkInitialAuth()
@@ -114,8 +151,12 @@ image {
 
 page {
   /* #ifdef MP-WEIXIN */
-  /* 微信小程序使用纯色背景（浅色模式） */
+  /* 微信小程序浅色模式背景 */
   background: #ecf1f9;
+  /* 深色模式：跟随系统，使用深色渐变背景 */
+  @media (prefers-color-scheme: dark) {
+    background: -webkit-linear-gradient(135deg, #0b1220 0%, #0d1426 20%, #0f182e 45%, #101a33 70%, #12203b 100%);
+  }
   /* #endif */
 
   /* #ifndef MP-WEIXIN */
@@ -129,17 +170,15 @@ page {
   background-size: 100% 100%;
 }
 
-@media (prefers-color-scheme: dark) {
-  page {
-    /* #ifdef MP-WEIXIN */
-    /* 微信小程序使用纯色背景（深色模式） */
-    background: #0b1220;
-    /* #endif */
-    /* #ifndef MP-WEIXIN */
-    background: -webkit-linear-gradient(135deg, #0b1220 0%, #0d1426 20%, #0f182e 45%, #101a33 70%, #12203b 100%);
-    /* #endif */
-  }
+/* H5 下根据 data-theme 主动切换背景，避免仅依赖系统偏好 */
+/* #ifdef H5 */
+[data-theme='light'] page {
+  background: -webkit-linear-gradient(135deg, #f3f7ff 0%, #f0f4ff 20%, #e8edff 45%, #e2e8ff 70%, #dde5ff 100%);
 }
+[data-theme='dark'] page {
+  background: -webkit-linear-gradient(135deg, #0b1220 0%, #0d1426 20%, #0f182e 45%, #101a33 70%, #12203b 100%);
+}
+/* #endif */
 
 /* #ifdef H5 */
 uni-page-head {

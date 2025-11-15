@@ -10,7 +10,6 @@
 import dayjs from 'dayjs'
 import { computed, ref, watch } from 'vue'
 import { getAttendanceRecord, getAttendanceStatistics, getCalendarStatistics } from '@/api/attendance'
-import InlineCalendar from '@/components/InlineCalendar.vue'
 import ThemeCard from '@/components/ThemeCard.vue'
 import { getAttendanceDotClass, getAttendanceLabel, getAttendanceTagType } from '@/config/attendance'
 import { useAppStore } from '@/store/app'
@@ -20,7 +19,6 @@ defineOptions({ name: 'AttendanceRecord' })
 // 主题适配
 const appStore = useAppStore()
 const isDark = computed(() => appStore.theme === 'dark')
-const cardClass = computed(() => (isDark.value ? 'bg-gray-800' : 'bg-white'))
 const titleClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-gray-900'))
 const textClass = computed(() => (isDark.value ? 'text-gray-300' : 'text-gray-600'))
 const borderClass = computed(() => (isDark.value ? 'border-white/10' : 'border-gray-100'))
@@ -37,13 +35,20 @@ const monthTitle = computed(() => dayjs(panelMonthTs.value).format('YYYY年MM月
 // 可选择范围（向前/向后 12 个月）
 const minDate = dayjs().subtract(12, 'month').valueOf()
 const maxDate = dayjs().add(12, 'month').valueOf()
+// uni-calendar 需要字符串日期
+const minDateStr = computed(() => dayjs(minDate).format('YYYY-MM-DD'))
+const maxDateStr = computed(() => dayjs(maxDate).format('YYYY-MM-DD'))
+const calendarDateStr = computed(() => dayjs(calendarValue.value).format('YYYY-MM-DD'))
 // 点选即变更
-function onCalendarChange({ value }: { value: number }) {
-  calendarValue.value = value
-  panelMonthTs.value = dayjs(value).startOf('month').valueOf()
+// 使用 uni-calendar 的事件
+function onUniCalendarChange(e: { fulldate: string }) {
+  const ts = dayjs(e.fulldate).valueOf()
+  calendarValue.value = ts
+  panelMonthTs.value = dayjs(ts).startOf('month').valueOf()
 }
-function onMonthChange(panelTs: number) {
-  panelMonthTs.value = panelTs
+function onUniMonthSwitch(e: { year: number, month: number }) {
+  const ts = dayjs(`${e.year}-${String(e.month).padStart(2, '0')}-01`).valueOf()
+  panelMonthTs.value = ts
 }
 
 // 当日详情（UI 映射）
@@ -149,18 +154,19 @@ function isSamePanelMonth(ts: number): boolean {
   return dayjs(ts).format('YYYY-MM') === dayjs(panelMonthTs.value).format('YYYY-MM')
 }
 
-// 判断是否显示打点：仅在当前面板月份且当月日期存在状态
-function hasRecordTs(ts: number): boolean {
-  if (!isSamePanelMonth(ts))
-    return false
-  const day = dayjs(ts).date()
-  return calendarStats.value[day] != null
-}
+// uni-calendar 的打点数组（仅当前面板月份）
+const selectedMarks = computed(() => {
+  const baseMonth = dayjs(panelMonthTs.value)
+  const entries = Object.entries(calendarStats.value)
+  return entries.map(([d, code]) => ({
+    date: baseMonth.date(Number(d)).format('YYYY-MM-DD'),
+    info: '',
+    data: { code },
+  }))
+})
 
 // 判断是否为当前选中日期
-function isSelected(ts: number): boolean {
-  return dayjs(calendarValue.value).isSame(ts, 'day')
-}
+// 已由 uni-calendar 负责选中态
 
 // 删除重复的圆点与视图滑动逻辑（周/月），仅保留月份滑动
 
@@ -247,35 +253,27 @@ function tryNavigateToLeaveDetail() {
   <view class="min-h-screen px-4 py-2">
     <!-- 1. 年月 -->
     <ThemeCard card-class="mb-4" :padding="false">
-      <!-- 头部：月份与导航 -->
-      <view class="flex items-center justify-between border-b px-4 py-3" :class="borderClass">
-        <!-- 左侧：上月 -->
-        <view class="w-10 flex items-center justify-center">
-          <view
-            class="h-7 w-7 flex items-center justify-center rounded-full" :class="isDark ? 'bg-white/5' : 'bg-gray-100'" @click="panelMonthTs = dayjs(panelMonthTs).subtract(1, 'month').valueOf()"
-          >
-            <text :class="titleClass" class="text-sm">
-              ‹
-            </text>
-          </view>
-        </view>
-        <!-- 中间：标题居中 -->
-        <view class="flex-1 text-center">
-          <text :class="titleClass" class="text-lg font-semibold">
-            {{ monthTitle }}
-          </text>
-        </view>
-        <!-- 右侧：下月 -->
-        <view class="w-10 flex items-center justify-center">
-          <view class="h-7 w-7 flex items-center justify-center rounded-full" :class="isDark ? 'bg-white/5' : 'bg-gray-100'" @click="panelMonthTs = dayjs(panelMonthTs).add(1, 'month').valueOf()">
-            <text :class="titleClass" class="text-sm">
-              ›
-            </text>
-          </view>
-        </view>
+      <!-- 日历面板：使用 uni-calendar 官方组件 -->
+      <view
+        class="calendar-override px-2 pb-2"
+        :class="isDark ? 'uni-calendar-dark' : ''"
+      >
+        <uni-calendar
+          :insert="true"
+          :lunar="false"
+          :start-date="minDateStr"
+          :end-date="maxDateStr"
+          :date="calendarDateStr"
+          :selected="selectedMarks"
+          :show-month="false"
+          @change="onUniCalendarChange"
+          @month-switch="onUniMonthSwitch"
+        />
       </view>
-      <!-- 2. 考勤统计（顶部纵向布局，无总计、无标签） -->
-      <view class="grid grid-cols-5 gap-2 px-4 py-3 text-center">
+      <!-- 分隔符：位于日历与统计之间，使用统一边框色 -->
+      <wd-divider>考勤统计</wd-divider>
+      <!-- 2. 考勤统计（移动到日历下方） -->
+      <view class="grid grid-cols-5 gap-2 px-4 pb-3 pt-1 text-center">
         <view class="flex flex-col items-center">
           <text :class="textClass" class="text-xs">
             正常
@@ -316,34 +314,6 @@ function tryNavigateToLeaveDetail() {
             {{ periodSummary.leave }}
           </text>
         </view>
-      </view>
-      <!-- 日历面板：使用自研 InlineCalendar，支持左右滑动切月 -->
-      <view class="px-4 pb-2">
-        <InlineCalendar
-          v-model="calendarValue"
-          :first-day-of-week="0"
-          :min-date="minDate"
-          :max-date="maxDate"
-          :show-panel-title="false"
-          :panel-month="panelMonthTs"
-          @change="onCalendarChange"
-          @month-change="onMonthChange"
-        >
-          <template #date-cell="{ day }">
-            <!-- 固定每个日期单元的内部高度，避免有圆点时高度不一致 -->
-            <view class="relative h-10 w-full flex flex-col items-center justify-center">
-              <text class="leading-none" :class="isSelected(day.date) ? 'text-white' : ''">{{ dayjs(day.date).date() }}</text>
-              <!-- 为圆点预留固定高度，占位，保证数值垂直位置一致 -->
-              <view class="mt-0.5 h-2 flex items-center justify-center">
-                <view
-                  v-if="!isSelected(day.date) && hasRecordTs(day.date)"
-                  class="h-1.5 w-1.5 rounded-full ring-1"
-                  :class="[dotColorClass(day.date), isDark ? 'ring-gray-700/60' : 'ring-white/80']"
-                />
-              </view>
-            </view>
-          </template>
-        </InlineCalendar>
       </view>
       <!-- 已移除：底部周/月视图切换区域（避免未定义变量引用） -->
     </ThemeCard>
@@ -423,4 +393,68 @@ function tryNavigateToLeaveDetail() {
 </template>
 
 <style scoped>
+/* 深色模式下，调整官方日历的文字与选中态颜色 */
+.uni-calendar-dark :deep(.uni-calendar__weeks-day-text) {
+  color: #9ca3af; /* text-gray-400 */
+}
+.uni-calendar-dark :deep(.uni-calendar-item__weeks-box-text) {
+  color: #e5e7eb; /* text-gray-200 */
+}
+.uni-calendar-dark :deep(.uni-calendar-item--isDay-text) {
+  color: #93c5fd; /* text-sky-300 */
+}
+
+/* 深色模式：头部与容器 */
+.uni-calendar-dark :deep(.uni-calendar__content) {
+  background-color: transparent;
+}
+.uni-calendar-dark :deep(.uni-calendar__header) {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+.uni-calendar-dark :deep(.uni-calendar__header-text) {
+  color: #e5e7eb; /* text-gray-200 */
+}
+.uni-calendar-dark :deep(.uni-calendar__header-btn) {
+  border-left-color: #9ca3af; /* text-gray-400 */
+  border-top-color: #9ca3af; /* text-gray-400 */
+}
+.uni-calendar-dark :deep(.uni-calendar__backtoday) {
+  background-color: #1f2937; /* bg-gray-800 */
+  color: #93c5fd; /* text-sky-300 */
+}
+.uni-calendar-dark :deep(.uni-calendar__weeks-day) {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+.uni-calendar-dark :deep(.uni-calendar__box-bg-text) {
+  color: #6b7280; /* text-gray-500 */
+  opacity: 0.15;
+}
+
+/* 通用覆盖：缩小单元格高度、去除非当月背景块，优化观感 */
+.calendar-override :deep(.uni-calendar-item__weeks-box-item) {
+  width: 68rpx;
+  height: 68rpx;
+}
+.calendar-override :deep(.uni-calendar-item--disable) {
+  background-color: transparent;
+}
+.calendar-override :deep(.uni-calendar__weeks-day-text) {
+  font-weight: 500;
+}
+
+/* 需求：不显示“今日”字样，仅保留高亮选中背景 */
+.calendar-override :deep(.uni-calendar-item__weeks-lunar-text.uni-calendar-item--isDay-text) {
+  display: none;
+}
+.uni-calendar-dark :deep(.uni-calendar-item--disable) {
+  color: #6b7280; /* text-gray-500 */
+  opacity: 0.55;
+}
+.uni-calendar-dark :deep(.uni-calendar-item--disable .uni-calendar-item__weeks-box-text),
+.uni-calendar-dark :deep(.uni-calendar-item--disable .uni-calendar-item__weeks-lunar-text) {
+  color: #6b7280; /* text-gray-500 */
+}
+.uni-calendar-dark :deep(.uni-calendar-item--disable .uni-calendar-item__weeks-box-circle) {
+  opacity: 0.45;
+}
 </style>

@@ -12,7 +12,8 @@ export const ATTENDANCE_STATUS_LABELS: Record<AttendanceStatusCode, string> = {
 }
 
 export function getAttendanceLabel(code?: number | null): string {
-  if (!code || !(code in ATTENDANCE_STATUS_LABELS)) return '未知'
+  if (!code || !(code in ATTENDANCE_STATUS_LABELS))
+    return '未知'
   return ATTENDANCE_STATUS_LABELS[code as AttendanceStatusCode]
 }
 
@@ -22,9 +23,9 @@ export function getAttendanceTagType(code?: number | null): 'primary' | 'success
     case 1: return 'success' // 正常
     case 2: return 'warning' // 迟到
     case 3: return 'warning' // 早退
-    case 4: return 'danger'  // 缺卡
+    case 4: return 'danger' // 缺卡
     case 5: return 'primary' // 请假
-    case 6: return 'danger'  // 缺勤
+    case 6: return 'danger' // 缺勤
     case 7: return 'primary' // 上课（突出显示）
     default: return 'default'
   }
@@ -48,13 +49,14 @@ export function getAttendanceDotClass(isDark: boolean, code?: number | null): st
 // 首页状态徽标背景色（不区分深浅色，仅使用统一色阶）
 export function getAttendanceBadgeBgClass(code?: number | null): string {
   switch (code) {
-    case 1: return 'bg-blue-600/80'
+    case 1: return 'bg-blue-600'
     case 2:
-    case 3: return 'bg-yellow-600/80'
-    case 4: return 'bg-gray-600/80'
-    case 5: return 'bg-green-600/80'
-    case 6: return 'bg-red-600/80'
-    case 7: return 'bg-sky-600/80'
-    default: return 'bg-white/20'
+    case 3: return 'bg-yellow-600'
+    case 4: return 'bg-gray-600'
+    case 5: return 'bg-green-600'
+    case 6: return 'bg-red-600'
+    case 7: return 'bg-sky-600'
+    // 未知或无数据：改为浅灰背景以提升可读性（避免白底白字不易读）
+    default: return 'bg-gray-500'
   }
 }
