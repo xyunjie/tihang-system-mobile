@@ -129,11 +129,22 @@ function getCategoryColor(tags: string[]): string {
     return tagColorLight[tags[0]] || 'text-gray-600 bg-gray-50 border-gray-200'
   }
 }
-
+let isNavigating = false
 // 跳转到文章详情
 function goToArticleDetail(articleId: number) {
+  if (isNavigating) {
+    // 如果已经在跳转，不再处理
+    return
+  }
+
+  isNavigating = true
+
   uni.navigateTo({
     url: `/pages-sub/article/detail?id=${articleId}`,
+    complete: () => {
+      // 无论成功或失败，跳转执行完成后恢复
+      isNavigating = false
+    },
     fail: (error) => {
       console.error('跳转失败:', error)
       uni.showToast({

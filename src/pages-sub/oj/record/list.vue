@@ -25,6 +25,8 @@ const iconClass = computed(() => appStore.theme === 'dark' ? 'text-gray-400' : '
 const records = ref<HydroOjRecordRespVO[]>([])
 const pagingRef = ref()
 const firstLoad = ref(true)
+// 骨架行底色：浅色模式灰色，深色模式更深灰
+const skBaseClass = computed(() => appStore.theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200')
 
 // 加载评测记录列表
 async function queryList(pageNo: number, pageSize: number) {
@@ -217,11 +219,11 @@ function onTapRecord(item: HydroOjRecordRespVO) {
         <!-- 首屏骨架占位 -->
         <view v-if="firstLoad && records.length === 0" class="space-y-3">
           <view v-for="n in 4" :key="n" :class="cardClass" class="rounded-2xl p-4 shadow-sm">
-            <view :class="cardClass" class="h-4 w-2/3 rounded" />
-            <view :class="cardClass" class="mt-2 h-3 w-1/3 rounded" />
+            <view :class="skBaseClass" class="h-4 w-2/3 rounded" />
+            <view :class="skBaseClass" class="mt-2 h-3 w-1/3 rounded" />
             <view class="grid grid-cols-2 mt-4 gap-2">
-              <view :class="cardClass" class="h-3 w-full rounded" />
-              <view :class="cardClass" class="h-3 w-full rounded" />
+              <view :class="skBaseClass" class="h-3 w-full rounded" />
+              <view :class="skBaseClass" class="h-3 w-full rounded" />
             </view>
           </view>
         </view>

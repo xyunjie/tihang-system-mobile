@@ -22,11 +22,12 @@ defineOptions({
 const appStore = useAppStore()
 
 // 深色模式计算属性
-const pageClass = computed(() => appStore.theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50')
 const cardClass = computed(() => appStore.theme === 'dark' ? 'bg-gray-800' : 'bg-white')
 const titleClass = computed(() => appStore.theme === 'dark' ? 'text-gray-100' : 'text-gray-900')
 const textClass = computed(() => appStore.theme === 'dark' ? 'text-gray-300' : 'text-gray-500')
 const contentClass = computed(() => appStore.theme === 'dark' ? 'text-gray-200' : 'text-gray-700')
+const skeletonClass = computed(() => appStore.theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200')
+const errorIconClass = computed(() => appStore.theme === 'dark' ? 'text-amber-300' : 'text-amber-500')
 
 const loading = ref(true)
 const problem = ref<HydroProblemRespVO | null>(null)
@@ -39,28 +40,26 @@ async function fetchProblem(params: { id: number, docId?: string }) {
       problem.value = (res as any).data
       uni.setNavigationBarTitle({ title: problem.value?.title || '题目详情' })
     }
-    else {
-      errorMsg.value = (res as any).msg || '加载失败'
-      uni.showToast({ title: errorMsg.value, icon: 'none' })
-    }
+  else {
+    const code = (res as any)?.code
+    // 业务约定：1002035002 表示比赛未开始，其余非 0 视为未找到题目或不可查看
+    errorMsg.value = code === 1002035002 ? '比赛未开始' : '未找到题目'
   }
-  catch (err: any) {
-    errorMsg.value = err?.message || '网络错误，请稍后重试'
-    uni.showToast({ title: errorMsg.value, icon: 'none' })
-  }
-  finally {
-    loading.value = false
-  }
+}
+catch (err: any) {
+  errorMsg.value = err?.message || '网络错误，请稍后重试'
+}
+finally {
+  loading.value = false
+}
 }
 
 onLoad((options: any) => {
   const id = Number(options?.id)
   const docId = options?.docId ? String(options.docId) : undefined
-  console.log('docId:', docId)
   if (!id) {
     loading.value = false
     errorMsg.value = '参数缺失：id 必填'
-    uni.showToast({ title: errorMsg.value, icon: 'none' })
     return
   }
 
@@ -72,18 +71,39 @@ function metaItem(label: string, value?: string | number) {
     return ''
   return `${label}：${value}`
 }
+
 </script>
 
 <template>
-  <view :class="pageClass" class="min-h-screen p-4">
-    <!-- 首屏骨架加载 -->
-    <view v-if="loading" class="p-2">
-      <wd-skeleton theme="paragraph" />
+  <view class="min-h-screen">
+    <!-- 首屏骨架加载（卡片风格） -->
+    <view v-if="loading" class="p-4 space-y-4 animate-pulse">
+      <view :class="cardClass" class="rounded-2xl p-4 shadow-sm">
+        <view :class="skeletonClass" class="h-5 w-2/3 rounded" />
+        <view :class="skeletonClass" class="mt-2 h-3 w-1/3 rounded" />
+      </view>
+      <view :class="cardClass" class="rounded-2xl p-4 shadow-sm">
+        <view :class="skeletonClass" class="h-3 w-full rounded" />
+        <view :class="skeletonClass" class="mt-2 h-3 w-5/6 rounded" />
+        <view :class="skeletonClass" class="mt-2 h-3 w-4/6 rounded" />
+      </view>
     </view>
 
-    <view v-else>
+    <view v-else-if="!problem" class="p-4">
+      <view :class="cardClass" class="flex flex-col items-center rounded-2xl p-6 text-center shadow-sm">
+        <wd-icon name="warning" size="32px" :class="errorIconClass" />
+        <view :class="titleClass" class="mt-3 text-base font-semibold">
+          {{ errorMsg || '未找到题目' }}
+        </view>
+        <view :class="textClass" class="mt-1 text-xs">
+          {{ errorMsg === '比赛未开始' ? '请稍后再试，比赛开始后可查看题目' : '该题目可能被删除或隐藏，请联系管理员' }}
+        </view>
+      </view>
+    </view>
+
+    <view v-else class="p-4 space-y-4">
       <!-- 题目标题 -->
-      <view :class="cardClass" class="mb-4 rounded-2xl p-4 shadow-sm">
+      <view :class="cardClass" class="rounded-2xl p-4 shadow-sm">
         <view :class="titleClass" class="text-lg font-bold">
           {{ problem.title }}
         </view>

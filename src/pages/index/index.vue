@@ -21,6 +21,7 @@ import { getTodayAttendanceRecord } from '@/api/attendance'
 import { getNoticePage } from '@/api/notice'
 import { getMyNotifyMessagePage, getUnreadCount } from '@/api/notify-message'
 import ThemeCard from '@/components/ThemeCard.vue'
+import { getAttendanceBadgeBgClass } from '@/config/attendance'
 import { WECHAT_SHARE_IMAGE_URL } from '@/config/share'
 import { useAppStore } from '@/store/app'
 import { formatDateOnly, formatRelativeTime, formatStandardDateTime, formatTimeOnly, parseDateTime } from '@/utils'
@@ -221,23 +222,11 @@ async function loadTodayAttendance() {
     }
     else {
       todayAttendance.attendanceStatus = '未打卡'
-
-      uni.showToast({
-        title: response.msg || '获取考勤信息失败',
-        icon: 'none',
-        duration: 2000,
-      })
     }
   }
   catch (error) {
     console.error('加载考勤数据错误:', error) // 改进错误日志
     todayAttendance.attendanceStatus = '加载失败'
-
-    uni.showToast({
-      title: '获取考勤信息失败',
-      icon: 'none',
-      duration: 2000,
-    })
   }
   finally {
     todayAttendance.loading = false
@@ -320,32 +309,9 @@ function getAttendanceStatusText(result: number): string {
   }
 }
 
-// 获取考勤状态文本背景样式
 function getAttendanceStatusTextBackground(result: number): string {
-  // 根据不同考勤结果返回状态文本的背景颜色
-  switch (result) {
-    case 1:
-      // 正常 - 绿色背景
-      return 'bg-green-600/80'
-    case 2:
-      // 迟到 - 橙色背景
-      return 'bg-orange-600/80'
-    case 3:
-      // 早退 - 黄色背景
-      return 'bg-yellow-600/80'
-    case 4:
-      // 缺卡 - 红色背景
-      return 'bg-red-600/80'
-    case 5:
-      // 请假 - 紫色背景
-      return 'bg-purple-600/80'
-    case 6:
-      // 缺勤 - 灰色背景
-      return 'bg-gray-600/80'
-    default:
-      // 默认 - 白色半透明背景
-      return 'bg-white/20'
-  }
+  // 使用统一配置的徽标背景颜色映射
+  return getAttendanceBadgeBgClass(result)
 }
 
 // 获取考勤结果的数值，用于背景样式判断
@@ -364,6 +330,7 @@ function getAttendanceResultValue(): number {
       case '缺卡': return 4
       case '请假': return 5
       case '缺勤': return 6
+      case '上课': return 7
       default: return 0
     }
   }
@@ -384,20 +351,8 @@ async function loadNotificationList() {
     if (response.code === 0 && response.data) {
       notificationList.value = response.data.list
     }
-    else {
-      uni.showToast({
-        title: response.msg || '获取通知公告失败',
-        icon: 'none',
-        duration: 2000,
-      })
-    }
   }
   catch (error) {
-    uni.showToast({
-      title: '获取通知公告失败',
-      icon: 'none',
-      duration: 2000,
-    })
   }
   finally {
     notificationLoading.value = false
@@ -457,11 +412,6 @@ function getPlainTextContent(htmlContent: string): string {
     .replace(/&#39;/g, '\'')
     .trim()
 }
-function gotoLogin() {
-  uni.redirectTo({
-    url: '/pages/login/index',
-  })
-}
 
 // 加载消息提醒数据
 async function loadMessageList() {
@@ -476,20 +426,8 @@ async function loadMessageList() {
     if (response.code === 0 && response.data) {
       messageList.value = response.data.list
     }
-    else {
-      uni.showToast({
-        title: response.msg || '获取消息提醒失败',
-        icon: 'none',
-        duration: 2000,
-      })
-    }
   }
   catch (error) {
-    uni.showToast({
-      title: '获取消息提醒失败',
-      icon: 'none',
-      duration: 2000,
-    })
   }
   finally {
     messageLoading.value = false
@@ -542,6 +480,16 @@ function getMessageTypeColor(templateType: number): string {
 
 // 跳转到指定页面
 function navigateTo(route: string) {
+  // 防抖：在 800ms 时间窗内忽略重复触发
+  const NAV_DEBOUNCE_MS = 800
+  // 使用闭包外变量保存上次跳转时间（在 setup 作用域声明）
+  ;(navigateTo as any)._lastTs = (navigateTo as any)._lastTs ?? 0
+  const now = Date.now()
+  if (now - (navigateTo as any)._lastTs < NAV_DEBOUNCE_MS) {
+    return
+  }
+  ;(navigateTo as any)._lastTs = now
+
   if (route) {
     // 实际的路由跳转
     uni.navigateTo({
@@ -716,7 +664,7 @@ function formatCount(count: number) {
       v-else class="home-content px-4 pt-1"
     >
       <!-- 第一部分：今日考勤信息 -->
-      <ThemeCard card-class="mb-6" :padding="false">
+      <ThemeCard card-class="mb-6" :padding="false" @click="navigateTo('/pages-sub/attendance/record')">
         <view class="bg-blue-500 px-4 py-3">
           <view class="flex items-center justify-between">
             <view class="text-lg text-white font-semibold">

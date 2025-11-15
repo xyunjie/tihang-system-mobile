@@ -13,7 +13,8 @@ const props = defineProps<{
 const appStore = useAppStore()
 const isDark = computed(() => appStore.theme === 'dark')
 const containerStyle = computed(() => {
-  if (props.containerStyle) return props.containerStyle
+  if (props.containerStyle)
+    return props.containerStyle
   const textColor = isDark.value ? '#e5e7eb' : '#374151'
   return `padding: 6px 0; font-size: 15px; line-height: 1.8; color: ${textColor}; word-break: break-word; overflow-wrap: break-word; overflow: hidden;`
 })
@@ -24,21 +25,21 @@ const defaultTagStyle = computed<Record<string, string>>(() => {
     const headerBg = 'rgba(255,255,255,0.06)'
     const cellBg = 'transparent'
     return {
-      table: `border-collapse: collapse; table-layout: auto; width: auto; max-width: 100%; border: 1px solid ${borderColor};`,
+      table: `border-collapse: collapse; table-layout: auto; width: auto; max-width: 100%; border: 1px solid ${borderColor}; margin: 8px auto;`,
       thead: `background-color: ${headerBg};`,
-      th: `border: 1px solid ${borderColor}; padding: 6px; background-color: ${headerBg}; text-align: left; box-sizing: border-box; white-space: nowrap;`,
-      td: `border: 1px solid ${borderColor}; padding: 6px; background-color: ${cellBg}; text-align: left; box-sizing: border-box;`,
-      pre: 'font-size: 13px; background-color: #111827; color: #e5e7eb; border-radius: 8px; padding: 10px;',
+      th: `border: 1px solid ${borderColor}; padding: 6px; background-color: ${headerBg}; text-align: center; box-sizing: border-box; white-space: nowrap;`,
+      td: `border: 1px solid ${borderColor}; padding: 6px; background-color: ${cellBg}; text-align: center; box-sizing: border-box;`,
+      pre: 'font-size: 13px; background-color: #111827; color: #e5e7eb; border-radius: 8px;',
       code: 'font-size: 13px; background-color: rgba(255,255,255,0.06); color: #e5e7eb; border-radius: 4px; padding: 0 4px;',
     }
   }
   else {
     return {
-      table: 'border-collapse: collapse; table-layout: auto; width: auto; max-width: 100%; border: 1px solid #d1d5db;',
+      table: 'border-collapse: collapse; table-layout: auto; width: auto; max-width: 100%; border: 1px solid #d1d5db; margin: 8px auto;',
       thead: 'background-color: #f9fafb;',
-      th: 'border: 1px solid #d1d5db; padding: 6px; background-color: #f9fafb; text-align: left; box-sizing: border-box; white-space: nowrap;',
-      td: 'border: 1px solid #d1d5db; padding: 6px; text-align: left; box-sizing: border-box;',
-      pre: 'font-size: 13px; background-color: #f7fafc; color: #374151; border-radius: 8px; padding: 10px;',
+      th: 'border: 1px solid #d1d5db; padding: 6px; background-color: #f9fafb; text-align: center; box-sizing: border-box; white-space: nowrap;',
+      td: 'border: 1px solid #d1d5db; padding: 6px; text-align: center; box-sizing: border-box;',
+      pre: 'font-size: 13px; background-color: #f7fafc; color: #374151; border-radius: 8px;',
       code: 'font-size: 13px; background-color: rgba(0,0,0,0.04); color: #374151; border-radius: 4px; padding: 0 4px;',
     }
   }
@@ -85,5 +86,13 @@ const scrollTable = computed(() => props.scrollTable ?? true)
   font-size: 13px;
   padding: 0 4px;
   border-radius: 4px;
+}
+
+/* 代码块中的 <code> 应继承背景与颜色，避免出现“气泡”背景 */
+.content-body :deep(._pre) ._code {
+  background: transparent !important;
+  color: inherit !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
 }
 </style>

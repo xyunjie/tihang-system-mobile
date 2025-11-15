@@ -1,4 +1,4 @@
-import type { AttendanceManualReqVO, AttendanceManualRespVO, EduScheduleRespVO, EduScheduleSaveReqVO, ResetFaceResult, TodayAttendanceRecordRespVO } from './types/attendance'
+import type { AttendanceArchiveRespVO, AttendanceManualReqVO, AttendanceManualRespVO, AttendanceStatisticsRespVO, CalendarStatisticsMap, EduScheduleRespVO, EduScheduleSaveReqVO, ResetFaceResult, TodayAttendanceRecordRespVO } from './types/attendance'
 import { http } from '@/http/http'
 import { useUserStore } from '@/store'
 
@@ -86,6 +86,37 @@ export function getEduSchedule() {
  */
 export function createEduSchedule(data: EduScheduleSaveReqVO) {
   return http.post<number>('/admin-api/system/edu-schedule/create', data, {
+    'tenant-id': 1,
+  })
+}
+
+/**
+ * 获取考勤统计
+ * @param archiveDate 统计归档日期（格式：YYYY-MM-DD，建议传每月第一天）
+ */
+export function getAttendanceStatistics(archiveDate?: string) {
+  return http.get<AttendanceStatisticsRespVO>('/admin-api/system/attendance-archive/get-statistics', { archiveDate }, {
+    'tenant-id': 1,
+  })
+}
+
+/**
+ * 获取日历统计（每日状态映射）
+ * @param archiveDate 统计归档日期（建议传当月第一天，格式：YYYY-MM-DD）
+ */
+export function getCalendarStatistics(archiveDate?: string) {
+  return http.get<CalendarStatisticsMap>('/admin-api/system/attendance-archive/get-calendar-statistics', { archiveDate }, {
+    'tenant-id': 1,
+  })
+}
+
+/**
+ * 获取某一天的考勤记录
+ * @param archiveDate 归档/考勤日期（格式：YYYY-MM-DD）
+ * @returns Promise<AttendanceArchiveRespVO> 当日考勤记录
+ */
+export function getAttendanceRecord(archiveDate?: string) {
+  return http.get<AttendanceArchiveRespVO>('/admin-api/system/attendance-archive/get-attendance-record', { archiveDate }, {
     'tenant-id': 1,
   })
 }

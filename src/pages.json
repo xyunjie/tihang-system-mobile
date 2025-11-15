@@ -205,6 +205,13 @@
           }
         },
         {
+          "path": "attendance/record",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "考勤记录"
+          }
+        },
+        {
           "path": "attendance/timetable",
           "type": "page",
           "style": {

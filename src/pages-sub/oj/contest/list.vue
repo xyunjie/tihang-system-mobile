@@ -21,6 +21,8 @@ const appStore = useAppStore()
 
 // 深色模式计算属性
 const cardClass = computed(() => appStore.theme === 'dark' ? 'bg-gray-800' : 'bg-white')
+// 骨架行底色：浅色模式使用灰色，避免白底看不见；深色模式使用更深灰
+const skBaseClass = computed(() => appStore.theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200')
 const titleClass = computed(() => appStore.theme === 'dark' ? 'text-gray-100' : 'text-gray-900')
 const textClass = computed(() => appStore.theme === 'dark' ? 'text-gray-300' : 'text-gray-500')
 
@@ -186,9 +188,9 @@ function onTapContest(item: HydroOjContestItemRespVO) {
         <!-- 首屏骨架占位 -->
         <view v-if="firstLoad && contests.length === 0" class="space-y-3">
           <view v-for="n in 4" :key="n" :class="cardClass" class="rounded-2xl p-4 shadow-sm">
-            <view :class="cardClass" class="h-4 w-2/3 rounded" />
-            <view :class="cardClass" class="mt-2 h-3 w-1/3 rounded" />
-            <view :class="cardClass" class="mt-4 h-3 w-full rounded" />
+            <view :class="skBaseClass" class="h-4 w-2/3 rounded" />
+            <view :class="skBaseClass" class="mt-2 h-3 w-1/3 rounded" />
+            <view :class="skBaseClass" class="mt-4 h-3 w-full rounded" />
           </view>
         </view>
       </view>
