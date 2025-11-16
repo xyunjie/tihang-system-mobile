@@ -8,6 +8,9 @@ import DeptSelector from './DeptSelector.vue'
 import DictSelector from './DictSelector.vue'
 import UserSelector from './UserSelector.vue'
 
+// 定义支持的modelValue类型
+const props = defineProps<Props>()
+const emit = defineEmits<Emits>()
 // 主题状态管理
 const appStore = useAppStore()
 const isDark = computed(() => appStore.theme === 'dark')
@@ -15,47 +18,42 @@ const isDark = computed(() => appStore.theme === 'dark')
 // 动态样式类
 const uploadAreaClass = computed(() => [
   'aspect-square flex items-center justify-center border-2 rounded-lg border-dashed',
-  isDark.value 
-    ? 'border-gray-600 bg-gray-800' 
-    : 'border-gray-300 bg-gray-50'
+  isDark.value
+    ? 'border-gray-600 bg-gray-800'
+    : 'border-gray-300 bg-gray-50',
 ])
 
 const uploadAreaTextClass = computed(() => [
   'text-2xl',
-  isDark.value ? 'text-gray-500' : 'text-gray-400'
+  isDark.value ? 'text-gray-500' : 'text-gray-400',
 ])
 
 const uploadAreaLabelClass = computed(() => [
   'mt-1 block text-xs',
-  isDark.value ? 'text-gray-500' : 'text-gray-400'
+  isDark.value ? 'text-gray-500' : 'text-gray-400',
 ])
 
 const imageBorderClass = computed(() => [
   'h-full w-full border rounded-lg object-cover',
-  isDark.value ? 'border-gray-600' : 'border-gray-200'
+  isDark.value ? 'border-gray-600' : 'border-gray-200',
 ])
 
 const uploadingContainerClass = computed(() => [
   'h-full w-full flex items-center justify-center border rounded-lg',
-  isDark.value 
-    ? 'border-gray-600 bg-gray-700' 
-    : 'border-gray-200 bg-gray-100'
+  isDark.value
+    ? 'border-gray-600 bg-gray-700'
+    : 'border-gray-200 bg-gray-100',
 ])
 
 const uploadingTextClass = computed(() => [
   'text-xs',
-  isDark.value ? 'text-gray-400' : 'text-gray-500'
+  isDark.value ? 'text-gray-400' : 'text-gray-500',
 ])
 
 const unsupportedTextClass = computed(() => [
   'text-sm',
-  isDark.value ? 'text-gray-400' : 'text-gray-500'
+  isDark.value ? 'text-gray-400' : 'text-gray-500',
 ])
-
-// 定义支持的modelValue类型
-const props = defineProps<Props>()
-
-const emit = defineEmits<Emits>()
 
 // 图片上传相关状态
 const uploadingImages = ref<Array<{ id: string, progress: number }>>([])
@@ -65,18 +63,18 @@ const uploadFinishList = ref<string[]>([])
 function getDateTimeValue(value: any, range: boolean): string | number | (string | number)[] | undefined {
   if (range) {
     if (value === null || value === undefined)
-      return []
+      return [Date.now(), Date.now()]
     if (typeof value === 'string' || typeof value === 'number')
-      return [value]
+      return [value, value]
     if (Array.isArray(value))
       return value
     if (value instanceof Date)
-      return [value.getTime()]
-    return []
+      return [value.getTime(), value.getTime()]
+    return [Date.now(), Date.now()]
   }
   else {
     if (value === null || value === undefined)
-      return ''
+      return Date.now()
     if (typeof value === 'string' || typeof value === 'number')
       return value
     if (Array.isArray(value)) {
@@ -84,7 +82,7 @@ function getDateTimeValue(value: any, range: boolean): string | number | (string
     }
     if (value instanceof Date)
       return value.getTime()
-    return ''
+    return Date.now()
   }
 }
 
@@ -127,6 +125,8 @@ const fieldOptions = computed(() => parsedField.value.options || fieldProps.valu
 // 通用属性
 const placeholder = computed(() => fieldProps.value.placeholder || parsedField.value.placeholder || `请输入${fieldTitle.value}`)
 const disabled = computed(() => props.readonly || fieldProps.value.disabled || parsedField.value.disabled)
+const todayStart = new Date(new Date().setHours(0, 0, 0, 0)).getTime()
+const today = Date.now().toLocaleString().split(' ')[0]
 
 // 统一的值更新处理
 function updateValue(value: any, validate = false) {
@@ -422,6 +422,9 @@ function handleDeleteAttachment(index: number) {
         :key="field._fc_id"
         :model-value="modelValue"
         shape="button"
+        :prop="field.field"
+        :name="field.field"
+        :rules="getRules(field)"
         @change="handleChange"
       >
         <wd-radio
@@ -446,6 +449,9 @@ function handleDeleteAttachment(index: number) {
         :key="field._fc_id"
         :model-value="modelValue ?? []"
         shape="button"
+        :prop="field.field"
+        :name="field.field"
+        :rules="getRules(field)"
         @change="handleChange"
       >
         <wd-checkbox
@@ -471,6 +477,9 @@ function handleDeleteAttachment(index: number) {
         :columns="fieldOptions"
         :placeholder="placeholder"
         :disabled="disabled"
+        :prop="field.field"
+        :name="field.field"
+        :rules="getRules(field)"
         @confirm="handleConfirm"
       />
     </wd-cell>
@@ -485,6 +494,9 @@ function handleDeleteAttachment(index: number) {
         :key="field._fc_id"
         :model-value="modelValue ?? false"
         :disabled="disabled"
+        :prop="field.field"
+        :name="field.field"
+        :rules="getRules(field)"
         @change="handleChange"
       />
     </wd-cell>
@@ -502,6 +514,9 @@ function handleDeleteAttachment(index: number) {
         :disabled="disabled"
         :allow-half="fieldProps.allowHalf"
         :show-text="fieldProps.showText"
+        :prop="field.field"
+        :name="field.field"
+        :rules="getRules(field)"
         @change="handleChange"
       />
     </wd-cell>
@@ -520,6 +535,9 @@ function handleDeleteAttachment(index: number) {
         :max="fieldProps.max || 100"
         :step="fieldProps.step || 1"
         :disabled="disabled"
+        :prop="field.field"
+        :name="field.field"
+        :rules="getRules(field)"
         @change="handleChange"
       />
     </wd-cell>
@@ -537,6 +555,9 @@ function handleDeleteAttachment(index: number) {
         type="date"
         :placeholder="placeholder"
         :disabled="disabled"
+        :prop="field.field"
+        :name="field.field"
+        :rules="getRules(field)"
         @confirm="handleConfirm"
       />
     </wd-cell>
@@ -554,6 +575,9 @@ function handleDeleteAttachment(index: number) {
         type="time"
         :placeholder="placeholder"
         :disabled="disabled"
+        :prop="field.field"
+        :name="field.field"
+        :rules="getRules(field)"
         @confirm="handleConfirm"
       />
     </wd-cell>

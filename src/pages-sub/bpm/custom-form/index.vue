@@ -235,7 +235,20 @@ function getApprovalMethodName(method: number | null) {
 
 // 提交表单
 async function handleSubmit() {
-  await form.value.validate()
+  if (!form.value)
+    return
+  try {
+    const result = await form.value.validate()
+    if (result.valid === false) {
+      return
+    }
+  }
+  catch (e) {
+    uni.showToast({ title: '请完善必填项', icon: 'none' })
+    return
+  }
+
+  submitting.value = true
   uni.showLoading({ title: '正在提交...', mask: true })
   try {
     const submitData: BpmCustomFormCreateReqVO = {
@@ -257,6 +270,7 @@ async function handleSubmit() {
     uni.showToast({ title: '提交失败，请重试', icon: 'none' })
   }
   finally {
+    submitting.value = false
     uni.hideLoading()
   }
 }
