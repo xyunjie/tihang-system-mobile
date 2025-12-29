@@ -289,6 +289,14 @@
           }
         },
         {
+          "path": "summary/index",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "年度总结",
+            "navigationStyle": "custom"
+          }
+        },
+        {
           "path": "bpm/approval/index",
           "type": "page",
           "layout": "default",

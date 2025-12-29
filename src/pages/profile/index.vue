@@ -84,6 +84,13 @@ function gotoOJInfo() {
   })
 }
 
+// 跳转到年度总结页面
+function gotoSummary() {
+  uni.navigateTo({
+    url: '/pages-sub/summary/index',
+  })
+}
+
 // 跳转到系统设置页面
 function gotoSettings() {
   uni.navigateTo({
@@ -235,6 +242,7 @@ const menuItems = [
   {
     category: '个人管理',
     items: [
+      { icon: '⭐', name: '年度总结', desc: '查看您的年度报告', action: gotoSummary, iconColor: 'text-yellow-500' },
       { icon: '●', name: '个人资料', desc: '管理个人信息', action: editProfile, iconColor: 'text-blue-500' },
       { icon: '◆', name: '账号安全', desc: '密码、登录记录', action: gotoSecurity, iconColor: 'text-green-500' },
       { icon: '▲', name: '消息通知', desc: '通知设置', action: () => showToast('消息通知'), iconColor: 'text-orange-500' },
