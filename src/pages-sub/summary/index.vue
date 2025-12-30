@@ -15,13 +15,7 @@ import useRequest from '@/hooks/useRequest'
 import { getYearSummary } from '@/pages-sub/api/year-summary'
 import { useUserStore } from '@/store'
 
-let toPngFn: ((node: HTMLElement, options?: any) => Promise<string>) | null = null
-const isH5 = typeof process !== 'undefined' && (process as any).env && (process as any).env.UNI_PLATFORM === 'h5'
-if (isH5) {
-  import('html-to-image').then((m) => {
-    toPngFn = m.toPng
-  })
-}
+const DEFAULT_AVATAR = 'https://file.tihangstudio.cn/image/tihang_logo.png'
 
 // Data Loading State
 const loading = ref(true)
@@ -43,7 +37,7 @@ const userInfo = computed(() => {
 
   return userStore.userInfo || {
     nickname: '梯航探索者',
-    avatar: '/static/images/default-avatar.png',
+    avatar: DEFAULT_AVATAR,
     createTime: '2023-09-01', // Default join date for preview
   }
 })
@@ -194,6 +188,30 @@ const gitHasData = computed(() => {
   return !!(d.gitCommits || (Array.isArray(d.gitTopRepos) && d.gitTopRepos.length) || d.gitTopRepo || d.gitAdditions != null || d.gitDeletions != null || d.gitActiveDays)
 })
 
+const attendanceHasData = computed(() => {
+  const d = statsView.value
+  if (!d)
+    return false
+  return !!((d.totalWorkingHours && d.totalWorkingHours > 0) || (d.attendanceCount && d.attendanceCount > 0) || d.firstClockIn || d.latestClockOut || d.longestWorkingDay)
+})
+const totalWorkingHoursText = computed(() => {
+  const v = statsView.value?.totalWorkingHours
+  return typeof v === 'number' && v > 0 ? `${v}` : '—'
+})
+const longestWorkingDayText = computed(() => statsView.value?.longestWorkingDay ?? '—')
+const firstClockInText = computed(() => statsView.value?.firstClockIn ?? '—')
+const latestClockOutText = computed(() => statsView.value?.latestClockOut ?? '—')
+const attendanceCountText = computed(() => {
+  const v = statsView.value?.attendanceCount
+  return typeof v === 'number' && v > 0 ? `${v}` : '—'
+})
+const articleHasData = computed(() => {
+  const d = statsView.value
+  if (!d)
+    return false
+  return !!(d.articlesPublished && d.articlesPublished > 0)
+})
+
 function formatLastCommitTime() {
   return statsView.value?.gitLastCommitTime
 }
@@ -202,6 +220,13 @@ function formatLastCommitTime() {
 const joinDate = computed(() => {
   const date = userInfo.value?.createTime || '2023-09-01'
   return dayjs(date).format('YYYY年MM月DD日')
+})
+
+const userAvatar = computed(() => {
+  const a = (userInfo.value as any)?.avatar
+  if (!a || typeof a !== 'string' || a.trim() === '')
+    return DEFAULT_AVATAR
+  return a
 })
 
 const isNewMember = computed(() => {
@@ -263,41 +288,6 @@ onMounted(() => {
 function goBack() {
   uni.navigateBack()
 }
-
-async function exportPoster() {
-  if (!posterRef.value) {
-    uni.showToast({ title: '海报未就绪', icon: 'none' })
-    return
-  }
-  if (!isH5) {
-    uni.showToast({ title: '小程序端可长按海报图片保存', icon: 'none' })
-    return
-  }
-  try {
-    exporting.value = true
-    if (!toPngFn) {
-      const mod = await import('html-to-image')
-      toPngFn = mod.toPng
-    }
-    const dataUrl = await toPngFn(posterRef.value as unknown as HTMLElement, {
-      pixelRatio: 2,
-      backgroundColor: 'transparent',
-    })
-    const link = document.createElement('a')
-    link.href = dataUrl
-    link.download = `年度海报-${dayjs().format('YYYYMMDD-HHmmss')}.png`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    uni.showToast({ title: '已生成图片', icon: 'success' })
-  }
-  catch (e) {
-    uni.showToast({ title: '生成失败', icon: 'none' })
-  }
-  finally {
-    exporting.value = false
-  }
-}
 </script>
 
 <template>
@@ -344,7 +334,7 @@ async function exportPoster() {
           <view class="relative z-10 mb-6">
             <view class="animate-ping-slow absolute inset-0 rounded-full bg-white/20" />
             <view class="relative z-10 h-24 w-24 overflow-hidden border-4 border-white/20 rounded-full opacity-0 shadow-2xl" :class="{ 'animate-fade-in-down': !loading && currentPage === 0 }">
-              <image :src="userInfo.avatar || '/static/images/default-avatar.png'" class="h-full w-full" mode="aspectFill" />
+              <image :src="userAvatar" class="h-full w-full" mode="aspectFill" />
             </view>
           </view>
 
@@ -432,14 +422,14 @@ async function exportPoster() {
             勤奋的足迹
           </view>
 
-          <view class="grid grid-cols-2 mb-8 gap-4">
+          <view v-if="attendanceHasData" class="grid grid-cols-2 mb-8 gap-4">
             <!-- Total Hours -->
             <view class="rounded-2xl bg-white/10 p-4 opacity-0 backdrop-blur-md transition-colors delay-100 hover:bg-white/20" :class="{ 'animate-zoom-in': currentPage === 2 }">
               <view class="mb-1 text-sm text-emerald-200">
                 年度工时
               </view>
               <view class="text-3xl font-bold">
-                {{ statsView?.totalWorkingHours }} <text class="text-sm font-normal">
+                {{ totalWorkingHoursText }} <text class="text-sm font-normal">
                   h
                 </text>
               </view>
@@ -450,7 +440,7 @@ async function exportPoster() {
                 最长一天
               </view>
               <view class="text-xl font-bold">
-                {{ statsView?.longestWorkingDay }}
+                {{ longestWorkingDayText }}
               </view>
             </view>
             <!-- Earliest In -->
@@ -459,7 +449,7 @@ async function exportPoster() {
                 最早上班
               </view>
               <view class="text-3xl font-bold">
-                {{ statsView?.firstClockIn }}
+                {{ firstClockInText }}
               </view>
             </view>
             <!-- Latest Out -->
@@ -468,7 +458,17 @@ async function exportPoster() {
                 最晚下班
               </view>
               <view class="text-3xl font-bold">
-                {{ statsView?.latestClockOut }}
+                {{ latestClockOutText }}
+              </view>
+            </view>
+          </view>
+          <view v-else class="mb-8 flex items-center justify-center">
+            <view class="border border-white/10 rounded-2xl bg-white/10 p-6 text-center text-white/80">
+              <view class="mb-2 text-sm">
+                暂无考勤数据
+              </view>
+              <view class="text-xs opacity-70">
+                也许，新的打卡记录正在路上
               </view>
             </view>
           </view>
@@ -477,12 +477,16 @@ async function exportPoster() {
             class="group relative mt-4 overflow-hidden border-l-4 border-emerald-500 rounded-2xl bg-white/10 p-6 opacity-0 backdrop-blur-sm transition-all duration-500"
             :class="{ 'animate-slide-in-up delay-500': currentPage === 2 }"
           >
-            <view class="text-sm leading-relaxed opacity-80">
+            <view v-if="attendanceHasData" class="text-sm leading-relaxed opacity-80">
               这一年，你一共打卡 <text class="mx-1 inline-block animate-count-up text-xl text-emerald-400 font-bold">
-                {{ statsView?.attendanceCount }}
+                {{ attendanceCountText }}
               </text> 次。<br>
               每一个清晨的问候，<br>
               都是对梦想最长情的告白。
+            </view>
+            <view v-else class="text-center text-sm leading-relaxed opacity-80">
+              这一年暂未产生考勤记录<br>
+              期待你的第一次打卡
             </view>
           </view>
         </view>
@@ -607,12 +611,11 @@ async function exportPoster() {
           </view>
 
           <view class="opacity-0 delay-200 space-y-4" :class="{ 'animate-slide-in-up': currentPage === 4 }">
-            <!-- Popular Article Card -->
             <view
+              v-if="articleHasData"
               class="relative overflow-hidden border border-white/10 rounded-2xl bg-white/10 p-5 backdrop-blur-md transition-transform active:scale-98"
               @click.stop="handleLike"
             >
-              <!-- Floating Hearts Animation Container -->
               <view v-if="showLikes" class="pointer-events-none absolute inset-0 z-20 overflow-hidden">
                 <view class="animate-float-up absolute bottom-0 left-1/2 text-pink-500 opacity-0 -translate-x-1/2" style="animation-delay: 0s">
                   ❤️
@@ -624,7 +627,6 @@ async function exportPoster() {
                   ❤️
                 </view>
               </view>
-
               <view class="mb-2 flex items-center gap-1 text-xs text-pink-300">
                 <view class="i-carbon-trophy" />
                 年度最受欢迎文章
@@ -632,7 +634,6 @@ async function exportPoster() {
               <view class="line-clamp-2 mb-4 text-xl font-bold leading-snug">
                 {{ statsView?.mostPopularArticle }}
               </view>
-
               <view class="flex items-center justify-between text-sm text-white/70">
                 <view class="flex items-center gap-1">
                   <view class="i-carbon-view" />
@@ -648,8 +649,15 @@ async function exportPoster() {
                 </view>
               </view>
             </view>
-
-            <view class="mt-8 px-4 text-center text-sm opacity-60">
+            <view v-else class="border border-white/10 rounded-2xl bg-white/10 p-5 text-center opacity-80">
+              <view class="mb-2 text-sm text-white">
+                暂无文章发布记录
+              </view>
+              <view class="text-xs text-white/70">
+                每一篇文章，都是经验的沉淀。期待你的第一篇作品！
+              </view>
+            </view>
+            <view class="px-4 text-center text-sm opacity-60">
               "分享是最好的学习"<br>
               你的每一次记录，都照亮了后来者的路。
             </view>
@@ -768,15 +776,16 @@ async function exportPoster() {
       <swiper-item>
         <view
           v-if="maxVisitedPage >= 6"
+          v-show="currentPage === 6"
           class="relative box-border h-full w-full flex flex-col justify-center overflow-hidden from-gray-900 via-neutral-900 to-black bg-gradient-to-br p-8 text-white"
           :style="{ paddingTop: `${statusBarHeight}px`, paddingBottom: `${safeAreaBottom + 20}px` }"
         >
-          <view class="z-10 mb-8 text-3xl font-bold opacity-0" :class="{ 'animate-fade-in-down': currentPage === 6 }">
+          <view class="z-10 mb-8 text-3xl font-bold opacity-0 will-change-transform" :class="{ 'animate-fade-in': currentPage === 6 }">
             代码贡献
           </view>
 
           <!-- Git Stats Cards -->
-          <view v-if="gitHasData" class="relative mb-6 opacity-0 delay-100 space-y-4" :class="{ 'animate-zoom-in': currentPage === 6 }">
+          <view v-if="gitHasData" class="relative mb-6 opacity-0 delay-100 will-change-transform space-y-4" :class="{ 'animate-zoom-in': currentPage === 6 }">
             <!-- Top Day Card -->
             <view class="flex items-center justify-between border border-white/10 rounded-2xl bg-gray-800/60 p-4">
               <view>
@@ -816,19 +825,22 @@ async function exportPoster() {
               </view>
             </view>
           </view>
-          <view v-else class="relative mb-6 text-center text-sm text-gray-400 opacity-0 delay-100 space-y-4" :class="{ 'animate-zoom-in': currentPage === 6 }">
+          <view v-else class="relative mb-6 text-center text-sm text-gray-400 opacity-0 delay-100 space-y-2" :class="{ 'animate-zoom-in': currentPage === 6 }">
             <view class="mx-auto w-full border border-white/10 rounded-2xl bg-gray-800/60 p-6">
               <view class="mb-2 text-base text-white font-bold">
                 暂无代码贡献数据
               </view>
-              <view>
-                请稍后重试或检查登录状态与仓库权限
+              <view class="mb-1">
+                每一次提交，都是成长的脚印。期待你的下一次 commit！
+              </view>
+              <view class="text-xs opacity-70">
+                小贴士：确认账号已绑定、仓库有权限，或稍后再试
               </view>
             </view>
           </view>
 
           <!-- Code Frequency & Activity -->
-          <view v-if="gitHasData" class="border border-white/5 rounded-2xl bg-black/40 p-5 opacity-0 delay-200" :class="{ 'animate-slide-in-up': currentPage === 6 }">
+          <view v-if="gitHasData" class="border border-white/5 rounded-2xl bg-black/40 p-5 opacity-0 delay-200" :class="{ 'animate-fade-in': currentPage === 6 }">
             <view class="mb-6 flex items-center justify-between text-sm">
               <view class="flex gap-4">
                 <text class="text-green-400 font-mono">
@@ -865,9 +877,10 @@ async function exportPoster() {
               />
             </view>
           </view>
-          <view v-else class="opacity-0 delay-200" :class="{ 'animate-slide-in-up': currentPage === 6 }">
-            <view class="mx-auto w-full border border-white/10 rounded-2xl bg-black/30 p-5 text-center text-gray-400">
-              暂无可展示的代码频率与活跃度
+          <view v-else class="opacity-0 delay-200" :class="{ 'animate-fade-in': currentPage === 6 }">
+            <view class="mx-auto w-full border border-white/10 rounded-2xl bg-black/30 p-5 text-center text-gray-400 leading-relaxed">
+              暂无可展示的代码频率与活跃度<br>
+              也许，下一次 push 就会点亮你的热力图
             </view>
           </view>
 
@@ -881,7 +894,7 @@ async function exportPoster() {
       <swiper-item>
         <view
           v-if="maxVisitedPage >= 7"
-          class="relative box-border h-full w-full flex flex-col items-center justify-start overflow-hidden from-violet-900 via-fuchsia-900 to-black bg-gradient-to-br p-6 text-white space-y-4"
+          class="relative box-border h-full w-full flex flex-col items-center justify-center overflow-hidden from-violet-900 via-fuchsia-900 to-black bg-gradient-to-br p-4 text-white space-y-2"
           :style="{ paddingTop: `${statusBarHeight}px`, paddingBottom: `${safeAreaBottom + 16}px` }"
         >
           <view class="absolute right-10 top-10 rotate-12 text-9xl font-black opacity-10">
@@ -892,7 +905,7 @@ async function exportPoster() {
             你的年度关键词
           </view>
 
-          <view class="relative mb-12 opacity-0 delay-200" :class="{ 'animate-zoom-in': currentPage === 7 }">
+          <view class="relative mb-6 opacity-0 delay-200" :class="{ 'animate-zoom-in': currentPage === 7 }">
             <view class="animate-pulse-slow absolute inset-0 rounded-full bg-fuchsia-500 opacity-40 blur-[60px]" />
             <view class="relative z-10 scale-100 from-white to-fuchsia-200 bg-gradient-to-r bg-clip-text text-6xl text-transparent font-black tracking-widest transition-transform duration-300 hover:scale-110" style="-webkit-background-clip: text;">
               {{ statsView?.keyword }}
@@ -900,12 +913,14 @@ async function exportPoster() {
           </view>
 
           <view
+            id="poster-root"
             ref="posterRef"
             class="mb-4 max-w-160 w-full border border-white/10 rounded-2xl bg-white/10 p-5 opacity-0 backdrop-blur-md delay-300"
+            data-poster="true"
             :class="{ 'animate-slide-in-up': currentPage === 7 }"
           >
             <view class="mb-4 flex items-center">
-              <image :src="userInfo.avatar" class="mr-3 h-12 w-12 rounded-full" mode="aspectFill" />
+              <image :src="userAvatar" class="mr-3 h-12 w-12 rounded-full" mode="aspectFill" />
               <view class="flex-1">
                 <view class="text-base font-bold">
                   {{ userInfo.nickname }}
@@ -932,7 +947,7 @@ async function exportPoster() {
                   加入天数
                 </view>
                 <view class="mt-1 text-sm font-bold">
-                  {{ statsView?.joinDays }}
+                  {{ statsView?.joinDays ?? '—' }}
                 </view>
               </view>
               <view class="border border-white/10 rounded-xl bg-white/8 p-3">
@@ -940,7 +955,7 @@ async function exportPoster() {
                   通过题目
                 </view>
                 <view class="mt-1 text-sm font-bold">
-                  {{ statsView?.ojProblemsPassed }}
+                  {{ statsView?.ojProblemsPassed ?? '—' }}
                 </view>
               </view>
               <view class="border border-white/10 rounded-xl bg-white/8 p-3">
@@ -948,7 +963,7 @@ async function exportPoster() {
                   Git 提交
                 </view>
                 <view class="mt-1 text-sm font-bold">
-                  {{ statsView?.gitCommits }}
+                  {{ statsView?.gitCommits ?? '—' }}
                 </view>
               </view>
               <view class="border border-white/10 rounded-xl bg-white/8 p-3">
@@ -973,81 +988,13 @@ async function exportPoster() {
             </view>
           </view>
 
-          <!-- Hexagon Ability Chart Placeholder (CSS) -->
-          <view class="opacity-0 delay-300" :class="{ 'animate-zoom-in': currentPage === 7 }">
-            <view class="animate-spin-slow relative mb-8 h-40 w-40 opacity-30">
-              <view class="absolute inset-0 rotate-0 border-2 border-white/30" />
-              <view class="absolute inset-0 rotate-60 border-2 border-white/30" />
-              <view class="absolute inset-0 rotate-120 border-2 border-white/30" />
-            </view>
-          </view>
+          <!-- Hexagon removed to keep within screen height -->
 
-          <view class="mb-4 w-full border border-white/10 rounded-2xl bg-white/10 p-6 opacity-0 backdrop-blur-md delay-300" :class="{ 'animate-slide-in-up': currentPage === 7 }">
-            <view class="mb-3 flex justify-between border-b border-white/10 pb-2">
-              <text class="text-sm opacity-70">
-                加入天数
-              </text>
-              <text class="font-bold">
-                {{ statsView?.joinDays }} 天
-              </text>
-            </view>
-            <view class="mb-3 flex justify-between border-b border-white/10 pb-2">
-              <text class="text-sm opacity-70">
-                通过题目
-              </text>
-              <text class="font-bold">
-                {{ statsView?.ojProblemsPassed }} 个
-              </text>
-            </view>
-            <view class="mb-3 flex justify-between border-b border-white/10 pb-2">
-              <text class="text-sm opacity-70">
-                活跃天数
-              </text>
-              <text class="font-bold">
-                {{ gitActiveDaysText }}
-              </text>
-            </view>
-            <view class="mb-3 flex justify-between border-b border-white/10 pb-2">
-              <text class="text-sm opacity-70">
-                Git 提交
-              </text>
-              <text class="font-bold">
-                {{ statsView?.gitCommits }} 次
-              </text>
-            </view>
-            <view class="mb-3 flex justify-between border-b border-white/10 pb-2">
-              <text class="text-sm opacity-70">
-                文章发布
-              </text>
-              <text class="font-bold">
-                {{ statsView?.articlesPublished ?? '—' }} 篇
-              </text>
-            </view>
-            <view class="flex justify-between">
-              <text class="text-sm opacity-70">
-                总获赞
-              </text>
-              <text class="font-bold">
-                {{ statsView?.totalLikes ?? '—' }}
-              </text>
-            </view>
-          </view>
+          <!-- Summary card removed to avoid exceeding screen height -->
 
-          <button
-            class="z-10 mb-3 w-full border border-white/30 rounded-full bg-white/10 py-3 text-white font-bold opacity-0 transition-transform delay-400 active:scale-95"
-            :class="{ 'animate-slide-in-up': currentPage === 7 }"
-            @click.stop="exportPoster"
-          >
-            保存图片
-          </button>
+          <!-- 保存图片按钮移除 -->
 
-          <button
-            class="z-10 w-full rounded-full from-violet-600 to-fuchsia-600 bg-gradient-to-r py-4 text-white font-bold opacity-0 shadow-lg shadow-violet-900/50 transition-transform delay-500 active:scale-95"
-            :class="{ 'animate-bounce-in': currentPage === 7 }"
-            @click.stop="goBack"
-          >
-            开启 {{ reportYear + 1 }} 新篇章
-          </button>
+          <!-- 下一页按钮移除以避免超过屏幕高度 -->
         </view>
       </swiper-item>
     </swiper>
@@ -1055,6 +1002,12 @@ async function exportPoster() {
 </template>
 
 <style scoped>
+/* Normalize uni-view layout spacing for this page */
+uni-view {
+  box-sizing: border-box;
+  word-break: break-word;
+}
+
 /* Custom Animations */
 @keyframes fade-in {
   from {
