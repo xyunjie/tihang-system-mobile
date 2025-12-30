@@ -212,6 +212,20 @@ const articleHasData = computed(() => {
   return !!(d.articlesPublished && d.articlesPublished > 0)
 })
 
+const oaHasData = computed(() => {
+  const d = statsView.value
+  if (!d)
+    return false
+  return !!((d.oaProcessInitiated && d.oaProcessInitiated > 0) || (d.oaTasksDone && d.oaTasksDone > 0) || d.oaMostInitiatedProcess || d.oaAvgApprovalTime || d.mostBusyMonth)
+})
+
+const ojHasData = computed(() => {
+  const d = statsView.value
+  if (!d)
+    return false
+  return !!((d.ojSubmissions && d.ojSubmissions > 0) || (d.ojProblemsPassed && d.ojProblemsPassed > 0) || d.ojPassRate != null || d.ojHighestRank || d.ojContests || d.ojMostAttempted || d.ojLateNightSubmission)
+})
+
 function formatLastCommitTime() {
   return statsView.value?.gitLastCommitTime
 }
@@ -503,7 +517,7 @@ function goBack() {
             高效的工作
           </view>
 
-          <view class="relative mb-8 h-48 w-full flex items-center justify-center opacity-0 delay-100" :class="{ 'animate-zoom-in': currentPage === 3 }">
+          <view v-if="oaHasData" class="relative mb-8 h-48 w-full flex items-center justify-center opacity-0 delay-100" :class="{ 'animate-zoom-in': currentPage === 3 }">
             <!-- Animated Chart Bars -->
             <view
               class="absolute bottom-0 left-10 w-16 rounded-t-lg bg-orange-500/80 transition-all duration-1000 ease-out"
@@ -529,9 +543,14 @@ function goBack() {
             </view>
             <view class="absolute bottom-0 h-px w-full bg-white/20" />
           </view>
+          <view v-else class="relative mb-8 opacity-0 delay-100" :class="{ 'animate-zoom-in': currentPage === 3 }">
+            <view class="mx-auto w-full border border-white/10 rounded-2xl bg-white/5 p-6 text-center text-white/80">
+              暂无OA工作数据
+            </view>
+          </view>
 
           <!-- Additional OA Stats -->
-          <view class="grid grid-cols-2 mb-6 gap-4 opacity-0 delay-200" :class="{ 'animate-slide-in-up': currentPage === 3 }">
+          <view v-if="oaHasData" class="grid grid-cols-2 mb-6 gap-4 opacity-0 delay-200" :class="{ 'animate-slide-in-up': currentPage === 3 }">
             <view class="border border-white/10 rounded-xl bg-white/10 p-3">
               <view class="mb-1 text-xs text-orange-200">
                 发起最多
@@ -549,6 +568,11 @@ function goBack() {
               </view>
             </view>
           </view>
+          <view v-else class="mb-6 text-center opacity-0 delay-200" :class="{ 'animate-slide-in-up': currentPage === 3 }">
+            <view class="inline-block border border-white/10 rounded-xl bg-white/10 px-4 py-3 text-xs opacity-80">
+              等待你的下一次流程发起与处理
+            </view>
+          </view>
 
           <view
             class="relative overflow-hidden rounded-2xl p-6 opacity-0 backdrop-blur-md transition-all duration-500 delay-300"
@@ -558,7 +582,7 @@ function goBack() {
             ]"
             @click.stop="revealBusyMonth"
           >
-            <view v-if="!showBusyMonth" class="absolute inset-0 z-10 flex items-center justify-center bg-black/40">
+            <view v-if="!showBusyMonth && oaHasData" class="absolute inset-0 z-10 flex items-center justify-center bg-black/40">
               <view class="flex flex-col animate-pulse items-center gap-2">
                 <view class="i-carbon-touch-1 text-3xl text-orange-400" />
                 <text class="text-xs text-orange-200">
@@ -567,7 +591,7 @@ function goBack() {
               </view>
             </view>
 
-            <view class="mb-4 transition-all duration-500" :class="{ 'blur-sm opacity-50': !showBusyMonth }">
+            <view v-if="oaHasData" class="mb-4 transition-all duration-500" :class="{ 'blur-sm opacity-50': !showBusyMonth }">
               <text class="mr-2 text-2xl text-orange-300 font-bold" :class="{ 'animate-zoom-in': showBusyMonth }">
                 {{ statsView?.mostBusyMonth }}
               </text>
@@ -575,10 +599,13 @@ function goBack() {
                 是你最忙碌的一个月
               </text>
             </view>
-            <view class="text-sm leading-relaxed opacity-70 transition-all duration-500" :class="{ 'blur-sm opacity-50': !showBusyMonth }">
+            <view v-if="oaHasData" class="text-sm leading-relaxed opacity-70 transition-all duration-500" :class="{ 'blur-sm opacity-50': !showBusyMonth }">
               流程流转之间，是你忙碌的身影。<br>
               每一个节点的完成，都凝聚着你的智慧。<br>
               你也因此成为了大家眼中的“效率担当”。
+            </view>
+            <view v-else class="text-center text-sm leading-relaxed opacity-70">
+              暂无“最忙月份”统计
             </view>
           </view>
         </view>
@@ -680,6 +707,7 @@ function goBack() {
           </view>
 
           <view
+            v-if="ojHasData"
             class="relative z-10 overflow-hidden border border-gray-700 rounded-xl bg-gray-800/50 p-6 opacity-0 backdrop-blur-sm delay-100"
             :class="{ 'animate-zoom-in': currentPage === 5 }"
           >
@@ -712,9 +740,12 @@ function goBack() {
               <text>通过率: {{ statsView?.ojPassRate }}</text>
             </view>
           </view>
+          <view v-else class="relative z-10 overflow-hidden border border-gray-700 rounded-xl bg-gray-800/40 p-6 opacity-0 backdrop-blur-sm delay-100 text-center" :class="{ 'animate-zoom-in': currentPage === 5 }">
+            暂无在线评测数据
+          </view>
 
           <!-- New Stats Section -->
-          <view class="z-10 mt-6 opacity-0 delay-200 space-y-3" :class="{ 'animate-slide-in-up': currentPage === 5 }">
+          <view v-if="ojHasData" class="z-10 mt-6 opacity-0 delay-200 space-y-3" :class="{ 'animate-slide-in-up': currentPage === 5 }">
             <!-- Most Attempted -->
             <view class="flex items-center justify-between border border-white/10 rounded-lg bg-white/5 p-3">
               <view class="flex items-center gap-2">
@@ -763,6 +794,11 @@ function goBack() {
                 </text>，<br>
                 {{ ojPeriodMessage }}
               </view>
+            </view>
+          </view>
+          <view v-else class="z-10 mt-6 opacity-0 delay-200 text-center" :class="{ 'animate-slide-in-up': currentPage === 5 }">
+            <view class="inline-block border border-white/10 rounded-lg bg-white/5 px-4 py-3 text-xs opacity-80">
+              还没有评测记录，期待你的下一次提交
             </view>
           </view>
 
