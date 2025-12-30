@@ -168,6 +168,21 @@ const oaBarHeights = computed(() => {
   }
 })
 
+const oaInitiatedCount = computed(() => statsView.value?.oaProcessInitiated ?? 0)
+const oaDoneCount = computed(() => statsView.value?.oaTasksDone ?? 0)
+const mostInitiatedText = computed(() => {
+  const initiated = oaInitiatedCount.value
+  if (!initiated || initiated <= 0)
+    return '无数据'
+  return statsView.value?.oaMostInitiatedProcess ?? '—'
+})
+const avgApprovalText = computed(() => statsView.value?.oaAvgApprovalTime ?? '—')
+const mostBusyMonthText = computed(() => statsView.value?.mostBusyMonth ?? '—')
+const hasMostBusyMonth = computed(() => {
+  const m = statsView.value?.mostBusyMonth
+  return !!(m && String(m).trim().length > 0)
+})
+
 const gitAdditionsText = computed(() => {
   const v = statsView.value?.gitAdditions
   return typeof v === 'number' ? `+${v}` : '—'
@@ -194,6 +209,13 @@ const attendanceHasData = computed(() => {
     return false
   return !!((d.totalWorkingHours && d.totalWorkingHours > 0) || (d.attendanceCount && d.attendanceCount > 0) || d.firstClockIn || d.latestClockOut || d.longestWorkingDay)
 })
+const hasWorkingHours = computed(() => {
+  const v = statsView.value?.totalWorkingHours
+  return typeof v === 'number' && v > 0
+})
+const hasFirstClockIn = computed(() => !!statsView.value?.firstClockIn)
+const hasLatestClockOut = computed(() => !!statsView.value?.latestClockOut)
+const hasLongestWorkingDay = computed(() => !!statsView.value?.longestWorkingDay)
 const totalWorkingHoursText = computed(() => {
   const v = statsView.value?.totalWorkingHours
   return typeof v === 'number' && v > 0 ? `${v}` : '—'
@@ -223,7 +245,17 @@ const ojHasData = computed(() => {
   const d = statsView.value
   if (!d)
     return false
-  return !!((d.ojSubmissions && d.ojSubmissions > 0) || (d.ojProblemsPassed && d.ojProblemsPassed > 0) || d.ojPassRate != null || d.ojHighestRank || d.ojContests || d.ojMostAttempted || d.ojLateNightSubmission)
+  const hasNums = (d.ojSubmissions || 0) > 0
+    || (d.ojProblemsPassed || 0) > 0
+    || (d.ojContests || 0) > 0
+    || (d.ojHighestRank || 0) > 0
+    || (d.ojMaxStreak || 0) > 0
+  const hasText = !!(d.ojMostAttempted) || !!(d.favLang)
+  const hasLate = !!(d.ojLateNightSubmission)
+  const hasPassRate = typeof d.ojPassRate === 'string'
+    ? Number.parseFloat(String(d.ojPassRate).replace('%', '')) > 0
+    : (typeof d.ojPassRate === 'number' ? d.ojPassRate > 0 : false)
+  return hasNums || hasText || hasLate || hasPassRate
 })
 
 function formatLastCommitTime() {
@@ -443,9 +475,14 @@ function goBack() {
                 年度工时
               </view>
               <view class="text-3xl font-bold">
-                {{ totalWorkingHoursText }} <text class="text-sm font-normal">
-                  h
-                </text>
+                <view v-if="hasWorkingHours">
+                  {{ totalWorkingHoursText }} <text class="text-sm font-normal">
+                    h
+                  </text>
+                </view>
+                <view v-else class="text-base opacity-80">
+                  尚未记录工时
+                </view>
               </view>
             </view>
             <!-- Longest Day -->
@@ -454,25 +491,40 @@ function goBack() {
                 最长一天
               </view>
               <view class="text-xl font-bold">
-                {{ longestWorkingDayText }}
+                <text v-if="hasLongestWorkingDay">
+                  {{ longestWorkingDayText }}
+                </text>
+                <text v-else class="text-base opacity-80">
+                  暂无最长打卡日
+                </text>
               </view>
             </view>
             <!-- Earliest In -->
             <view class="rounded-2xl bg-white/10 p-4 opacity-0 backdrop-blur-md transition-colors delay-300 hover:bg-white/20" :class="{ 'animate-zoom-in': currentPage === 2 }">
               <view class="mb-1 text-sm text-emerald-200">
-                最早上班
+                最早打卡
               </view>
               <view class="text-3xl font-bold">
-                {{ firstClockInText }}
+                <text v-if="hasFirstClockIn">
+                  {{ firstClockInText }}
+                </text>
+                <text v-else class="text-base opacity-80">
+                  暂无最早打卡记录
+                </text>
               </view>
             </view>
             <!-- Latest Out -->
             <view class="rounded-2xl bg-white/10 p-4 opacity-0 backdrop-blur-md transition-colors delay-400 hover:bg-white/20" :class="{ 'animate-zoom-in': currentPage === 2 }">
               <view class="mb-1 text-sm text-emerald-200">
-                最晚下班
+                最晚打卡
               </view>
               <view class="text-3xl font-bold">
-                {{ latestClockOutText }}
+                <text v-if="hasLatestClockOut">
+                  {{ latestClockOutText }}
+                </text>
+                <text v-else class="text-base opacity-80">
+                  暂无最晚打卡记录
+                </text>
               </view>
             </view>
           </view>
@@ -524,7 +576,7 @@ function goBack() {
               :style="{ height: currentPage === 3 ? `${oaBarHeights.initiated}%` : '0%' }"
             >
               <view class="absolute w-full text-center text-sm -top-6" :class="{ 'opacity-100': currentPage === 3, 'opacity-0': currentPage !== 3 }">
-                {{ statsView?.oaProcessInitiated }}
+                {{ oaInitiatedCount }}
               </view>
               <view class="absolute bottom-2 w-full text-center text-xs opacity-70">
                 发起
@@ -535,13 +587,16 @@ function goBack() {
               :style="{ height: currentPage === 3 ? `${oaBarHeights.done}%` : '0%' }"
             >
               <view class="absolute w-full text-center text-sm -top-6" :class="{ 'opacity-100': currentPage === 3, 'opacity-0': currentPage !== 3 }">
-                {{ statsView?.oaTasksDone }}
+                {{ oaDoneCount }}
               </view>
               <view class="absolute bottom-2 w-full text-center text-xs opacity-70">
                 处理
               </view>
             </view>
             <view class="absolute bottom-0 h-px w-full bg-white/20" />
+            <view v-if="oaInitiatedCount === 0 && oaDoneCount === 0" class="absolute inset-x-0 text-center text-xs opacity-70 -bottom-8">
+              今年尚未产生 OA 流程记录
+            </view>
           </view>
           <view v-else class="relative mb-8 opacity-0 delay-100" :class="{ 'animate-zoom-in': currentPage === 3 }">
             <view class="mx-auto w-full border border-white/10 rounded-2xl bg-white/5 p-6 text-center text-white/80">
@@ -556,7 +611,7 @@ function goBack() {
                 发起最多
               </view>
               <view class="truncate text-lg font-bold">
-                {{ statsView?.oaMostInitiatedProcess }}
+                {{ mostInitiatedText }}
               </view>
             </view>
             <view class="border border-white/10 rounded-xl bg-white/10 p-3">
@@ -564,7 +619,7 @@ function goBack() {
                 平均耗时
               </view>
               <view class="text-lg font-bold">
-                {{ statsView?.oaAvgApprovalTime }}
+                {{ avgApprovalText }}
               </view>
             </view>
           </view>
@@ -596,7 +651,7 @@ function goBack() {
                 {{ statsView?.mostBusyMonth }}
               </text>
               <text class="text-sm opacity-80">
-                是你最忙碌的一个月
+                {{ hasMostBusyMonth ? '是你最忙碌的一个月' : '暂无最忙月份' }}
               </text>
             </view>
             <view v-if="oaHasData" class="text-sm leading-relaxed opacity-70 transition-all duration-500" :class="{ 'blur-sm opacity-50': !showBusyMonth }">
@@ -740,28 +795,15 @@ function goBack() {
               <text>通过率: {{ statsView?.ojPassRate }}</text>
             </view>
           </view>
-          <view v-else class="relative z-10 overflow-hidden border border-gray-700 rounded-xl bg-gray-800/40 p-6 opacity-0 backdrop-blur-sm delay-100 text-center" :class="{ 'animate-zoom-in': currentPage === 5 }">
+          <view v-else class="relative z-10 overflow-hidden border border-gray-700 rounded-xl bg-gray-800/40 p-6 text-center opacity-0 backdrop-blur-sm delay-100" :class="{ 'animate-zoom-in': currentPage === 5 }">
             暂无在线评测数据
           </view>
 
           <!-- New Stats Section -->
           <view v-if="ojHasData" class="z-10 mt-6 opacity-0 delay-200 space-y-3" :class="{ 'animate-slide-in-up': currentPage === 5 }">
-            <!-- Most Attempted -->
-            <view class="flex items-center justify-between border border-white/10 rounded-lg bg-white/5 p-3">
-              <view class="flex items-center gap-2">
-                <view class="i-carbon-warning-alt text-orange-400" />
-                <text class="text-sm">
-                  尝试最多
-                </text>
-              </view>
-              <text class="text-sm text-orange-100 font-bold">
-                {{ statsView?.ojMostAttempted }}
-              </text>
-            </view>
-
-            <!-- Contest Stats Grid -->
-            <view class="grid grid-cols-2 gap-3">
-              <view class="border border-white/10 rounded-lg bg-white/5 p-3 text-center">
+            <!-- Contests & Most Attempted in one row -->
+            <view class="grid grid-cols-3 gap-3">
+              <view class="col-span-1 border border-white/10 rounded-lg bg-white/5 p-3 text-center">
                 <view class="mb-1 text-xs text-gray-400">
                   参赛
                 </view>
@@ -769,12 +811,12 @@ function goBack() {
                   {{ statsView?.ojContests }}
                 </view>
               </view>
-              <view class="border border-white/10 rounded-lg bg-white/5 p-3 text-center">
+              <view class="col-span-2 border border-white/10 rounded-lg bg-white/5 p-3 text-center">
                 <view class="mb-1 text-xs text-gray-400">
-                  最高排名
+                  尝试最多
                 </view>
-                <view class="text-lg text-yellow-400 font-bold">
-                  {{ statsView?.ojHighestRank }}
+                <view class="truncate text-base text-orange-200 font-bold">
+                  {{ statsView?.ojMostAttempted }}
                 </view>
               </view>
             </view>
@@ -796,7 +838,7 @@ function goBack() {
               </view>
             </view>
           </view>
-          <view v-else class="z-10 mt-6 opacity-0 delay-200 text-center" :class="{ 'animate-slide-in-up': currentPage === 5 }">
+          <view v-else class="z-10 mt-6 text-center opacity-0 delay-200" :class="{ 'animate-slide-in-up': currentPage === 5 }">
             <view class="inline-block border border-white/10 rounded-lg bg-white/5 px-4 py-3 text-xs opacity-80">
               还没有评测记录，期待你的下一次提交
             </view>
