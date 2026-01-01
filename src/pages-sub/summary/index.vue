@@ -46,8 +46,7 @@ const userInfo = computed(() => {
 const systemInfo = uni.getSystemInfoSync()
 const statusBarHeight = systemInfo.statusBarHeight || 0
 const safeAreaBottom = systemInfo.safeAreaInsets?.bottom || 0
-const screenWidth = systemInfo.windowWidth
-const reportYear = dayjs().year()
+const reportYear = 2025
 
 // Current Page Index for Animation Triggers
 const currentPage = ref(0)
