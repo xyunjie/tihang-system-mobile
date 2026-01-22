@@ -6,20 +6,12 @@ import { http } from '@/http/http'
  * @param data 纳新登记数据
  */
 export function createUserRecruitment(data: UserRecruitmentSaveReqVO) {
-  const headers: Record<string, any> = {
-    'tenant-id': 1, // 默认租户ID
-  }
-
-  return http.post<CommonResultLong>('/admin-api/system/user-recruitment/create', data, undefined, headers)
+  return http.post<CommonResultLong>('/admin-api/system/user-recruitment/create', data, undefined)
 }
 
 /**
  * 获取用户纳新计划配置
  */
 export function getUserRecruitmentConfig() {
-  const headers: Record<string, any> = {
-    'tenant-id': 1, // 默认租户ID
-  }
-
-  return http.get<UserRecruitmentConfigRespVO>('/admin-api/system/user-recruitment-config/get', undefined, headers)
+  return http.get<UserRecruitmentConfigRespVO>('/admin-api/system/user-recruitment-config/get-runtime')
 }

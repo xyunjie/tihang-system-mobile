@@ -297,6 +297,15 @@
           }
         },
         {
+          "path": "webview/index",
+          "type": "page",
+          "style": {
+            "navigationStyle": "default",
+            "navigationBarTitleText": "网页"
+          },
+          "notLogin": true
+        },
+        {
           "path": "bpm/approval/index",
           "type": "page",
           "layout": "default",

@@ -12,7 +12,7 @@
 <script setup lang="ts">
 import type { UserRecruitmentConfigRespVO, UserRecruitmentSaveReqVO } from '@/api/types/recruitment'
 import { onLoad, onShow } from '@dcloudio/uni-app'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { useMessage } from 'wot-design-uni'
 import { getCityList, getProvinceList } from '@/api/area'
 import { getWxCode } from '@/api/login'
@@ -20,10 +20,9 @@ import { createUserRecruitment, getUserRecruitmentConfig } from '@/api/recruitme
 import { getClassList, getCollegeList, getMajorList } from '@/api/school-dept'
 import { uploadFile } from '@/api/user'
 import KspCropper from '@/components/ksp-cropper.vue'
-import ThemeCard from '@/components/ThemeCard.vue'
-import { useAppStore } from '@/store/app'
 import { DictTypeEnum } from '@/utils/dictTypes'
 import { DictUtils } from '@/utils/dictUtils'
+import { isMpWeixin } from '@/utils/platform'
 import { showToast } from '@/utils/toast'
 
 // 初始化消息框
@@ -195,22 +194,9 @@ const rules: any = {
 
 const formRef = ref()
 
-// 主题 & 样式
-const appStore = useAppStore()
-const isDark = computed(() => appStore.theme === 'dark')
-const pageBgClass = computed(() => (isDark.value ? 'bg-[#0f172a]' : 'bg-gray-100'))
-const overlayBgClass = computed(() => (isDark.value ? 'bg-[#0f172a]' : 'bg-white'))
-const loadingTextClass = computed(() => (isDark.value ? 'text-gray-300' : 'text-gray-500'))
-const uploadBoxClass = computed(() => (isDark.value
-  ? 'bg-white/6 border border-white/12 rounded border-dashed'
-  : 'bg-gray-50 border border-gray-400 rounded border-dashed'))
-const uploadHintClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-gray-500'))
-
 // 加载省市区数据
 async function loadAreaData() {
   try {
-    console.log('🔄 开始加载省份数据...')
-
     // 获取省份列表
     const provinces = await getProvinceList()
     provinceOptions.value = provinces.map(province => ({
@@ -218,20 +204,15 @@ async function loadAreaData() {
       value: province.name,
       id: province.id,
     }))
-
-    console.log('✅ 省份数据加载完成:', provinceOptions.value.length, '个省份')
   }
   catch (error) {
-    console.error('❌ 加载省份数据失败:', error)
-    showToast('加载省份数据失败，请稍后重试')
+    showToast('网络错误，请稍后重试')
   }
 }
 
 // 加载城市数据
 async function loadCityData(provinceId: number) {
   try {
-    console.log('🔄 开始加载城市数据，省份ID:', provinceId)
-
     // 获取城市列表
     const cities = await getCityList(provinceId)
     cityOptions.value = cities.map(city => ({
@@ -239,20 +220,15 @@ async function loadCityData(provinceId: number) {
       value: city.name,
       id: city.id,
     }))
-
-    console.log('✅ 城市数据加载完成:', cityOptions.value.length, '个城市')
   }
   catch (error) {
-    console.error('❌ 加载城市数据失败:', error)
-    showToast('加载城市数据失败，请稍后重试')
+    showToast('网络错误，请稍后重试')
   }
 }
 
 // 加载学院数据
 async function loadCollegeData() {
   try {
-    console.log('🔄 开始加载学院数据')
-
     // 获取学院列表（parentId为0表示顶级学院）
     const colleges = await getCollegeList()
     collegeOptions.value = colleges.map(college => ({
@@ -260,20 +236,15 @@ async function loadCollegeData() {
       value: college.id,
       id: college.id,
     }))
-
-    console.log('✅ 学院数据加载完成:', collegeOptions.value.length, '个学院')
   }
   catch (error) {
-    console.error('❌ 加载学院数据失败:', error)
-    showToast('加载学院数据失败，请稍后重试')
+    showToast('网络错误，请稍后重试')
   }
 }
 
 // 加载专业数据
 async function loadMajorData(collegeId: number) {
   try {
-    console.log('🔄 开始加载专业数据，学院ID:', collegeId)
-
     // 获取专业列表
     const majors = await getMajorList(collegeId)
     majorOptions.value = majors.map(major => ({
@@ -281,20 +252,15 @@ async function loadMajorData(collegeId: number) {
       value: major.id,
       id: major.id,
     }))
-
-    console.log('✅ 专业数据加载完成:', majorOptions.value.length, '个专业')
   }
   catch (error) {
-    console.error('❌ 加载专业数据失败:', error)
-    showToast('加载专业数据失败，请稍后重试')
+    showToast('网络错误，请稍后重试')
   }
 }
 
 // 加载班级数据
 async function loadClassData(majorId: number) {
   try {
-    console.log('🔄 开始加载班级数据，专业ID:', majorId)
-
     // 获取班级列表
     const classes = await getClassList(majorId, String(recruitmentConfig.value.grade).slice(-2))
     classOptions.value = classes.map(classItem => ({
@@ -302,12 +268,9 @@ async function loadClassData(majorId: number) {
       value: classItem.id,
       id: classItem.id,
     }))
-
-    console.log('✅ 班级数据加载完成:', classOptions.value.length, '个班级')
   }
   catch (error) {
-    console.error('❌ 加载班级数据失败:', error)
-    showToast('加载班级数据失败，请稍后重试')
+    showToast('网络错误，请稍后重试')
   }
 }
 
@@ -327,7 +290,7 @@ async function loadNationData() {
   }
   catch (error) {
     console.error('❌ 加载民族数据失败:', error)
-    showToast('加载民族数据失败，请稍后重试')
+    showToast('网络错误，请稍后重试')
   }
 }
 
@@ -343,7 +306,7 @@ async function loadPoliticalStatusData() {
   }
   catch (error) {
     console.error('❌ 加载政治面貌数据失败:', error)
-    showToast('加载政治面貌数据失败，请稍后重试')
+    showToast('网络错误，请稍后重试')
   }
 }
 
@@ -383,7 +346,6 @@ async function loadRecruitmentConfig() {
         // 回到上一层
         uni.navigateBack()
       }).catch(() => {
-        console.log('请求失败,用户点击取消')
       })
       return
     }
@@ -409,27 +371,61 @@ async function loadRecruitmentConfig() {
 
 // 获取微信登录凭证
 async function getWxLoginCode() {
-  try {
-    // 检查是否在微信小程序环境
-    // #ifdef MP-WEIXIN
-    console.log('🔄 开始获取微信登录凭证')
-    const res = await getWxCode()
-    formData.value.openid = res.code
-    console.log('✅ 微信登录凭证获取成功:', res.code)
-    // #endif
+  // #ifdef MP-WEIXIN
+  const res = await getWxCode()
+  formData.value.openid = res.code
+  // #endif
+}
 
-    // #ifndef MP-WEIXIN
-    console.log('⚠️ 非微信小程序环境，跳过获取微信登录凭证')
-    // #endif
-  }
-  catch (error) {
-    console.error('❌ 获取微信登录凭证失败:', error)
-    // 获取失败不影响正常流程，只是无法获取openid
-  }
+// 检查是否在微信环境中
+function checkWechatEnvironment(): boolean {
+  let isWechat = false
+  // #ifdef MP-WEIXIN
+  isWechat = true
+  // #endif
+
+  // #ifdef H5
+  // 检查是否在微信浏览器中
+  const ua = navigator.userAgent.toLowerCase()
+  isWechat = ua.includes('micromessenger')
+  // #endif
+
+  // 其他平台（非微信环境）
+  return isWechat
+}
+
+// 处理非微信环境的访问
+function handleNonWechatEnvironment() {
+  message.alert({
+    msg: '纳新登记功能仅在微信环境中可用，请在微信小程序或微信浏览器中访问。',
+    title: '访问受限',
+    confirmButtonText: '我知道了',
+    showCancelButton: false,
+    closeOnClickModal: false,
+  }).then(() => {
+    // 返回上一页
+    uni.navigateBack({
+      fail: () => {
+        // 如果无法返回，跳转到首页
+        uni.reLaunch({
+          url: '/pages/index/index',
+        })
+      },
+    })
+  }).catch(() => {
+    // 用户点击遮罩（不应该发生，因为 closeOnClickModal 为 false）
+    uni.navigateBack()
+  })
 }
 
 // 页面加载时获取纳新配置
 onLoad(async () => {
+  // 检查微信环境
+  if (!checkWechatEnvironment()) {
+    handleNonWechatEnvironment()
+    return
+  }
+
   // 并行加载纳新配置、省市区数据、学院数据和微信登录凭证
   await Promise.all([
     loadRecruitmentConfig(),
@@ -452,26 +448,28 @@ function showRecruitmentNotice() {
     msg: `您的信息仅用于工作室报名申请，不会发生泄露！
 请保证所填写的信息真实有效，请按照要求正确填写！
 如有疑问请联系纳新群管理员！\n
-    
+
 本次纳新时间为：${formatTime(recruitmentConfig.value!.startTime)} - ${formatTime(recruitmentConfig.value!.endTime)}`,
     confirmButtonText: '我知道了',
     cancelButtonText: '加入纳新群',
     closeOnClickModal: false,
   }).then(() => {
-    // 用户点击了"我知道了"
-    console.log('用户点击了"我知道了"')
   }).catch(() => {
     // 用户点击了"加入纳新群"
     if (recruitmentConfig.value?.groupLink) {
-      console.log('用户点击了"加入纳新群"')
-      // 复制群链接到剪贴板
-      uni.setClipboardData({
-        data: recruitmentConfig.value.groupLink,
-        success: () => {
-          showToast('群链接已复制到剪贴板')
-        },
-      })
+      openGroupLink(recruitmentConfig.value.groupLink)
     }
+  })
+}
+
+// 打开纳新群链接
+function openGroupLink(url: string) {
+  uni.navigateTo({
+    url: `/pages-sub/webview/index?url=${encodeURIComponent(url)}`,
+    fail: (err) => {
+      console.error('打开链接失败:', err)
+      showToast('打开链接失败，请稍后重试')
+    },
   })
 }
 
@@ -589,7 +587,6 @@ function onSelectPhoto() {
     },
     fail: (err) => {
       console.error('选择图片失败:', err)
-      showToast('选择图片失败，请重试')
     },
   })
 }
@@ -607,7 +604,7 @@ function onCropperOk(res: any) {
     })
     .catch((error) => {
       console.error('上传失败:', error)
-      showToast('照片上传失败，请重试')
+      showToast('网络错误，请稍后重试')
     })
 }
 
@@ -696,7 +693,7 @@ async function onSubmit() {
 </script>
 
 <template>
-  <view class="min-h-screen" :class="pageBgClass">
+  <view class="recruitment-page min-h-screen bg-[#f5f7fa]">
     <!-- 消息框组件 -->
     <wd-message-box />
 
@@ -711,259 +708,354 @@ async function onSubmit() {
       @cancel="onCropperCancel"
     />
 
+    <!-- 顶部 Header -->
+    <view class="header-section relative overflow-hidden from-[#2563eb] to-[#1e40af] bg-gradient-to-br px-6 pb-12 pt-8">
+      <!-- 装饰圆形 -->
+      <view class="absolute right-[-40px] top-[-40px] h-32 w-32 rounded-full bg-white/10" />
+      <view class="absolute bottom-[-20px] left-[-20px] h-24 w-24 rounded-full bg-white/5" />
+
+      <view class="relative z-10">
+        <view class="mb-2 text-2xl text-white font-bold">
+          纳新登记
+        </view>
+        <view class="text-sm text-white/80">
+          欢迎加入我们，开启你的技术之旅
+        </view>
+      </view>
+    </view>
+
     <!-- 主要表单内容 -->
-    <view v-if="!loading && recruitmentConfig" class="p-4">
-      <ThemeCard padding="p-4" radius="rounded-2xl" shadow>
-        <wd-form ref="formRef" :model="formData" :rules="rules">
-          <!-- 姓名 -->
-          <wd-cell-group title="基本信息">
-            <wd-input
-              v-model="formData.name"
-              label="姓名"
-              placeholder="请输入真实姓名"
-              required
-              prop="name"
-            />
+    <view v-if="!loading && recruitmentConfig" class="relative z-10 mt-[-24px] px-4 pb-8">
+      <wd-form ref="formRef" :model="formData" :rules="rules">
+        <!-- 基本信息卡片 -->
+        <view class="form-card mb-4 rounded-2xl bg-white p-5 shadow-sm">
+          <view class="card-header mb-4 flex items-center">
+            <view class="mr-3 h-8 w-1 rounded-full bg-[#2563eb]" />
+            <text class="text-lg text-gray-800 font-semibold">
+              基本信息
+            </text>
+          </view>
 
-            <!-- 性别 -->
-            <wd-cell title="性别" required center>
-              <view class="w-[200px]">
-                <wd-radio-group v-model="formData.sex" shape="button">
-                  <wd-radio :value="1">
-                    男
-                  </wd-radio>
-                  <wd-radio :value="2">
-                    女
-                  </wd-radio>
-                </wd-radio-group>
-              </view>
-            </wd-cell>
-
-            <!-- 证件照 -->
-            <wd-cell title="证件照" required>
-              <view class="flex flex-col items-center">
-                <view
-                  class="h-33.25 w-25 flex flex-col items-center justify-center overflow-hidden"
-                  :class="uploadBoxClass"
-                  @click="onSelectPhoto"
-                >
-                  <image
-                    v-if="formData.imageUrl"
-                    :src="formData.imageUrl"
-                    class="h-full w-full object-cover"
-                    mode="aspectFill"
-                  />
-                  <view v-else class="h-full w-full flex flex-col items-center justify-center">
-                    <wd-icon name="camera" size="24px" color="#999" />
-                    <text class="mt-1 text-xs" :class="uploadHintClass">
-                      点击上传
-                    </text>
-                  </view>
-                </view>
-                <text class="mt-2 text-xs" :class="uploadHintClass">
-                  一寸证件照
+          <!-- 证件照上传 -->
+          <view class="photo-upload mb-6 flex items-center">
+            <view
+              class="photo-box relative h-32 w-24 flex flex-shrink-0 cursor-pointer items-center justify-center overflow-hidden border-2 border-[#2563eb]/30 rounded-xl border-dashed bg-[#f0f7ff] transition-all"
+              hover-class="border-[#2563eb]"
+              @click="onSelectPhoto"
+            >
+              <image
+                v-if="formData.imageUrl"
+                :src="formData.imageUrl"
+                class="h-full w-full object-cover"
+                mode="aspectFill"
+              />
+              <view v-else class="flex flex-col items-center">
+                <wd-icon name="camera" size="28px" color="#2563eb" />
+                <text class="mt-2 text-xs text-[#2563eb]">
+                  上传照片
                 </text>
               </view>
-            </wd-cell>
-
-            <!-- 学号 -->
-            <wd-input
-              v-model="formData.studentId"
-              label="学号"
-              placeholder="请输入学号"
-              required
-              prop="studentId"
-            />
-
-            <!-- QQ号 -->
-            <wd-input
-              v-model="formData.qqNumber"
-              label="QQ号"
-              placeholder="请输入QQ号"
-              required
-              prop="qqNumber"
-            />
-
-            <!-- 邮箱 -->
-            <wd-input
-              v-model="formData.email"
-              label="邮箱"
-              placeholder="请输入邮箱地址"
-              required
-              prop="email"
-            />
-
-            <!-- 手机号 -->
-            <wd-input
-              v-model="formData.phone"
-              label="手机号"
-              placeholder="请输入手机号"
-              required
-              prop="phone"
-            />
-          </wd-cell-group>
-
-          <!-- 个人信息 -->
-          <wd-cell-group title="个人详细信息">
-            <!-- 出生日期 -->
-            <wd-cell title="出生日期" required>
-              <wd-datetime-picker
-                v-model="formData.birthday"
-                :min-date="946656000000"
-                type="date"
-                @confirm="onBirthdayChange"
-              />
-            </wd-cell>
-
-            <!-- 民族 -->
-            <wd-cell title="民族" required>
-              <wd-picker
-                v-model="formData.nation"
-                :columns="nationOptions"
-                @confirm="onNationChange"
-              />
-            </wd-cell>
-
-            <!-- 政治面貌 -->
-            <wd-cell title="政治面貌" required>
-              <wd-picker
-                v-model="formData.politicalOutlook"
-                :columns="politicalOptions"
-                @confirm="onPoliticalChange"
-              />
-            </wd-cell>
-
-            <!-- 籍贯 -->
-            <wd-cell title="省份" required>
-              <wd-picker
-                v-model="formData.province"
-                :columns="provinceOptions"
-                placeholder="请选择省份"
-                @confirm="onProvinceChange"
-              />
-            </wd-cell>
-
-            <wd-cell title="市/区" required>
-              <wd-picker
-                v-model="formData.city"
-                :columns="cityOptions"
-                placeholder="请选择市或区"
-                :disabled="!selectedProvinceId"
-                @confirm="onCityChange"
-              />
-            </wd-cell>
-          </wd-cell-group>
-
-          <!-- 学院专业信息 -->
-          <wd-cell-group title="学院专业信息">
-            <!-- 学院 -->
-            <wd-cell title="学院" required>
-              <wd-picker
-                v-model="selectedCollegeId"
-                :columns="collegeOptions"
-                placeholder="请选择学院"
-                @confirm="onCollegeChange"
-              />
-            </wd-cell>
-
-            <!-- 专业 -->
-            <wd-cell title="专业" required>
-              <wd-picker
-                v-model="selectedMajorId"
-                :columns="majorOptions"
-                placeholder="请选择专业"
-                :disabled="!selectedCollegeId"
-                @confirm="onMajorChange"
-              />
-            </wd-cell>
-
-            <!-- 班级 -->
-            <wd-cell title="班级" required>
-              <wd-picker
-                v-model="selectedClassId"
-                :columns="classOptions"
-                placeholder="请选择班级"
-                :disabled="!selectedMajorId"
-                @confirm="onClassChange"
-              />
-            </wd-cell>
-          </wd-cell-group>
-
-          <!-- 个人能力信息 -->
-          <wd-cell-group title="个人能力与意向">
-            <!-- 个人介绍 -->
-            <wd-cell title="个人介绍" vertical required>
-              <wd-textarea
-                v-model="formData.userIntroduce"
-                placeholder="请简要介绍自己"
-                :maxlength="200"
-                show-word-limit
-                required
-                prop="userIntroduce"
-              />
-            </wd-cell>
-
-            <!-- 加入原因 -->
-            <wd-cell title="加入原因" vertical required>
-              <wd-textarea
-                v-model="formData.joinReason"
-                placeholder="请说明加入工作室的原因"
-                :maxlength="200"
-                show-word-limit
-                required
-                prop="joinReason"
-              />
-            </wd-cell>
-
-            <!-- 个人技能 -->
-            <wd-cell title="个人技能" vertical required>
-              <wd-textarea
-                v-model="formData.personalSkills"
-                placeholder="请描述您的个人技能和特长"
-                :maxlength="200"
-                show-word-limit
-                required
-                prop="personalSkills"
-              />
-            </wd-cell>
-
-            <!-- 兴趣方向 -->
-            <wd-cell title="兴趣方向" vertical required>
-              <wd-textarea
-                v-model="formData.interestDirection"
-                placeholder="请描述您感兴趣的技术方向"
-                :maxlength="200"
-                show-word-limit
-                required
-                prop="interestDirection"
-              />
-            </wd-cell>
-          </wd-cell-group>
-
-          <!-- 提交按钮 -->
-          <view class="mb-8 mt-8 px-4">
-            <wd-button
-              type="primary"
-              size="large"
-              block
-              :loading="submitting"
-              @click="onSubmit"
-            >
-              提交申请
-            </wd-button>
+            </view>
+            <view class="ml-4 flex-1">
+              <text class="mb-1 block text-sm text-gray-700 font-medium">
+                一寸证件照 <text class="text-red-500">
+                  *
+                </text>
+              </text>
+              <text class="text-xs text-gray-400">
+                请上传清晰的正面免冠照片
+              </text>
+            </view>
           </view>
-        </wd-form>
-      </ThemeCard>
+
+          <wd-input
+            v-model="formData.name"
+            label="姓名"
+            placeholder="请输入真实姓名"
+            required
+            prop="name"
+          />
+
+          <wd-cell title="性别" required center>
+            <wd-radio-group v-model="formData.sex" shape="button">
+              <wd-radio :value="1">
+                男
+              </wd-radio>
+              <wd-radio :value="2">
+                女
+              </wd-radio>
+            </wd-radio-group>
+          </wd-cell>
+
+          <wd-input
+            v-model="formData.studentId"
+            label="学号"
+            placeholder="请输入学号"
+            required
+            prop="studentId"
+          />
+
+          <wd-input
+            v-model="formData.phone"
+            label="手机号"
+            placeholder="请输入手机号"
+            required
+            prop="phone"
+          />
+
+          <wd-input
+            v-model="formData.qqNumber"
+            label="QQ号"
+            placeholder="请输入QQ号"
+            required
+            prop="qqNumber"
+          />
+
+          <wd-input
+            v-model="formData.email"
+            label="邮箱"
+            placeholder="请输入邮箱地址"
+            required
+            prop="email"
+          />
+        </view>
+
+        <!-- 个人详细信息卡片 -->
+        <view class="form-card mb-4 rounded-2xl bg-white p-5 shadow-sm">
+          <view class="card-header mb-4 flex items-center">
+            <view class="mr-3 h-8 w-1 rounded-full bg-[#2563eb]" />
+            <text class="text-lg text-gray-800 font-semibold">
+              个人详情
+            </text>
+          </view>
+
+          <wd-cell title="出生日期" required center>
+            <wd-datetime-picker
+              v-model="formData.birthday"
+              :min-date="946656000000"
+              type="date"
+              @confirm="onBirthdayChange"
+            />
+          </wd-cell>
+
+          <wd-cell title="民族" required center>
+            <wd-picker
+              v-model="formData.nation"
+              :columns="nationOptions"
+              @confirm="onNationChange"
+            />
+          </wd-cell>
+
+          <wd-cell title="政治面貌" required center>
+            <wd-picker
+              v-model="formData.politicalOutlook"
+              :columns="politicalOptions"
+              @confirm="onPoliticalChange"
+            />
+          </wd-cell>
+
+          <wd-cell title="省份" required center>
+            <wd-picker
+              v-model="formData.province"
+              :columns="provinceOptions"
+              placeholder="请选择省份"
+              @confirm="onProvinceChange"
+            />
+          </wd-cell>
+
+          <wd-cell title="市/区" required center>
+            <wd-picker
+              v-model="formData.city"
+              :columns="cityOptions"
+              placeholder="请选择市或区"
+              :disabled="!selectedProvinceId"
+              @confirm="onCityChange"
+            />
+          </wd-cell>
+        </view>
+
+        <!-- 学院专业信息卡片 -->
+        <view class="form-card mb-4 rounded-2xl bg-white p-5 shadow-sm">
+          <view class="card-header mb-4 flex items-center">
+            <view class="mr-3 h-8 w-1 rounded-full bg-[#2563eb]" />
+            <text class="text-lg text-gray-800 font-semibold">
+              学院信息
+            </text>
+          </view>
+
+          <wd-cell title="学院" required center>
+            <wd-picker
+              v-model="selectedCollegeId"
+              :columns="collegeOptions"
+              placeholder="请选择学院"
+              @confirm="onCollegeChange"
+            />
+          </wd-cell>
+
+          <wd-cell title="专业" required center>
+            <wd-picker
+              v-model="selectedMajorId"
+              :columns="majorOptions"
+              placeholder="请选择专业"
+              :disabled="!selectedCollegeId"
+              @confirm="onMajorChange"
+            />
+          </wd-cell>
+
+          <wd-cell title="班级" required center>
+            <wd-picker
+              v-model="selectedClassId"
+              :columns="classOptions"
+              placeholder="请选择班级"
+              :disabled="!selectedMajorId"
+              @confirm="onClassChange"
+            />
+          </wd-cell>
+        </view>
+
+        <!-- 个人能力与意向卡片 -->
+        <view class="form-card mb-4 rounded-2xl bg-white p-5 shadow-sm">
+          <view class="card-header mb-4 flex items-center">
+            <view class="mr-3 h-8 w-1 rounded-full bg-[#2563eb]" />
+            <text class="text-lg text-gray-800 font-semibold">
+              能力与意向
+            </text>
+          </view>
+
+          <view class="textarea-section mb-4">
+            <view class="mb-2 text-sm text-gray-700 font-medium">
+              个人介绍 <text class="text-red-500">
+                *
+              </text>
+            </view>
+            <wd-textarea
+              v-model="formData.userIntroduce"
+              placeholder="请简要介绍自己（兴趣爱好、性格特点等）"
+              :maxlength="200"
+              show-word-limit
+              required
+              prop="userIntroduce"
+            />
+          </view>
+
+          <view class="textarea-section mb-4">
+            <view class="mb-2 text-sm text-gray-700 font-medium">
+              加入原因 <text class="text-red-500">
+                *
+              </text>
+            </view>
+            <wd-textarea
+              v-model="formData.joinReason"
+              placeholder="请说明加入工作室的原因"
+              :maxlength="200"
+              show-word-limit
+              required
+              prop="joinReason"
+            />
+          </view>
+
+          <view class="textarea-section mb-4">
+            <view class="mb-2 text-sm text-gray-700 font-medium">
+              个人技能 <text class="text-red-500">
+                *
+              </text>
+            </view>
+            <wd-textarea
+              v-model="formData.personalSkills"
+              placeholder="请描述您的个人技能和特长"
+              :maxlength="200"
+              show-word-limit
+              required
+              prop="personalSkills"
+            />
+          </view>
+
+          <view class="textarea-section">
+            <view class="mb-2 text-sm text-gray-700 font-medium">
+              兴趣方向 <text class="text-red-500">
+                *
+              </text>
+            </view>
+            <wd-textarea
+              v-model="formData.interestDirection"
+              placeholder="请描述您感兴趣的技术方向"
+              :maxlength="200"
+              show-word-limit
+              required
+              prop="interestDirection"
+            />
+          </view>
+        </view>
+
+        <!-- 提交按钮 -->
+        <view class="submit-section mt-6 px-2 pb-8">
+          <wd-button
+            type="primary"
+            size="large"
+            block
+            :loading="submitting"
+            custom-class="submit-btn"
+            @click="onSubmit"
+          >
+            提交申请
+          </wd-button>
+          <view class="mt-3 text-center text-xs text-gray-400">
+            提交即表示您同意我们的信息收集与使用规范
+          </view>
+        </view>
+      </wd-form>
     </view>
 
     <!-- 加载状态 -->
-    <view v-if="loading" class="fixed inset-0 flex items-center justify-center" :class="overlayBgClass">
+    <view v-if="loading" class="fixed inset-0 z-50 flex items-center justify-center bg-white">
       <view class="text-center">
-        <wd-loading />
-        <view class="mt-4 text-sm" :class="loadingTextClass">
+        <wd-loading color="#2563eb" />
+        <view class="mt-4 text-sm text-gray-500">
           正在加载纳新配置...
         </view>
       </view>
     </view>
   </view>
 </template>
+
+<style scoped>
+.recruitment-page {
+  --primary-color: #2563eb;
+}
+
+.form-card {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.photo-box:active {
+  border-color: var(--primary-color);
+  background-color: #e0edff;
+}
+
+:deep(.submit-btn) {
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%) !important;
+  border: none !important;
+  border-radius: 12px !important;
+  height: 48px !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+}
+
+:deep(.wd-input) {
+  padding: 12px 0;
+}
+
+:deep(.wd-cell) {
+  padding: 4px 0;
+}
+
+:deep(.wd-textarea) {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.wd-input {
+  padding: 12px 0 !important;
+}
+</style>
