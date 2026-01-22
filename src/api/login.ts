@@ -1,4 +1,4 @@
-import type { AuthResetPasswordByEmailReqVO, IAuthSendScanMessageReqVO, IAuthSocialLoginReqVO, IBindAccountForm, ICaptcha, ILoginForm, ISocialAuthRedirectReqVO, ITokenRefreshResponse, IUserLogin } from './types/login'
+import type { AuthResetPasswordByEmailReqVO, GetWxUserInfoReqVO, IAuthSendScanMessageReqVO, IAuthSocialLoginReqVO, IBindAccountForm, ICaptcha, ILoginForm, ISocialAuthRedirectReqVO, ITokenRefreshResponse, IUserLogin, WxUserInfoRespVO } from './types/login'
 import { http } from '@/http/http'
 
 /**
@@ -51,6 +51,25 @@ export function getWxCode() {
 }
 
 /**
+ * 获取微信用户信息（openid 和 unionId）
+ * 此接口用于获取微信用户的唯一标识，不进行登录操作
+ * @param params 微信登录参数（type、code、state）
+ * @returns Promise 包含 openid 和 unionId
+ */
+export function getWxUserInfoApi(params: GetWxUserInfoReqVO) {
+  return http.post<WxUserInfoRespVO>('/admin-api/system/auth/social-user-info', params)
+}
+
+/**
+ * 获取微信 H5 授权 URL
+ * @param redirectUri 授权回调地址
+ * @returns 授权 URL
+ */
+export function getWxH5AuthUrl(redirectUri: string) {
+  return http.get<string>('/admin-api/system/auth/social-auth-redirect', { type: 31, redirectUri })
+}
+
+/**
  * 微信登录
  * @param params 微信登录参数，包含code
  * @returns Promise 包含登录结果
@@ -98,7 +117,7 @@ export function getSocialAuthRedirect(params: ISocialAuthRedirectReqVO) {
  * 发送邮箱验证码（找回密码）
  * @param data { username, email }
  */
-export function sendEmailCode(data: { username: string; email: string }) {
+export function sendEmailCode(data: { username: string, email: string }) {
   // 根据 OpenAPI 要求附带 tenant-id 头；Authorization 将由拦截器按需添加
   const headers: Record<string, any> = {
     'tenant-id': 1,

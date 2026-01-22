@@ -15,14 +15,14 @@ import { onLoad, onShow } from '@dcloudio/uni-app'
 import { ref } from 'vue'
 import { useMessage } from 'wot-design-uni'
 import { getCityList, getProvinceList } from '@/api/area'
-import { getWxCode } from '@/api/login'
+import { getWxCode, getWxUserInfoApi } from '@/api/login'
 import { createUserRecruitment, getUserRecruitmentConfig } from '@/api/recruitment'
 import { getClassList, getCollegeList, getMajorList } from '@/api/school-dept'
 import { uploadFile } from '@/api/user'
 import KspCropper from '@/components/ksp-cropper.vue'
 import { DictTypeEnum } from '@/utils/dictTypes'
 import { DictUtils } from '@/utils/dictUtils'
-import { isMpWeixin } from '@/utils/platform'
+import { getSocialType, getWechatEnvType, isMpWeixin, isWechatBrowser } from '@/utils/platform'
 import { showToast } from '@/utils/toast'
 
 // 初始化消息框
@@ -41,6 +41,7 @@ const formData = ref<UserRecruitmentSaveReqVO>(
     name: '',
     studentId: '',
     openid: '',
+    unionId: '',
     email: '',
     phone: '',
     qqNumber: '',
@@ -60,6 +61,9 @@ const formData = ref<UserRecruitmentSaveReqVO>(
     city: '',
   },
 )
+
+// 微信用户信息缓存
+const wxUserInfo = ref<{ openid: string, unionId?: string } | null>(null)
 
 // 照片上传
 const showCropper = ref(false)
@@ -369,29 +373,47 @@ async function loadRecruitmentConfig() {
   }
 }
 
-// 获取微信登录凭证
-async function getWxLoginCode() {
-  // #ifdef MP-WEIXIN
-  const res = await getWxCode()
-  formData.value.openid = res.code
-  // #endif
+// 获取微信用户信息（openid 和 unionId）
+async function getWxUserInfo() {
+  try {
+    const socialType = getSocialType()
+    const codeRes = await getWxCode()
+
+    // 调用后端接口获取 openid 和 unionId
+    const res = await getWxUserInfoApi({
+      type: socialType,
+      code: codeRes.code,
+    })
+
+    if (res.code === 0 && res.data) {
+      wxUserInfo.value = {
+        openid: res.data.openid,
+        unionId: res.data.unionId,
+      }
+      formData.value.openid = res.data.openid
+      formData.value.unionId = res.data.unionId || ''
+      return true
+    }
+    return false
+  }
+  catch (error) {
+    console.error('获取微信用户信息失败:', error)
+    return false
+  }
 }
 
 // 检查是否在微信环境中
 function checkWechatEnvironment(): boolean {
-  let isWechat = false
   // #ifdef MP-WEIXIN
-  isWechat = true
+  return true
   // #endif
 
   // #ifdef H5
-  // 检查是否在微信浏览器中
-  const ua = navigator.userAgent.toLowerCase()
-  isWechat = ua.includes('micromessenger')
+  return isWechatBrowser()
   // #endif
 
   // 其他平台（非微信环境）
-  return isWechat
+  return false
 }
 
 // 处理非微信环境的访问
@@ -419,14 +441,41 @@ function handleNonWechatEnvironment() {
 }
 
 // 页面加载时获取纳新配置
-onLoad(async () => {
+onLoad(async (options) => {
+  // #ifdef H5
+  // H5 环境下，检查是否从微信授权回调返回
+  if (isWechatBrowser() && options.code) {
+    // 从微信授权回调返回，处理获取用户信息
+    try {
+      const res = await getWxUserInfoApi({
+        type: getSocialType(),
+        code: options.code,
+        state: options.state,
+      })
+
+      if (res.code === 0 && res.data) {
+        wxUserInfo.value = {
+          openid: res.data.openid,
+          unionId: res.data.unionId,
+        }
+        formData.value.openid = res.data.openid
+        formData.value.unionId = res.data.unionId || ''
+      }
+    }
+    catch (error) {
+      console.error('获取微信用户信息失败:', error)
+      showToast('请先授权微信用户信息后再进行纳新登记！')
+    }
+  }
+  // #endif
+
   // 检查微信环境
   if (!checkWechatEnvironment()) {
     handleNonWechatEnvironment()
     return
   }
 
-  // 并行加载纳新配置、省市区数据、学院数据和微信登录凭证
+  // 并行加载纳新配置、省市区数据、学院数据
   await Promise.all([
     loadRecruitmentConfig(),
     loadAreaData(),
@@ -662,10 +711,20 @@ async function onSubmit() {
 
     submitting.value = true
 
-    // 准备提交数据，包含微信code用于后端获取openid
-    await getWxLoginCode()
+    // 如果还没有获取微信用户信息，先获取
+    if (!wxUserInfo.value || !wxUserInfo.value.openid) {
+      const success = await getWxUserInfo()
+      if (!success) {
+        showToast('获取微信用户信息失败，请重试')
+        return
+      }
+    }
+
+    // 准备提交数据，包含 openid 和 unionId
     const submitData = {
       ...formData.value,
+      openid: formData.value.openid,
+      unionId: formData.value.unionId,
     }
 
     // 提交申请

@@ -130,3 +130,29 @@ export interface AuthResetPasswordByEmailReqVO {
   /** 新密码 */
   password: string
 }
+
+/**
+ * 获取微信用户信息请求参数
+ */
+export interface GetWxUserInfoReqVO {
+  /** 社交类型：34=微信小程序，31=微信H5（服务号） */
+  type: number
+  /** 微信登录凭证 */
+  code: string
+  /** 状态字符串（H5 OAuth 需要） */
+  state?: string
+}
+
+/**
+ * 微信用户信息响应
+ */
+export interface WxUserInfoRespVO {
+  /** 微信小程序唯一ID（小程序环境）或 微信公众号唯一ID（H5环境） */
+  openid: string
+  /** 微信开放平台ID（同一用户在不同应用下相同） */
+  unionId?: string
+  /** 昵称 */
+  nickname?: string
+  /** 头像 */
+  avatar?: string
+}
