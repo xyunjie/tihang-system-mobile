@@ -21,6 +21,7 @@ import ThemeCard from '@/components/ThemeCard.vue'
 import { useUserStore } from '@/store'
 import { useAppStore } from '@/store/app'
 import { currRoute } from '@/utils'
+import { getWeChatAuthLink } from '@/utils/wechat'
 
 const userStore = useUserStore()
 const redirectUrl = ref('')
@@ -94,26 +95,7 @@ function initMpWeixinOnLoad() {
 
 // H5 环境的页面初始化（包含微信浏览器自动登录处理）
 async function initH5OnLoad() {
-  setupRedirectFromQuery()
-  const ua = navigator.userAgent || ''
-  if (!/MicroMessenger/i.test(ua)) {
-    return
-  }
-
-  // 构造通用回调地址，使用 callback 页面处理 type/code/state
-  const callbackPath = '/pages/login/callback'
-  const queryParts = [`type=31`]
-  if (redirectUrl.value) {
-    queryParts.push(`redirect=${encodeURIComponent(redirectUrl.value)}`)
-  }
-  const callbackQuery = `?${queryParts.join('&')}`
-  const redirectUri = `${location.origin}${callbackPath}${callbackQuery}`
-  const res = await getSocialAuthRedirect({ type: 31, redirectUri })
-  if (res.code !== 0) {
-    uni.showToast({ icon: 'none', title: res.msg || '授权链接获取失败' })
-    return
-  }
-  location.href = res.data
+  location.href = await getWeChatAuthLink()
 }
 
 // 页面加载时仅保留条件编译和函数调用

@@ -1,4 +1,4 @@
-import type { CommonResultLong, UserRecruitmentConfigRespVO, UserRecruitmentSaveReqVO } from '@/api/types/recruitment'
+import type { CommonResultLong, UserRecruitmentConfigRespVO, UserRecruitmentRespVO, UserRecruitmentSaveReqVO } from '@/api/types/recruitment'
 import { http } from '@/http/http'
 
 /**
@@ -14,4 +14,13 @@ export function createUserRecruitment(data: UserRecruitmentSaveReqVO) {
  */
 export function getUserRecruitmentConfig() {
   return http.get<UserRecruitmentConfigRespVO>('/admin-api/system/user-recruitment-config/get-runtime')
+}
+
+/**
+ * 获取当前用户的纳新提交状态
+ * @param openid 微信 openid
+ * @param socialType 社交类型：34=微信小程序，31=微信H5（服务号）
+ */
+export function getSubmitStatus(openid: string, socialType: number) {
+  return http.get<UserRecruitmentRespVO>('/admin-api/system/user-recruitment/get-submit', { openid, socialType })
 }

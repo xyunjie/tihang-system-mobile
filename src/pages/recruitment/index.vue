@@ -10,19 +10,20 @@
 </route>
 
 <script setup lang="ts">
-import type { UserRecruitmentConfigRespVO, UserRecruitmentSaveReqVO } from '@/api/types/recruitment'
+import type { UserRecruitmentConfigRespVO, UserRecruitmentRespVO, UserRecruitmentSaveReqVO } from '@/api/types/recruitment'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { ref } from 'vue'
 import { useMessage } from 'wot-design-uni'
 import { getCityList, getProvinceList } from '@/api/area'
-import { getWxCode, getWxUserInfoApi } from '@/api/login'
-import { createUserRecruitment, getUserRecruitmentConfig } from '@/api/recruitment'
+import { getSocialAuthRedirect, getWxCode, getWxUserInfoApi } from '@/api/login'
+import { createUserRecruitment, getSubmitStatus, getUserRecruitmentConfig } from '@/api/recruitment'
 import { getClassList, getCollegeList, getMajorList } from '@/api/school-dept'
+import { RecruitmentStatus } from '@/api/types/recruitment'
 import { uploadFile } from '@/api/user'
 import KspCropper from '@/components/ksp-cropper.vue'
 import { DictTypeEnum } from '@/utils/dictTypes'
 import { DictUtils } from '@/utils/dictUtils'
-import { getSocialType, getWechatEnvType, isMpWeixin, isWechatBrowser } from '@/utils/platform'
+import { getSocialType, isWechatBrowser } from '@/utils/platform'
 import { showToast } from '@/utils/toast'
 
 // 初始化消息框
@@ -31,6 +32,11 @@ const message = useMessage()
 // 页面状态
 const loading = ref(true)
 const submitting = ref(false)
+
+// 是否为重新提交模式（审核不通过后重新填写）
+const isResubmit = ref(false)
+// 之前提交的记录ID（用于更新）
+const previousSubmitId = ref<number | null>(null)
 
 // 纳新配置
 const recruitmentConfig = ref<UserRecruitmentConfigRespVO | null>(null)
@@ -63,11 +69,12 @@ const formData = ref<UserRecruitmentSaveReqVO>(
 )
 
 // 微信用户信息缓存
-const wxUserInfo = ref<{ openid: string, unionId?: string } | null>(null)
+const wxUserInfo = ref<{ openid: string, unionId?: string, subscribe?: boolean } | null>(null)
 
 // 照片上传
 const showCropper = ref(false)
 const cropperImageUrl = ref('')
+const uploadingPhoto = ref(false)
 
 const politicalOptions = ref<Array<{ label: string, value: string, id: number }>>([])
 
@@ -76,16 +83,16 @@ const nationOptions = ref<Array<{ label: string, value: string, id: number }>>([
 // 省市区选项数据
 const provinceOptions = ref<Array<{ label: string, value: string, id: number }>>([])
 const cityOptions = ref<Array<{ label: string, value: string, id: number }>>([])
-const selectedProvinceId = ref<number | null>(null)
-const selectedCityId = ref<number | null>(null)
+const selectedProvinceId = ref<number | undefined>(undefined)
+const selectedCityId = ref<number | undefined>(undefined)
 
 // 学院专业班级选项数据
 const collegeOptions = ref<Array<{ label: string, value: number, id: number }>>([])
 const majorOptions = ref<Array<{ label: string, value: number, id: number }>>([])
 const classOptions = ref<Array<{ label: string, value: number, id: number }>>([])
-const selectedCollegeId = ref<number | null>(null)
-const selectedMajorId = ref<number | null>(null)
-const selectedClassId = ref<number | null>(null)
+const selectedCollegeId = ref<number | undefined>(undefined)
+const selectedMajorId = ref<number | undefined>(undefined)
+const selectedClassId = ref<number | undefined>(undefined)
 
 // 表单验证规则
 const rules: any = {
@@ -235,11 +242,13 @@ async function loadCollegeData() {
   try {
     // 获取学院列表（parentId为0表示顶级学院）
     const colleges = await getCollegeList()
+    console.log('colleges', colleges)
     collegeOptions.value = colleges.map(college => ({
       label: college.name,
       value: college.id,
       id: college.id,
     }))
+    console.log('collegeOptions', collegeOptions.value)
   }
   catch (error) {
     showToast('网络错误，请稍后重试')
@@ -440,40 +449,225 @@ function handleNonWechatEnvironment() {
   })
 }
 
-// 页面加载时获取纳新配置
-onLoad(async (options) => {
-  // #ifdef H5
-  // H5 环境下，检查是否从微信授权回调返回
-  if (isWechatBrowser() && options.code) {
-    // 从微信授权回调返回，处理获取用户信息
-    try {
-      const res = await getWxUserInfoApi({
-        type: getSocialType(),
-        code: options.code,
-        state: options.state,
-      })
+// 初始化微信认证信息（H5 微信浏览器环境）
+async function initWxAuthH5() {
+  // 如果已经有 openid，不需要再次授权
+  if (wxUserInfo.value?.openid) {
+    return
+  }
 
-      if (res.code === 0 && res.data) {
-        wxUserInfo.value = {
-          openid: res.data.openid,
-          unionId: res.data.unionId,
-        }
-        formData.value.openid = res.data.openid
-        formData.value.unionId = res.data.unionId || ''
-      }
+  try {
+    // 获取当前页面的完整 URL 作为回调地址（去掉现有的 code 和 state 参数）
+    const currentUrl = new URL(window.location.href)
+    currentUrl.searchParams.delete('code')
+    currentUrl.searchParams.delete('state')
+    const redirectUri = currentUrl.toString()
+
+    // 获取微信授权链接
+    const res = await getSocialAuthRedirect({
+      type: getSocialType(), // 31 = 微信H5服务号
+      redirectUri,
+    })
+
+    if (res.code === 0 && res.data) {
+      // 跳转到微信授权页面
+      window.location.href = res.data
     }
-    catch (error) {
-      console.error('获取微信用户信息失败:', error)
-      showToast('请先授权微信用户信息后再进行纳新登记！')
+    else {
+      console.error('获取微信授权链接失败:', res.msg)
     }
   }
-  // #endif
+  catch (error) {
+    console.error('初始化微信认证失败:', error)
+  }
+}
 
+// 处理微信授权回调（H5 微信浏览器环境）
+async function handleWxAuthCallback(code: string, state?: string) {
+  try {
+    const res = await getWxUserInfoApi({
+      type: getSocialType(), // 31 = 微信H5服务号
+      code,
+      state,
+    })
+
+    if (res.code === 0 && res.data) {
+      wxUserInfo.value = {
+        openid: res.data.openid,
+        unionId: res.data.unionId,
+        subscribe: res.data.subscribe,
+      }
+      formData.value.openid = res.data.openid
+      formData.value.unionId = res.data.unionId || ''
+
+      console.log('微信用户信息获取成功:', {
+        openid: res.data.openid,
+        unionId: res.data.unionId,
+        subscribe: res.data.subscribe,
+      })
+
+      return true
+    }
+    else {
+      console.error('获取微信用户信息失败:', res.msg)
+      return false
+    }
+  }
+  catch (error) {
+    console.error('处理微信授权回调失败:', error)
+    return false
+  }
+}
+
+// 服务号二维码链接
+const WECHAT_QRCODE_URL = 'https://file.tihangstudio.cn/image/wechat-qrcode.jpg'
+
+// 处理未关注服务号的情况
+function handleNotSubscribed() {
+  message.confirm({
+    title: '请先关注服务号',
+    msg: '为了更好地为您提供服务，请先关注我们的微信服务号后再进行纳新登记。\n\n关注后请刷新页面重新进入。',
+    confirmButtonText: '查看二维码',
+    cancelButtonText: '返回',
+    closeOnClickModal: false,
+  }).then(() => {
+    // 用户点击"查看二维码"，跳转到二维码图片页面
+    // #ifdef H5
+    window.open(WECHAT_QRCODE_URL, '_blank')
+    // #endif
+    // #ifdef MP-WEIXIN
+    uni.previewImage({
+      urls: [WECHAT_QRCODE_URL],
+      current: WECHAT_QRCODE_URL,
+    })
+    // #endif
+  }).catch(() => {
+    // 用户点击"返回"
+    uni.navigateBack({
+      fail: () => {
+        uni.reLaunch({
+          url: '/pages/index/index',
+        })
+      },
+    })
+  })
+}
+
+// 检查是否已提交过纳新申请
+async function checkSubmitStatus(): Promise<UserRecruitmentRespVO | null> {
+  if (!wxUserInfo.value?.openid) {
+    return null
+  }
+
+  try {
+    const res = await getSubmitStatus(wxUserInfo.value.openid, getSocialType())
+    if (res.code === 0 && res.data) {
+      return res.data
+    }
+    return null
+  }
+  catch (error) {
+    console.error('检查提交状态失败:', error)
+    return null
+  }
+}
+
+// 回填表单数据
+async function fillFormData(data: UserRecruitmentRespVO) {
+  formData.value = {
+    id: data.id,
+    name: data.name,
+    studentId: data.studentId,
+    openid: wxUserInfo.value?.openid || '',
+    unionId: wxUserInfo.value?.unionId || '',
+    email: data.email,
+    phone: data.phone,
+    qqNumber: data.qqNumber,
+    birthday: data.birthday,
+    sex: data.sex,
+    nation: data.nation,
+    politicalOutlook: data.politicalOutlook,
+    userIntroduce: data.userIntroduce,
+    joinReason: data.joinReason,
+    personalSkills: data.personalSkills,
+    interestDirection: data.interestDirection,
+    grade: data.grade,
+    schoolDeptId: data.schoolDeptId,
+    settingId: data.settingId,
+    imageUrl: data.imageUrl,
+    province: data.province,
+    city: data.city,
+  }
+
+  // 回填省份并加载城市
+  if (data.province) {
+    const provinceOption = provinceOptions.value.find(p => p.value === data.province)
+    if (provinceOption) {
+      selectedProvinceId.value = provinceOption.id
+      await loadCityData(provinceOption.id)
+      // 回填城市
+      if (data.city) {
+        const cityOption = cityOptions.value.find(c => c.value === data.city)
+        if (cityOption) {
+          selectedCityId.value = cityOption.id
+        }
+      }
+    }
+  }
+
+  // 回填学院专业班级需要逐级加载
+  // 这里需要根据 schoolDeptId 反向查找学院、专业、班级
+  // 由于数据结构限制，暂时只设置班级ID
+  selectedClassId.value = data.schoolDeptId
+}
+
+// 页面加载时获取纳新配置
+onLoad(async (options) => {
   // 检查微信环境
   if (!checkWechatEnvironment()) {
     handleNonWechatEnvironment()
     return
   }
+
+  // #ifdef H5
+  // H5 微信浏览器环境
+  if (isWechatBrowser()) {
+    // 检查是否从微信授权回调返回（URL 中包含 code 和 state 参数）
+    if (options?.code) {
+      // 从微信授权回调返回，处理获取用户信息
+      const success = await handleWxAuthCallback(options.code, options.state)
+      if (!success) {
+        showToast('获取微信用户信息失败，请重试')
+        return
+      }
+
+      // 授权成功后，检查是否关注了服务号
+      if (!wxUserInfo.value?.subscribe) {
+        // 未关注服务号，先加载纳新配置（用于获取服务号二维码等信息）
+        await loadRecruitmentConfig()
+        // 显示引导关注弹窗
+        handleNotSubscribed()
+        return
+      }
+
+      // 已关注服务号，继续加载其他数据
+    }
+    else {
+      // 没有 code 参数，需要跳转到微信授权页面
+      // 跳转微信授权
+      await initWxAuthH5()
+      return
+    }
+  }
+  // #endif
+
+  // #ifdef MP-WEIXIN
+  // 微信小程序环境：直接获取微信用户信息
+  const wxSuccess = await getWxUserInfo()
+  if (!wxSuccess) {
+    console.warn('微信小程序获取用户信息失败')
+  }
+  // #endif
 
   // 并行加载纳新配置、省市区数据、学院数据
   await Promise.all([
@@ -483,6 +677,28 @@ onLoad(async (options) => {
     loadNationData(),
     loadPoliticalStatusData(),
   ])
+
+  // 检查是否已提交过纳新申请
+  const submitData = await checkSubmitStatus()
+  if (submitData) {
+    // 已提交过申请
+    if (submitData.status === RecruitmentStatus.REFUSE) {
+      // 审核不通过，允许重新提交
+      isResubmit.value = true
+      previousSubmitId.value = submitData.id
+      // 回填表单数据
+      await fillFormData(submitData)
+    }
+    else {
+      // 其他状态，跳转到已提交页面
+      const groupLink = recruitmentConfig.value?.groupLink
+        ? encodeURIComponent(recruitmentConfig.value.groupLink)
+        : ''
+      uni.redirectTo({
+        url: `/pages/recruitment/success?groupLink=${groupLink}&status=${submitData.status}`,
+      })
+    }
+  }
 })
 
 // 页面显示时获取纳新配置
@@ -513,6 +729,10 @@ function showRecruitmentNotice() {
 
 // 打开纳新群链接
 function openGroupLink(url: string) {
+  // #ifdef H5
+  window.location.href = url
+  // #endif
+  // #ifdef MP-WEIXIN
   uni.navigateTo({
     url: `/pages-sub/webview/index?url=${encodeURIComponent(url)}`,
     fail: (err) => {
@@ -520,6 +740,11 @@ function openGroupLink(url: string) {
       showToast('打开链接失败，请稍后重试')
     },
   })
+  // #endif
+  // #ifdef APP-PLUS
+  plus.runtime.openURL(url)
+  // #endif
+  // 其他平台暂不支持
 }
 
 // 时间格式化
@@ -550,24 +775,37 @@ function onBirthdayChange(value: any) {
 
 // 政治面貌选择
 function onPoliticalChange(value: any) {
-  formData.value.politicalOutlook = value.value
+  // 如果没有滑动选择，value.value 可能是 undefined，默认选择第一个选项
+  const selectedValue = value.value ?? politicalOptions.value[0]?.value
+  if (selectedValue === undefined)
+    return
+  formData.value.politicalOutlook = selectedValue
 }
 
-// 政治面貌选择
+// 民族选择
 function onNationChange(value: any) {
-  formData.value.nation = value.value
+  // 如果没有滑动选择，value.value 可能是 undefined，默认选择第一个选项
+  const selectedValue = value.value ?? nationOptions.value[0]?.value
+  if (selectedValue === undefined)
+    return
+  formData.value.nation = selectedValue
 }
 
 // 省份选择
 async function onProvinceChange(value: any) {
-  const selectedOption = provinceOptions.value.find(option => option.value === value.value)
+  // 如果没有滑动选择，value.value 可能是 undefined，默认选择第一个选项
+  const selectedValue = value.value ?? provinceOptions.value[0]?.value
+  if (selectedValue === undefined)
+    return
+
+  const selectedOption = provinceOptions.value.find(option => option.value === selectedValue)
   if (selectedOption) {
     formData.value.province = selectedOption.value
     selectedProvinceId.value = selectedOption.id
 
     // 清空城市选择
     formData.value.city = ''
-    selectedCityId.value = null
+    selectedCityId.value = undefined
     cityOptions.value = []
 
     // 加载对应的城市数据
@@ -577,7 +815,12 @@ async function onProvinceChange(value: any) {
 
 // 城市选择
 function onCityChange(value: any) {
-  const selectedOption = cityOptions.value.find(option => option.value === value.value)
+  // 如果没有滑动选择，value.value 可能是 undefined，默认选择第一个选项
+  const selectedValue = value.value ?? cityOptions.value[0]?.value
+  if (selectedValue === undefined)
+    return
+
+  const selectedOption = cityOptions.value.find(option => option.value === selectedValue)
   if (selectedOption) {
     formData.value.city = selectedOption.value
     selectedCityId.value = selectedOption.id
@@ -586,12 +829,18 @@ function onCityChange(value: any) {
 
 // 学院选择
 async function onCollegeChange(value: any) {
-  const selectedOption = collegeOptions.value.find(option => option.value === value.value)
+  console.log('学院选择', value)
+  // 如果没有滑动选择，value.value 可能是 undefined，默认选择第一个选项
+  const selectedValue = value.value ?? collegeOptions.value[0]?.value
+  if (selectedValue === undefined)
+    return
+
+  const selectedOption = collegeOptions.value.find(option => option.value === selectedValue)
   if (selectedOption) {
     selectedCollegeId.value = selectedOption.id
 
-    selectedMajorId.value = null
-    selectedClassId.value = null
+    selectedMajorId.value = undefined
+    selectedClassId.value = undefined
     majorOptions.value = []
     classOptions.value = []
 
@@ -602,11 +851,16 @@ async function onCollegeChange(value: any) {
 
 // 专业选择
 async function onMajorChange(value: any) {
-  const selectedOption = majorOptions.value.find(option => option.value === value.value)
+  // 如果没有滑动选择，value.value 可能是 undefined，默认选择第一个选项
+  const selectedValue = value.value ?? majorOptions.value[0]?.value
+  if (selectedValue === undefined)
+    return
+
+  const selectedOption = majorOptions.value.find(option => option.value === selectedValue)
   if (selectedOption) {
     selectedMajorId.value = selectedOption.id
 
-    selectedClassId.value = null
+    selectedClassId.value = undefined
     classOptions.value = []
 
     // 加载对应的班级数据
@@ -616,7 +870,12 @@ async function onMajorChange(value: any) {
 
 // 班级选择
 function onClassChange(value: any) {
-  const selectedOption = classOptions.value.find(option => option.value === value.value)
+  // 如果没有滑动选择，value.value 可能是 undefined，默认选择第一个选项
+  const selectedValue = value.value ?? classOptions.value[0]?.value
+  if (selectedValue === undefined)
+    return
+
+  const selectedOption = classOptions.value.find(option => option.value === selectedValue)
   if (selectedOption) {
     formData.value.schoolDeptId = selectedOption.value
     selectedClassId.value = selectedOption.id
@@ -645,6 +904,9 @@ function onCropperOk(res: any) {
   showCropper.value = false
   const tempFilePath = res.path
 
+  // 显示上传loading状态
+  uploadingPhoto.value = true
+
   // 上传裁剪后的图片
   uploadFile(tempFilePath)
     .then((url) => {
@@ -654,6 +916,9 @@ function onCropperOk(res: any) {
     .catch((error) => {
       console.error('上传失败:', error)
       showToast('网络错误，请稍后重试')
+    })
+    .finally(() => {
+      uploadingPhoto.value = false
     })
 }
 
@@ -720,11 +985,12 @@ async function onSubmit() {
       }
     }
 
-    // 准备提交数据，包含 openid 和 unionId
+    // 准备提交数据，包含 openid、unionId 和 socialType
     const submitData = {
       ...formData.value,
       openid: formData.value.openid,
       unionId: formData.value.unionId,
+      socialType: getSocialType(), // 34=微信小程序，31=微信H5（服务号）
     }
 
     // 提交申请
@@ -732,10 +998,15 @@ async function onSubmit() {
 
     if (response.code === 0) {
       showToast('申请提交成功')
-      // 跳转回上一页或首页
+      // 跳转到提交成功页面，传递纳新群链接
       setTimeout(() => {
-        uni.navigateBack()
-      }, 1500)
+        const groupLink = recruitmentConfig.value?.groupLink
+          ? encodeURIComponent(recruitmentConfig.value.groupLink)
+          : ''
+        uni.redirectTo({
+          url: `/pages/recruitment/success?groupLink=${groupLink}`,
+        })
+      }, 1000)
     }
     else {
       showToast(response.msg || '提交失败，请重试')
@@ -783,6 +1054,21 @@ async function onSubmit() {
       </view>
     </view>
 
+    <!-- 重新提交提示 -->
+    <view v-if="isResubmit" class="relative z-20 mx-4 mt-[-12px]">
+      <view class="flex items-center rounded-xl bg-[#fef3c7] px-4 py-3 shadow-sm">
+        <wd-icon name="warning" size="20px" color="#d97706" />
+        <view class="ml-3 flex-1">
+          <view class="text-sm text-[#92400e] font-medium">
+            您的申请未通过审核
+          </view>
+          <view class="mt-1 text-xs text-[#b45309]">
+            请修改信息后重新提交，我们会尽快审核
+          </view>
+        </view>
+      </view>
+    </view>
+
     <!-- 主要表单内容 -->
     <view v-if="!loading && recruitmentConfig" class="relative z-10 mt-[-24px] px-4 pb-8">
       <wd-form ref="formRef" :model="formData" :rules="rules">
@@ -802,12 +1088,21 @@ async function onSubmit() {
               hover-class="border-[#2563eb]"
               @click="onSelectPhoto"
             >
+              <!-- 上传中loading状态 -->
+              <view v-if="uploadingPhoto" class="flex flex-col items-center">
+                <wd-loading color="#2563eb" size="28px" />
+                <text class="mt-2 text-xs text-[#2563eb]">
+                  上传中...
+                </text>
+              </view>
+              <!-- 已上传的照片 -->
               <image
-                v-if="formData.imageUrl"
+                v-else-if="formData.imageUrl"
                 :src="formData.imageUrl"
                 class="h-full w-full object-cover"
                 mode="aspectFill"
               />
+              <!-- 默认上传提示 -->
               <view v-else class="flex flex-col items-center">
                 <wd-icon name="camera" size="28px" color="#2563eb" />
                 <text class="mt-2 text-xs text-[#2563eb]">

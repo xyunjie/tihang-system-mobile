@@ -13,6 +13,9 @@ const props = defineProps<{
   cardClass?: string
 }>()
 
+const emit = defineEmits<{
+  (e: 'click'): void
+}>()
 const appStore = useAppStore()
 const isDark = computed(() => appStore.theme === 'dark')
 

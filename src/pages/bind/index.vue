@@ -210,12 +210,12 @@ onLoad(() => {
         <!-- 授权状态提示 -->
         <view v-if="hasSocialAuth" :class="[authBoxClass]" style="margin-top: 20rpx;">
           <text :class="[authTextClass]" style="font-size: 24rpx;">
-            已获取社交授权，绑定后可一键使用社交登录
+            已获取授权，绑定后可一键登录
           </text>
         </view>
         <view v-else :class="[warnBoxClass]" style="margin-top: 20rpx;">
           <text :class="[warnTextClass]" style="font-size: 24rpx;">
-            未检测到社交授权，请先完成授权后再绑定。
+            未检测到授权，请先完成授权后再绑定。
           </text>
         </view>
       </view>

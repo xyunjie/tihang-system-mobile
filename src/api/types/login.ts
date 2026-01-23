@@ -155,4 +155,6 @@ export interface WxUserInfoRespVO {
   nickname?: string
   /** 头像 */
   avatar?: string
+  /** 是否关注服务号（仅微信H5服务号环境有效） */
+  subscribe?: boolean
 }

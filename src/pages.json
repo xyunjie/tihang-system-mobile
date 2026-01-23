@@ -148,6 +148,15 @@
       "notLogin": true
     },
     {
+      "path": "pages/recruitment/success",
+      "type": "page",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "申请状态"
+      },
+      "notLogin": true
+    },
+    {
       "path": "pages/workspace/index",
       "type": "page",
       "layout": "tabbar",
