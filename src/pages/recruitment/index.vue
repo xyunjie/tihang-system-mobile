@@ -217,6 +217,7 @@ async function loadAreaData() {
     }))
   }
   catch (error) {
+    console.error('❌ 加载省市区数据失败:', error)
     showToast('网络错误，请稍后重试')
   }
 }
@@ -233,6 +234,7 @@ async function loadCityData(provinceId: number) {
     }))
   }
   catch (error) {
+    console.error('❌ 加载城市数据失败:', error)
     showToast('网络错误，请稍后重试')
   }
 }
@@ -251,6 +253,7 @@ async function loadCollegeData() {
     console.log('collegeOptions', collegeOptions.value)
   }
   catch (error) {
+    console.error('❌ 加载学院数据失败:', error)
     showToast('网络错误，请稍后重试')
   }
 }
@@ -267,15 +270,22 @@ async function loadMajorData(collegeId: number) {
     }))
   }
   catch (error) {
+    console.error('❌ 加载专业数据失败:', error)
     showToast('网络错误，请稍后重试')
   }
 }
 
 // 加载班级数据
-async function loadClassData(majorId: number) {
+async function loadClassData(majorId: number, grade?: number) {
   try {
+    // 优先使用传入的 grade，否则使用配置中的 grade
+    const gradeValue = grade ?? recruitmentConfig.value?.grade
+    if (!gradeValue) {
+      console.error('❌ 加载班级数据失败: 缺少年级信息')
+      return
+    }
     // 获取班级列表
-    const classes = await getClassList(majorId, String(recruitmentConfig.value.grade).slice(-2))
+    const classes = await getClassList(majorId, String(gradeValue).slice(-2))
     classOptions.value = classes.map(classItem => ({
       label: classItem.name,
       value: classItem.id,
@@ -283,6 +293,7 @@ async function loadClassData(majorId: number) {
     }))
   }
   catch (error) {
+    console.error('❌ 加载班级数据失败:', error)
     showToast('网络错误，请稍后重试')
   }
 }
@@ -337,13 +348,15 @@ async function loadRecruitmentConfig() {
         msg: '当前暂无正在进行的纳新计划，请关注官方通知。',
         title: '暂无纳新计划',
         closeOnClickModal: false,
-        showCancelButton: true,
+        showCancelButton: false,
       }).then(() => {
         console.log('暂无纳新计划,用户点击确定')
-        // 回到上一层
-        uni.navigateBack()
-      }).catch(() => {
-        console.log('暂无纳新计划,用户点击取消')
+        // 尝试回到上一层，如果失败则不做任何操作
+        uni.navigateBack({
+          fail: () => {
+            console.log('无法返回上一页')
+          },
+        })
       })
       return
     }
@@ -626,7 +639,7 @@ async function fillFormData(data: UserRecruitmentRespVO) {
       selectedMajorId.value = data.majorId
 
       // 3. 加载班级列表并回显班级
-      await loadClassData(data.majorId)
+      await loadClassData(data.majorId, data.grade)
       if (data.classId) {
         selectedClassId.value = data.classId
         formData.value.schoolDeptId = data.classId
@@ -1071,7 +1084,7 @@ async function onSubmit() {
     </view>
 
     <!-- 重新提交提示 -->
-    <view v-if="isResubmit" class="relative z-20 mx-4 mb-4 mt-[-12px]">
+    <view v-if="isResubmit && recruitmentConfig" class="relative z-20 mx-4 mb-4 mt-[-12px]">
       <view class="flex items-center rounded-xl bg-[#fef3c7] px-4 py-3 shadow-sm">
         <wd-icon name="warning" size="20px" color="#d97706" />
         <view class="ml-3 flex-1">
