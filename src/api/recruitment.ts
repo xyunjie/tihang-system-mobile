@@ -10,6 +10,14 @@ export function createUserRecruitment(data: UserRecruitmentSaveReqVO) {
 }
 
 /**
+ * 更新用户纳新登记
+ * @param data 纳新登记数据
+ */
+export function updateUserRecruitment(data: UserRecruitmentSaveReqVO) {
+  return http.put<CommonResultLong>('/admin-api/system/user-recruitment/update', data, undefined)
+}
+
+/**
  * 获取用户纳新计划配置
  */
 export function getUserRecruitmentConfig() {

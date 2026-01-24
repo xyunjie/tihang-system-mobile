@@ -16,7 +16,7 @@ import { ref } from 'vue'
 import { useMessage } from 'wot-design-uni'
 import { getCityList, getProvinceList } from '@/api/area'
 import { getSocialAuthRedirect, getWxCode, getWxUserInfoApi } from '@/api/login'
-import { createUserRecruitment, getSubmitStatus, getUserRecruitmentConfig } from '@/api/recruitment'
+import { createUserRecruitment, getSubmitStatus, getUserRecruitmentConfig, updateUserRecruitment } from '@/api/recruitment'
 import { getClassList, getCollegeList, getMajorList } from '@/api/school-dept'
 import { RecruitmentStatus } from '@/api/types/recruitment'
 import { uploadFile } from '@/api/user'
@@ -615,10 +615,24 @@ async function fillFormData(data: UserRecruitmentRespVO) {
     }
   }
 
-  // 回填学院专业班级需要逐级加载
-  // 这里需要根据 schoolDeptId 反向查找学院、专业、班级
-  // 由于数据结构限制，暂时只设置班级ID
-  selectedClassId.value = data.schoolDeptId
+  // 回填学院专业班级（按顺序加载）
+  if (data.collegeId) {
+    // 1. 回显学院
+    selectedCollegeId.value = data.collegeId
+
+    // 2. 加载专业列表并回显专业
+    await loadMajorData(data.collegeId)
+    if (data.majorId) {
+      selectedMajorId.value = data.majorId
+
+      // 3. 加载班级列表并回显班级
+      await loadClassData(data.majorId)
+      if (data.classId) {
+        selectedClassId.value = data.classId
+        formData.value.schoolDeptId = data.classId
+      }
+    }
+  }
 }
 
 // 页面加载时获取纳新配置
@@ -993,8 +1007,10 @@ async function onSubmit() {
       socialType: getSocialType(), // 34=微信小程序，31=微信H5（服务号）
     }
 
-    // 提交申请
-    const response = await createUserRecruitment(submitData)
+    // 根据是否为重新提交，调用不同的接口
+    const response = isResubmit.value
+      ? await updateUserRecruitment(submitData)
+      : await createUserRecruitment(submitData)
 
     if (response.code === 0) {
       showToast('申请提交成功')
@@ -1049,13 +1065,13 @@ async function onSubmit() {
           纳新登记
         </view>
         <view class="text-sm text-white/80">
-          欢迎加入我们，开启你的技术之旅
+          欢迎加入梯航工作室
         </view>
       </view>
     </view>
 
     <!-- 重新提交提示 -->
-    <view v-if="isResubmit" class="relative z-20 mx-4 mt-[-12px]">
+    <view v-if="isResubmit" class="relative z-20 mx-4 mb-4 mt-[-12px]">
       <view class="flex items-center rounded-xl bg-[#fef3c7] px-4 py-3 shadow-sm">
         <wd-icon name="warning" size="20px" color="#d97706" />
         <view class="ml-3 flex-1">

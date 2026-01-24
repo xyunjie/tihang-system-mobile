@@ -124,6 +124,15 @@ export interface UserRecruitmentRespVO {
   /* 学校组织ID */
   schoolDeptId: number
 
+  /* 学院ID */
+  collegeId?: number
+
+  /* 专业ID */
+  majorId?: number
+
+  /* 班级ID */
+  classId?: number
+
   /* 成员角色（录取后分配的角色） */
   roleId?: number
 
