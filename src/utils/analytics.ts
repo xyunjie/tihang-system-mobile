@@ -7,14 +7,13 @@
  * 3. 自定义事件使用 trackEvent(category, action, label?, value?)
  */
 
-// ============ 配置区域 - 请替换为你的百度统计 H5 站点 ID ============
-const H5_SITE_ID = '1137dd49a2690f9a6b7d8914a67eb59d'
 // ======================================================
 
 let isInitialized = false
 
 /**
  * 初始化百度统计（仅 H5 环境生效）
+ * 注意：统计脚本已在 index.html 中加载，此函数仅用于确保 _hmt 数组存在
  */
 export function initAnalytics() {
   // #ifndef H5
@@ -25,14 +24,10 @@ export function initAnalytics() {
     return
   isInitialized = true
 
-  const _hmt: any[] = (window as any)._hmt || []
-  ;(window as any)._hmt = _hmt
-
-  const hm = document.createElement('script')
-  hm.src = `https://hm.baidu.com/hm.js?${H5_SITE_ID}`
-  hm.async = true
-  const s = document.getElementsByTagName('script')[0]
-  s.parentNode?.insertBefore(hm, s)
+  // 确保 _hmt 数组存在（脚本已在 index.html 中加载）
+  if (!(window as any)._hmt) {
+    (window as any)._hmt = []
+  }
 
   console.log('[Analytics] 百度统计已初始化')
 }
