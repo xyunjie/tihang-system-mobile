@@ -1,6 +1,8 @@
 import { pages, subPackages } from '@/pages.json'
 import { isMpWeixin } from './platform'
 
+export { initAnalytics, trackEvent, trackPageView, setUserId } from './analytics'
+
 export function getLastPage() {
   // getCurrentPages() 至少有1个元素，所以不再额外判断
   // const lastPage = getCurrentPages().at(-1)

@@ -11,6 +11,7 @@ import {
   getWxCode,
 } from '@/api/login'
 import { getUserInfo as _getUserInfo } from '@/api/user'
+import { setUserId } from '@/utils/analytics'
 import { toast } from '@/utils/toast'
 import { generateUUID } from '@/utils/uuid'
 
@@ -109,6 +110,12 @@ export const useUserStore = defineStore(
       userData.username = userInfo.data.username
       userData.avatar = userInfo.data.avatar
       setUserInfo(userData)
+
+      // 设置百度统计用户 ID
+      if (loginData.userId) {
+        setUserId(String(loginData.userId))
+      }
+
       if (showToast) {
         toast.success('登录成功')
       }

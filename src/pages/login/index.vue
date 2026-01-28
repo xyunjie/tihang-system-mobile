@@ -95,7 +95,10 @@ function initMpWeixinOnLoad() {
 
 // H5 环境的页面初始化（包含微信浏览器自动登录处理）
 async function initH5OnLoad() {
-  location.href = await getWeChatAuthLink()
+  const wechatAuthLink = await getWeChatAuthLink()
+  if (wechatAuthLink) {
+    location.href = wechatAuthLink
+  }
 }
 
 // 页面加载时仅保留条件编译和函数调用

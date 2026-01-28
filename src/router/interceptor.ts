@@ -1,5 +1,6 @@
 import { useUserStore } from '@/store'
 import { notLoginPages as _notLoginPages, getLastPage, getNotLoginPages } from '@/utils'
+import { trackPageView } from '@/utils/analytics'
 
 const loginRoute = import.meta.env.VITE_LOGIN_URL
 
@@ -21,6 +22,9 @@ const navigateToInterceptor = {
   invoke({ url }: { url: string }) {
     console.log('要访问页面：', url)
     let path = url.split('?')[0]
+
+    // 上报页面浏览（百度统计）
+    trackPageView(path)
 
     // 处理相对路径
     if (!path.startsWith('/')) {

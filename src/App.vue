@@ -4,7 +4,7 @@ import { watch } from 'vue'
 import { usePageAuth } from '@/hooks/usePageAuth'
 import { useUserStore } from '@/store'
 import { useAppStore } from '@/store/app'
-import { notLoginPages as _notLoginPages, getNotLoginPages } from '@/utils'
+import { notLoginPages as _notLoginPages, getNotLoginPages, initAnalytics } from '@/utils'
 import 'abortcontroller-polyfill/dist/abortcontroller-polyfill-only'
 
 const isDev = import.meta.env.DEV
@@ -92,6 +92,9 @@ function checkInitialAuth() {
 usePageAuth()
 
 onLaunch(() => {
+  // 初始化百度统计（仅 H5 环境生效）
+  initAnalytics()
+
   // 初始化系统主题，并在 H5 下将主题同步到根节点，避免仅依赖 prefers-color-scheme 导致 H5 切换不生效
   const appStore = useAppStore()
   try {
