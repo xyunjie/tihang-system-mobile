@@ -100,10 +100,10 @@ function gotoSettings() {
 
 // 快捷操作列表
 const quickActions = [
-  { icon: 'user', label: '编辑资料', color: 'bg-blue-500', handler: editProfile },
-  { icon: 'lock-on', label: '账号安全', color: 'bg-green-500', handler: gotoSecurity },
-  { icon: 'time', label: '考勤管理', color: 'bg-purple-500', handler: gotoAttendance },
-  { icon: 'code', label: 'OJ信息', color: 'bg-orange-500', handler: gotoOJInfo },
+  { icon: 'user', label: '编辑资料', color: 'bg-theme-primary', handler: editProfile },
+  { icon: 'lock-on', label: '账号安全', color: 'bg-theme-success', handler: gotoSecurity },
+  { icon: 'time', label: '考勤管理', color: 'bg-theme-info', handler: gotoAttendance },
+  { icon: 'code', label: 'OJ信息', color: 'bg-theme-warning', handler: gotoOJInfo },
 ]
 
 // 格式化性别
@@ -243,7 +243,7 @@ const menuItems = [
     category: '个人管理',
     items: [
       { icon: '⭐', name: '年度总结', desc: '查看您的年度报告', action: gotoSummary, iconColor: 'text-yellow-500' },
-      { icon: '●', name: '个人资料', desc: '管理个人信息', action: editProfile, iconColor: 'text-blue-500' },
+      { icon: '●', name: '个人资料', desc: '管理个人信息', action: editProfile, iconColor: 'text-theme-primary' },
       { icon: '◆', name: '账号安全', desc: '密码、登录记录', action: gotoSecurity, iconColor: 'text-green-500' },
       { icon: '▲', name: '消息通知', desc: '通知设置', action: () => showToast('消息通知'), iconColor: 'text-orange-500' },
     ],
@@ -255,7 +255,7 @@ const menuItems = [
       { icon: '⚙', name: '系统设置', desc: '主题与通用设置', action: gotoSettings, iconColor: 'text-gray-500' },
       // #endif
       { icon: '■', name: '关于我们', desc: '工作室介绍与版本信息', action: gotoAboutStudio, iconColor: 'text-purple-500' },
-      { icon: '▼', name: '退出登录', desc: '安全退出账号', action: handleLogout, danger: true, iconColor: 'text-red-500' },
+      { icon: '▼', name: '退出登录', desc: '安全退出账号', action: handleLogout, danger: true, iconColor: 'text-theme-error' },
     ],
   },
 ]
@@ -265,11 +265,28 @@ const appStore = useAppStore()
 // 修正：使用 theme 字段判断深色模式
 const isDark = computed(() => appStore.theme === 'dark')
 
-const textPrimaryClass = computed(() => isDark.value ? 'text-white/95' : 'text-gray-800')
-const textSecondaryClass = computed(() => isDark.value ? 'text-white/70' : 'text-gray-600')
-const textMutedClass = computed(() => isDark.value ? 'text-white/50' : 'text-gray-400')
-const borderMutedClass = computed(() => isDark.value ? 'border-white/10' : 'border-gray-100')
-const activeRowBgClass = computed(() => isDark.value ? 'active:bg-white/6' : 'active:bg-gray-50')
+const textPrimaryClass = computed(() => 'text-content-primary')
+const textSecondaryClass = computed(() => 'text-content-secondary')
+const textMutedClass = computed(() => 'text-content-tertiary')
+const borderMutedClass = computed(() => 'border-divider-light')
+const activeRowBgClass = computed(() => (isDark.value ? 'active:bg-white/6' : 'active:bg-gray-50'))
+
+// 标签样式（确保对比度）
+const statusBadgeClass = computed(() =>
+  isDark.value
+    ? 'rounded-full bg-green-500/20 px-3 py-1 text-xs text-green-300 font-medium'
+    : 'rounded-full bg-green-50 px-3 py-1 text-xs text-green-700 font-medium',
+)
+const roleBadgeClass = computed(() =>
+  isDark.value
+    ? 'rounded-full bg-purple-500/20 px-3 py-1 text-xs text-purple-300 font-medium'
+    : 'rounded-full bg-purple-50 px-3 py-1 text-xs text-purple-700 font-medium',
+)
+const roleTagClass = computed(() =>
+  isDark.value
+    ? 'mb-1 mr-1 inline-block rounded-md bg-purple-500/20 px-2 py-1 text-xs text-purple-300'
+    : 'mb-1 mr-1 inline-block rounded-md bg-purple-50 px-2 py-1 text-xs text-purple-700',
+)
 
 // #ifdef MP-WEIXIN
 
@@ -328,12 +345,12 @@ onShareTimeline(() => ({
 
           <!-- 账号状态标签 -->
           <view class="flex gap-2">
-            <view class="rounded-full bg-green-100 px-3 py-1 text-xs text-green-700 font-medium">
+            <view :class="statusBadgeClass">
               正常状态
             </view>
             <view
               v-if="systemUserInfo?.roles && systemUserInfo.roles.length > 0"
-              class="rounded-full bg-purple-100 px-3 py-1 text-xs text-purple-700 font-medium"
+              :class="roleBadgeClass"
             >
               {{ systemUserInfo.roles.length }}个角色
             </view>
@@ -375,7 +392,7 @@ onShareTimeline(() => ({
     <ThemeCard v-if="systemUserInfo" card-class="mx-4 mb-6" :padding="false" radius="rounded-2xl">
       <view class="border-b px-4 py-3" :class="[borderMutedClass]">
         <view class="text-base font-semibold" :class="[textPrimaryClass]">
-          <text class="mr-2 text-blue-500">
+          <text class="mr-2 text-theme-primary">
             ●
           </text>个人信息
         </view>
@@ -451,7 +468,7 @@ onShareTimeline(() => ({
               <view v-else class="space-y-1">
                 <view
                   v-for="role in systemUserInfo.roles" :key="role.id"
-                  class="mb-1 mr-1 inline-block rounded-md bg-purple-50 px-2 py-1 text-xs text-purple-700"
+                  :class="roleTagClass"
                 >
                   {{ role.name }}
                 </view>
@@ -492,7 +509,7 @@ onShareTimeline(() => ({
             {{ item.icon }}
           </view>
           <view class="flex-1">
-            <view class="text-sm font-medium" :class="[textPrimaryClass, { 'text-red-500': item.danger }]">
+            <view class="text-sm font-medium" :class="[textPrimaryClass, { 'text-theme-error': item.danger }]">
               {{ item.name }}
             </view>
             <view v-if="item.desc" class="mt-1 text-xs" :class="[textSecondaryClass]">

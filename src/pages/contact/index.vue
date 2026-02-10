@@ -163,19 +163,13 @@ onLoad(async () => {
 // 主题适配：浅色/深色
 const appStore = useAppStore()
 const isDark = computed(() => appStore.theme === 'dark')
-const cardBgClass = computed(() =>
-  isDark.value
-    ? 'bg-[#0b1220] border border-white/15 shadow-lg'
-    : 'bg-white border border-gray-100 shadow-sm',
-)
-const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-gray-900'))
-const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-gray-600'))
-const borderMutedClass = computed(() => (isDark.value ? 'divide-white/10' : 'divide-gray-100'))
+const cardBgClass = computed(() => 'bg-surface-secondary border border-divider-light shadow-theme-sm')
+const textPrimaryClass = computed(() => 'text-content-primary')
+const textSecondaryClass = computed(() => 'text-content-secondary')
+const borderMutedClass = computed(() => 'divide-divider-light')
 const iconMutedBgClass = computed(() => (isDark.value ? 'bg-white/20' : 'bg-gray-100'))
 const contactBottomStyle = computed(() => ({
-  background: isDark.value
-    ? 'linear-gradient(180deg, #0b1220 0%, #0f172a 35%, #0f172a 100%)'
-    : 'linear-gradient(180deg, #f6f8fc 0%, #eef2f7 35%, #eef2f7 100%)',
+  background: 'var(--bg-primary)',
 }))
 </script>
 
@@ -236,7 +230,7 @@ const contactBottomStyle = computed(() => ({
       <view class="flex flex-wrap items-center text-xs" :class="textSecondaryClass">
         <template v-for="(crumb, index) in breadcrumbs" :key="crumb.id">
           <view
-            class="mr-1 cursor-pointer text-blue-600 leading-6"
+            class="mr-1 cursor-pointer text-theme-primary leading-6"
             @tap="goToCrumb(index)"
           >
             {{ crumb.name }}

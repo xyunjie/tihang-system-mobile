@@ -119,12 +119,12 @@ onLaunch(() => {
     const isDark = mode === 'dark'
     uni.setNavigationBarColor({
       frontColor: isDark ? '#ffffff' : '#000000',
-      backgroundColor: isDark ? '#0f182e' : '#ffffff',
+      backgroundColor: isDark ? '#1e293b' : '#ffffff',
     })
     uni.setBackgroundColor({
-      backgroundColor: isDark ? '#0b1220' : '#ecf1f9',
-      backgroundColorTop: isDark ? '#0b1220' : '#ecf1f9',
-      backgroundColorBottom: isDark ? '#0b1220' : '#ecf1f9',
+      backgroundColor: isDark ? '#0f172a' : '#f0f4f9',
+      backgroundColorTop: isDark ? '#0f172a' : '#e8f0fe',
+      backgroundColorBottom: isDark ? '#1e293b' : '#e8f5ff',
     })
   }
   applyMpTheme(appStore.theme)
@@ -154,17 +154,17 @@ image {
 
 page {
   /* #ifdef MP-WEIXIN */
-  /* 微信小程序浅色模式背景 */
-  background: #ecf1f9;
+  /* 微信小程序浅色模式背景 - 科技风渐变 */
+  background: linear-gradient(135deg, #e8f0fe 0%, #f0e8ff 50%, #e8f5ff 100%);
   /* 深色模式：跟随系统，使用深色渐变背景 */
   @media (prefers-color-scheme: dark) {
-    background: -webkit-linear-gradient(135deg, #0b1220 0%, #0d1426 20%, #0f182e 45%, #101a33 70%, #12203b 100%);
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #1e293b 100%);
   }
   /* #endif */
 
   /* #ifndef MP-WEIXIN */
-  /* 标准版本 */
-  background: -webkit-linear-gradient(135deg, #f3f7ff 0%, #f0f4ff 20%, #e8edff 45%, #e2e8ff 70%, #dde5ff 100%);
+  /* 标准版本 - 科技风渐变 */
+  background: linear-gradient(135deg, #e8f0fe 0%, #f0e8ff 50%, #e8f5ff 100%);
   /* #endif */
 
   min-height: 100vh;
@@ -176,10 +176,10 @@ page {
 /* H5 下根据 data-theme 主动切换背景，避免仅依赖系统偏好 */
 /* #ifdef H5 */
 [data-theme='light'] page {
-  background: -webkit-linear-gradient(135deg, #f3f7ff 0%, #f0f4ff 20%, #e8edff 45%, #e2e8ff 70%, #dde5ff 100%);
+  background: linear-gradient(135deg, #e8f0fe 0%, #f0e8ff 50%, #e8f5ff 100%);
 }
 [data-theme='dark'] page {
-  background: -webkit-linear-gradient(135deg, #0b1220 0%, #0d1426 20%, #0f182e 45%, #101a33 70%, #12203b 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #1e293b 100%);
 }
 /* #endif */
 

@@ -55,11 +55,39 @@ export default defineConfig({
     colors: {
       /** 主题色，用法如: text-primary */
       primary: 'var(--wot-color-theme,#0957DE)',
+      // 科技风主题色系统
+      'theme-primary': 'var(--color-primary)',
+      'theme-primary-light': 'var(--color-primary-light)',
+      'theme-primary-dark': 'var(--color-primary-dark)',
+      'theme-success': 'var(--color-success)',
+      'theme-warning': 'var(--color-warning)',
+      'theme-error': 'var(--color-error)',
+      'theme-info': 'var(--color-info)',
+      // 背景色（使用 surface 前缀避免混淆）
+      'surface-primary': 'var(--bg-primary)',
+      'surface-secondary': 'var(--bg-secondary)',
+      'surface-tertiary': 'var(--bg-tertiary)',
+      'surface-elevated': 'var(--bg-elevated)',
+      // 文本色（使用 content 前缀避免混淆）
+      'content-primary': 'var(--text-primary)',
+      'content-secondary': 'var(--text-secondary)',
+      'content-tertiary': 'var(--text-tertiary)',
+      'content-disabled': 'var(--text-disabled)',
+      // 边框色（使用 divider 前缀避免混淆）
+      'divider-light': 'var(--border-light)',
+      'divider-medium': 'var(--border-medium)',
+      'divider-dark': 'var(--border-dark)',
     },
     fontSize: {
       /** 提供更小号的字体，用法如：text-2xs */
       '2xs': ['20rpx', '28rpx'],
       '3xs': ['18rpx', '26rpx'],
+    },
+    boxShadow: {
+      'theme-sm': 'var(--shadow-sm)',
+      'theme-md': 'var(--shadow-md)',
+      'theme-lg': 'var(--shadow-lg)',
+      'theme-xl': 'var(--shadow-xl)',
     },
   },
 })

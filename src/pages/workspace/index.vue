@@ -69,20 +69,14 @@ const appStore = useAppStore()
 const isDark = computed(() => appStore.theme === 'dark')
 // 底部覆盖层背景，叠在占位符之上但在 TabBar 之下
 const wsBottomStyle = computed(() => ({
-  background: isDark.value
-    ? 'linear-gradient(180deg, rgba(15,23,42,1) 0%, rgba(15,23,42,0.85) 70%)'
-    : 'linear-gradient(180deg, rgba(238,242,247,1) 0%, rgba(238,242,247,0.85) 70%)',
+  background: 'var(--bg-primary)',
 }))
 // 卡片与文本类
-const cardBgClass = computed(() =>
-  isDark.value
-    ? 'bg-[#0b1220] border border-white/15 shadow-lg'
-    : 'bg-white border border-gray-100 shadow-md',
-)
-const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-gray-800'))
-const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-gray-500'))
-const borderMutedClass = computed(() => (isDark.value ? 'border-white/10' : 'border-gray-100'))
-const subTileBgClass = computed(() => (isDark.value ? 'bg-white/6 border border-white/8' : 'bg-gray-50 border border-gray-100'))
+const cardBgClass = computed(() => 'bg-surface-secondary border border-divider-light shadow-theme-md')
+const textPrimaryClass = computed(() => 'text-content-primary')
+const textSecondaryClass = computed(() => 'text-content-secondary')
+const borderMutedClass = computed(() => 'border-divider-light')
+const subTileBgClass = computed(() => 'bg-surface-tertiary border border-divider-light')
 
 // 按分类获取流程定义 - 根据获取的分类数据和流程定义的category进行匹配
 const processDefinitionsByCategory = computed(() => {
@@ -366,12 +360,12 @@ onPullDownRefresh(() => {
       <!-- 统计卡片 -->
       <view class="grid grid-cols-2 mb-5 gap-4">
         <view
-          class="overflow-hidden rounded-2xl bg-blue-500 p-5 shadow-lg"
+          class="overflow-hidden rounded-2xl bg-theme-primary p-5 shadow-lg"
           @click="navigateToTodoList"
         >
           <view class="flex items-start justify-between">
             <view>
-              <view class="mb-1 text-sm text-blue-100">
+              <view class="mb-1 text-sm text-white/90">
                 待办任务
               </view>
               <view class="text-3xl text-white font-bold">
@@ -385,12 +379,12 @@ onPullDownRefresh(() => {
         </view>
 
         <view
-          class="overflow-hidden rounded-2xl bg-green-500 p-5 shadow-lg"
+          class="overflow-hidden rounded-2xl bg-theme-success p-5 shadow-lg"
           @click="navigateToDoneList"
         >
           <view class="flex items-start justify-between">
             <view>
-              <view class="mb-1 text-sm text-green-100">
+              <view class="mb-1 text-sm text-white/90">
                 已办任务
               </view>
               <view class="text-3xl text-white font-bold">
@@ -404,12 +398,12 @@ onPullDownRefresh(() => {
         </view>
 
         <view
-          class="overflow-hidden rounded-2xl bg-orange-500 p-5 shadow-lg"
+          class="overflow-hidden rounded-2xl bg-theme-warning p-5 shadow-lg"
           @click="navigateToCopyList"
         >
           <view class="flex items-start justify-between">
             <view>
-              <view class="mb-1 text-sm text-orange-100">
+              <view class="mb-1 text-sm text-white/90">
                 今日抄送
               </view>
               <view class="text-3xl text-white font-bold">
@@ -423,12 +417,12 @@ onPullDownRefresh(() => {
         </view>
 
         <view
-          class="overflow-hidden rounded-2xl bg-purple-500 p-5 shadow-lg"
+          class="overflow-hidden rounded-2xl bg-theme-info p-5 shadow-lg"
           @click="navigateToMyApprovalList"
         >
           <view class="flex items-start justify-between">
             <view>
-              <view class="mb-1 text-sm text-purple-100">
+              <view class="mb-1 text-sm text-white/90">
                 我的审批
               </view>
               <view class="text-3xl text-white font-bold">
@@ -471,7 +465,7 @@ onPullDownRefresh(() => {
               >
                 <!-- 图标容器 -->
                 <view class="mb-2 h-16 w-16 flex items-center justify-center overflow-hidden rounded-2xl" :class="[subTileBgClass]">
-                  <view class="h-14 w-14 flex items-center justify-center rounded-xl bg-blue-500 shadow-md">
+                  <view class="h-14 w-14 flex items-center justify-center rounded-xl bg-theme-primary shadow-md">
                     <template v-if="process.icon">
                       <image
                         :src="process.icon"

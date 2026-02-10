@@ -35,32 +35,26 @@ const appStore = useAppStore()
 const isDark = computed(() => appStore.theme === 'dark')
 // 底部覆盖层背景，叠在占位符之上但在 TabBar 之下
 const homeBottomStyle = computed(() => ({
-  background: isDark.value
-    ? 'linear-gradient(180deg, rgba(15,23,42,1) 0%, rgba(15,23,42,0.85) 70%)'
-    : 'linear-gradient(180deg, rgba(238,242,247,1) 0%, rgba(238,242,247,0.85) 70%)',
+  background: 'var(--bg-primary)',
 }))
 // 增强卡片边界与阴影，避免与背景融为一体
-const cardBgClass = computed(() =>
-  isDark.value
-    ? 'bg-[#0b1220] border border-white/15 shadow-lg'
-    : 'bg-white border border-gray-100 shadow-md',
-)
-const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-gray-800'))
-const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-gray-500'))
-const textMutedClass = computed(() => (isDark.value ? 'text-gray-500' : 'text-gray-400'))
-const borderMutedClass = computed(() => (isDark.value ? 'border-white/10' : 'border-gray-100'))
+const cardBgClass = computed(() => 'bg-surface-secondary border border-divider-light shadow-theme-md')
+const textPrimaryClass = computed(() => 'text-content-primary')
+const textSecondaryClass = computed(() => 'text-content-secondary')
+const textMutedClass = computed(() => 'text-content-tertiary')
+const borderMutedClass = computed(() => 'border-divider-light')
 const activeRowBgClass = computed(() => (isDark.value ? 'active:bg-white/5' : 'active:bg-gray-50'))
-const subTileBgClass = computed(() => (isDark.value ? 'bg-white/6 border border-white/8' : 'bg-gray-50 border border-gray-100'))
+const subTileBgClass = computed(() => 'bg-surface-tertiary border border-divider-light')
 
 // 骨架屏颜色（主题感知）
 const skBaseClass = computed(() => (isDark.value ? 'bg-white/15' : 'bg-gray-200'))
 const skStrongClass = computed(() => (isDark.value ? 'bg-white/20' : 'bg-gray-300'))
-const skBorderClass = computed(() => (isDark.value ? 'border-white/10' : 'border-gray-100'))
+const skBorderClass = computed(() => 'border-divider-light')
 
 // 中性小图标背景（主题感知）
 const iconMutedBgClass = computed(() => (isDark.value ? 'bg-white/35' : 'bg-gray-400'))
 // 强调型图标容器背景（通知列表左侧图标容器）
-const iconAccentContainerClass = computed(() => (isDark.value ? 'bg-blue-500/12' : 'bg-blue-100'))
+const iconAccentContainerClass = computed(() => 'bg-theme-primary-light/10')
 
 // 今日考勤信息（考勤机自动记录）
 const todayAttendance = reactive({
@@ -384,17 +378,17 @@ function getNotificationTypeText(type: number): string {
 function getNotificationTypeColor(type: number): string {
   if (isDark.value) {
     switch (type) {
-      case 1: return 'text-blue-400 bg-blue-500/12 border-blue-400/20'
-      case 2: return 'text-red-400 bg-red-500/12 border-red-400/20'
-      case 3: return 'text-green-400 bg-green-500/12 border-green-400/20'
+      case 1: return 'text-blue-300 bg-blue-500/20 border-blue-400/30'
+      case 2: return 'text-red-300 bg-red-500/20 border-red-400/30'
+      case 3: return 'text-green-300 bg-green-500/20 border-green-400/30'
       default: return 'text-gray-400 bg-white/6 border-white/10'
     }
   }
   else {
     switch (type) {
-      case 1: return 'text-blue-600 bg-blue-50 border-blue-200' // 系统通知
-      case 2: return 'text-red-600 bg-red-50 border-red-200' // 公告
-      case 3: return 'text-green-600 bg-green-50 border-green-200' // 活动
+      case 1: return 'text-blue-700 bg-blue-50 border-blue-200' // 系统通知
+      case 2: return 'text-red-700 bg-red-50 border-red-200' // 公告
+      case 3: return 'text-green-700 bg-green-50 border-green-200' // 活动
       default: return 'text-gray-600 bg-gray-50 border-gray-200'
     }
   }
@@ -464,19 +458,19 @@ function formatMessageTime(createTime: string | number): string {
 function getMessageTypeColor(templateType: number): string {
   if (isDark.value) {
     switch (templateType) {
-      case 1: return 'text-blue-400 bg-blue-500/12'
-      case 2: return 'text-orange-400 bg-orange-500/12'
-      case 3: return 'text-green-400 bg-green-500/12'
-      case 4: return 'text-purple-400 bg-purple-500/12'
+      case 1: return 'text-blue-300 bg-blue-500/20' // 系统消息
+      case 2: return 'text-orange-300 bg-orange-500/20' // 审批消息
+      case 3: return 'text-green-300 bg-green-500/20' // 考勤消息
+      case 4: return 'text-cyan-300 bg-cyan-500/20' // 项目消息
       default: return 'text-gray-400 bg-white/6'
     }
   }
   else {
     switch (templateType) {
-      case 1: return 'text-blue-600 bg-blue-50' // 系统消息
-      case 2: return 'text-orange-600 bg-orange-50' // 审批消息
-      case 3: return 'text-green-600 bg-green-50' // 考勤消息
-      case 4: return 'text-purple-600 bg-purple-50' // 项目消息
+      case 1: return 'text-blue-700 bg-blue-50' // 系统消息
+      case 2: return 'text-orange-700 bg-orange-50' // 审批消息
+      case 3: return 'text-green-700 bg-green-50' // 考勤消息
+      case 4: return 'text-cyan-700 bg-cyan-50' // 项目消息
       default: return 'text-gray-600 bg-gray-50'
     }
   }
@@ -669,7 +663,7 @@ function formatCount(count: number) {
     >
       <!-- 第一部分：今日考勤信息 -->
       <ThemeCard card-class="mb-6" :padding="false" @click="navigateTo('/pages-sub/attendance/record')">
-        <view class="bg-blue-500 px-4 py-3">
+        <view class="bg-theme-primary px-4 py-3">
           <view class="flex items-center justify-between">
             <view class="text-lg text-white font-semibold">
               {{ todayAttendance.date }}
@@ -688,7 +682,7 @@ function formatCount(count: number) {
           <!-- 考勤机记录显示 -->
           <view class="grid grid-cols-2 mb-4 gap-4">
             <view class="text-center">
-              <view class="mb-2 text-2xl text-green-500 font-bold">
+              <view class="mb-2 text-2xl text-theme-success font-bold">
                 {{ formatTimeDisplay(todayAttendance.clockInTime) }}
               </view>
               <view class="text-sm" :class="textSecondaryClass">
@@ -696,7 +690,7 @@ function formatCount(count: number) {
               </view>
             </view>
             <view class="text-center">
-              <view class="mb-2 text-2xl text-blue-500 font-bold">
+              <view class="mb-2 text-2xl text-theme-primary font-bold">
                 {{ formatTimeDisplay(todayAttendance.clockOutTime) }}
               </view>
               <view class="text-sm" :class="textSecondaryClass">
@@ -709,7 +703,7 @@ function formatCount(count: number) {
           <view class="rounded-xl p-3" :class="subTileBgClass">
             <view class="mb-2 flex items-center justify-between">
               <view class="flex items-center">
-                <view class="mr-2 h-5 w-5 rounded bg-blue-500" />
+                <view class="mr-2 h-5 w-5 rounded bg-theme-primary" />
                 <view class="text-sm font-medium" :class="textPrimaryClass">
                   工作时长：{{ todayAttendance.workDuration }}
                 </view>
@@ -731,7 +725,7 @@ function formatCount(count: number) {
               通知公告
             </view>
             <view class="flex items-center">
-              <view class="text-sm text-blue-500" @click="navigateTo('/pages-sub/notification/index')">
+              <view class="text-sm text-theme-primary" @click="navigateTo('/pages-sub/notification/index')">
                 查看全部 ›
               </view>
             </view>
@@ -748,7 +742,7 @@ function formatCount(count: number) {
             <view class="mb-2 flex items-start justify-between">
               <view class="flex flex-1 items-start">
                 <view class="mr-3 h-8 w-8 flex items-center justify-center rounded-lg" :class="iconAccentContainerClass">
-                  <view class="h-4 w-4 rounded bg-blue-500" />
+                  <view class="h-4 w-4 rounded bg-theme-primary" />
                 </view>
                 <view class="flex-1">
                   <view class="line-clamp-1 text-sm font-medium" :class="textPrimaryClass">
@@ -788,10 +782,10 @@ function formatCount(count: number) {
               消息提醒
             </view>
             <view class="flex items-center">
-              <view v-if="unreadCount > 0" class="mr-2 h-5 w-5 flex items-center justify-center rounded-full bg-red-500 text-xs text-white font-medium">
+              <view v-if="unreadCount > 0" class="mr-2 h-5 w-5 flex items-center justify-center rounded-full bg-theme-error/100 text-xs text-white font-medium">
                 {{ unreadCount > 99 ? '99+' : unreadCount }}
               </view>
-              <view class="text-sm text-blue-500" @click="navigateTo('/pages-sub/message/index')">
+              <view class="text-sm text-theme-primary" @click="navigateTo('/pages-sub/message/index')">
                 查看全部 ›
               </view>
             </view>
@@ -823,7 +817,7 @@ function formatCount(count: number) {
                 <view class="text-xs" :class="textMutedClass">
                   {{ formatMessageTime(message.createTime) }}
                 </view>
-                <view v-if="!message.readStatus" class="mt-1 h-2 w-2 rounded-full bg-red-500" />
+                <view v-if="!message.readStatus" class="mt-1 h-2 w-2 rounded-full bg-theme-error/100" />
               </view>
             </view>
           </view>
@@ -845,7 +839,7 @@ function formatCount(count: number) {
             <view class="text-lg font-semibold" :class="[textPrimaryClass]">
               最新文章
             </view>
-            <view class="text-sm text-blue-500" @click="navigateTo('/pages-sub/article/index')">
+            <view class="text-sm text-theme-primary" @click="navigateTo('/pages-sub/article/index')">
               查看全部 ›
             </view>
           </view>
