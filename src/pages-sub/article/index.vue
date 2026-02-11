@@ -103,7 +103,6 @@ function handleSearch(val: { value: string }) {
   searchParams.keyword = val.value || ''
   pagingRef.value?.reload()
 }
-</script>
 
 // 格式化时间
 function formatTime(createTime: string | number): string {
@@ -120,14 +119,6 @@ function formatCount(count: number): string {
   }
   return count.toString()
 }
-
-// 获取文章分类颜色
-// 主题适配：浅色/深色
-const appStore = useAppStore()
-const isDark = computed(() => appStore.theme === 'dark')
-const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-gray-800'))
-const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-gray-500'))
-const textMutedClass = computed(() => (isDark.value ? 'text-gray-500' : 'text-gray-400'))
 
 function getCategoryColor(tags: string[]): string {
   if (!tags || tags.length === 0)
@@ -237,10 +228,6 @@ onShareTimeline(() => ({
             v-model="searchParams.keyword"
             placeholder="搜索文章标题、内容"
             hide-cancel
-            :custom-style="{
-              background: 'transparent',
-              padding: 0,
-            }"
             :custom-input-style="{
               backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#fff',
               borderRadius: '999px',
@@ -262,30 +249,34 @@ onShareTimeline(() => ({
           :padding="false"
           @click="goToArticleDetail(article.id)"
         >
-          <view class="p-4 bg-white dark:bg-slate-800 rounded-2xl">
+          <view class="rounded-2xl bg-white p-4 dark:bg-slate-800">
             <!-- 有封面图片的布局 -->
             <view v-if="article.coverImage" class="flex gap-4">
-              <view class="flex-1 flex flex-col justify-between min-h-[5rem]">
+              <view class="min-h-[5rem] flex flex-1 flex-col justify-between">
                 <view>
-                  <view class="flex items-center justify-between gap-2 mb-1">
-                     <view class="text-sm font-medium line-clamp-2 leading-relaxed tracking-wide" :class="textPrimaryClass">
-                        <rich-text :nodes="highlightSearchKeywords(article.title)" />
-                     </view>
+                  <view class="mb-1 flex items-center justify-between gap-2">
+                    <view class="line-clamp-2 text-sm font-medium leading-relaxed tracking-wide" :class="textPrimaryClass">
+                      <rich-text :nodes="highlightSearchKeywords(article.title)" />
+                    </view>
                   </view>
-                  <view class="text-xs line-clamp-2 opacity-70" :class="textSecondaryClass">
-                     <rich-text :nodes="highlightSearchKeywords(article.blogAbstract)" />
+                  <view class="line-clamp-2 text-xs opacity-70" :class="textSecondaryClass">
+                    <rich-text :nodes="highlightSearchKeywords(article.blogAbstract)" />
                   </view>
                 </view>
-                
-                <view class="flex justify-between items-center mt-2">
-                   <view class="flex items-center gap-2 text-xs opacity-80" :class="textMutedClass">
-                     <text class="font-medium">{{ article.authorName }}</text>
-                     <text class="opacity-30">|</text>
-                     <text>{{ formatTime(article.createTime).split(' ')[0] }}</text>
-                   </view>
-                   <view v-if="article.tagNames && article.tagNames.length > 0" class="px-2 py-0.5 text-[10px] rounded border" :class="getCategoryColor(article.tagNames)">
-                      {{ article.tagNames[0] }}
-                   </view>
+
+                <view class="mt-2 flex items-center justify-between">
+                  <view class="flex items-center gap-2 text-xs opacity-80" :class="textMutedClass">
+                    <text class="font-medium">
+                      {{ article.authorName }}
+                    </text>
+                    <text class="opacity-30">
+                      |
+                    </text>
+                    <text>{{ formatTime(article.createTime).split(' ')[0] }}</text>
+                  </view>
+                  <view v-if="article.tagNames && article.tagNames.length > 0" class="border rounded px-2 py-0.5 text-[10px]" :class="getCategoryColor(article.tagNames)">
+                    {{ article.tagNames[0] }}
+                  </view>
                 </view>
               </view>
               <!-- 封面图片 -->
@@ -300,36 +291,40 @@ onShareTimeline(() => ({
 
             <!-- 无封面图片的布局 -->
             <view v-else>
-               <view class="flex justify-between items-start gap-2 mb-1">
-                 <view class="text-sm font-medium line-clamp-2 leading-relaxed tracking-wide" :class="textPrimaryClass">
-                    <rich-text :nodes="highlightSearchKeywords(article.title)" />
-                 </view>
-                 <view v-if="article.tagNames && article.tagNames.length > 0" class="flex-shrink-0 px-2 py-0.5 text-[10px] rounded border mt-0.5" :class="getCategoryColor(article.tagNames)">
-                    {{ article.tagNames[0] }}
-                 </view>
-               </view>
-               
-               <view class="text-xs line-clamp-2 opacity-70 mb-3" :class="textSecondaryClass">
-                  <rich-text :nodes="highlightSearchKeywords(article.blogAbstract)" />
-               </view>
-               
-               <view class="flex justify-between items-center text-xs" :class="textMutedClass">
-                  <view class="flex items-center gap-2 opacity-80">
-                     <text class="font-medium">{{ article.authorName }}</text>
-                     <text class="opacity-30">|</text>
-                     <text>{{ formatTime(article.createTime).split(' ')[0] }}</text>
-                   </view>
-                   <view class="flex items-center gap-3 opacity-60">
-                     <view class="flex items-center gap-1">
-                       <wd-icon name="view" size="14px" />
-                       <text>{{ formatCount(article.browse) }}</text>
-                     </view>
-                     <view class="flex items-center gap-1">
-                       <wd-icon name="thumb-up" size="14px" />
-                       <text>{{ formatCount(article.love) }}</text>
-                     </view>
-                   </view>
-               </view>
+              <view class="mb-1 flex items-start justify-between gap-2">
+                <view class="line-clamp-2 text-sm font-medium leading-relaxed tracking-wide" :class="textPrimaryClass">
+                  <rich-text :nodes="highlightSearchKeywords(article.title)" />
+                </view>
+                <view v-if="article.tagNames && article.tagNames.length > 0" class="mt-0.5 flex-shrink-0 border rounded px-2 py-0.5 text-[10px]" :class="getCategoryColor(article.tagNames)">
+                  {{ article.tagNames[0] }}
+                </view>
+              </view>
+
+              <view class="line-clamp-2 mb-3 text-xs opacity-70" :class="textSecondaryClass">
+                <rich-text :nodes="highlightSearchKeywords(article.blogAbstract)" />
+              </view>
+
+              <view class="flex items-center justify-between text-xs" :class="textMutedClass">
+                <view class="flex items-center gap-2 opacity-80">
+                  <text class="font-medium">
+                    {{ article.authorName }}
+                  </text>
+                  <text class="opacity-30">
+                    |
+                  </text>
+                  <text>{{ formatTime(article.createTime).split(' ')[0] }}</text>
+                </view>
+                <view class="flex items-center gap-3 opacity-60">
+                  <view class="flex items-center gap-1">
+                    <wd-icon name="view" size="14px" />
+                    <text>{{ formatCount(article.browse) }}</text>
+                  </view>
+                  <view class="flex items-center gap-1">
+                    <wd-icon name="thumb-up" size="14px" />
+                    <text>{{ formatCount(article.love) }}</text>
+                  </view>
+                </view>
+              </view>
             </view>
           </view>
         </ThemeCard>
