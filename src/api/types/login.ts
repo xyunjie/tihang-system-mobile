@@ -4,6 +4,7 @@
 export interface IUserInfoVo {
   userId: string
   username: string
+  nickname: string
   avatar: string
   accessToken: string
   refreshToken?: string

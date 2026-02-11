@@ -78,7 +78,9 @@
       "style": {
         "navigationStyle": "default",
         "navigationBarTitleText": "通讯录",
-        "enablePullDownRefresh": true
+        "enablePullDownRefresh": true,
+        "navigationBarBackgroundColor": "#2563eb",
+        "navigationBarTextStyle": "white"
       }
     },
     {
@@ -135,7 +137,9 @@
       "style": {
         "navigationStyle": "default",
         "navigationBarTitleText": "个人中心",
-        "enablePullDownRefresh": true
+        "enablePullDownRefresh": true,
+        "navigationBarBackgroundColor": "#2563eb",
+        "navigationBarTextStyle": "white"
       }
     },
     {
@@ -163,7 +167,9 @@
       "style": {
         "navigationStyle": "default",
         "navigationBarTitleText": "工作台",
-        "enablePullDownRefresh": true
+        "enablePullDownRefresh": true,
+        "navigationBarBackgroundColor": "#2563eb",
+        "navigationBarTextStyle": "white"
       }
     }
   ],

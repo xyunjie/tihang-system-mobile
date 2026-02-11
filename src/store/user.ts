@@ -19,6 +19,7 @@ import { generateUUID } from '@/utils/uuid'
 const userInfoState: IUserInfoVo = {
   userId: '',
   username: '',
+  nickname: '',
   avatar: '',
   accessToken: '',
   refreshToken: '',
@@ -100,6 +101,7 @@ export const useUserStore = defineStore(
       const userData: IUserInfoVo = {
         userId: loginData.userId,
         username: username || loginData.userId, // 优先使用传入的用户名，否则使用userId
+        nickname: loginData.nickname || loginData.userId, // 优先使用传入的昵称，否则使用userId
         avatar: '',
         accessToken: loginData.accessToken,
         refreshToken: loginData.refreshToken,

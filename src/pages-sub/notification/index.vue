@@ -8,7 +8,7 @@
 
 <script lang="ts" setup>
 import type { NoticePageReqVO, NoticeRespVO } from '@/api/types/notice'
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { getNoticePage } from '@/api/notice'
 import ThemeCard from '@/components/ThemeCard.vue'
 import { useAppStore } from '@/store/app'
@@ -31,17 +31,31 @@ const baseParams = reactive({
   status: 0, // 只显示启用的通知
 })
 
-// 页面加载
-onLoad(() => {
-  // z-paging会自动触发首次加载
-})
-
 // 主题适配：浅色/深色
 const appStore = useAppStore()
 const isDark = computed(() => appStore.theme === 'dark')
-const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-gray-800'))
-const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-gray-600'))
-const textMutedClass = computed(() => (isDark.value ? 'text-gray-500' : 'text-gray-400'))
+const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-slate-800'))
+const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-slate-500'))
+const textMutedClass = computed(() => (isDark.value ? 'text-gray-500' : 'text-slate-400'))
+
+// 动态设置背景色
+function setPageBackgroundColor() {
+  const bgColor = isDark.value ? '#020617' : '#f5f7fa'
+  uni.setBackgroundColor({
+    backgroundColor: bgColor,
+    backgroundColorTop: bgColor,
+    backgroundColorBottom: bgColor,
+  })
+}
+
+onShow(() => {
+  setPageBackgroundColor()
+})
+
+watch(() => isDark.value, () => {
+  setPageBackgroundColor()
+})
+
 // 加载通知公告列表
 async function queryList(pageNo: number, pageSize: number) {
   try {
@@ -88,20 +102,16 @@ async function queryList(pageNo: number, pageSize: number) {
 }
 
 // 搜索通知公告
-function searchNotifications() {
+function handleSearch(val: { value: string }) {
+  searchKeyword.value = val.value || ''
   pagingRef.value?.reload()
 }
 
-// 清除搜索 - 现在由wd-search组件自动处理
-function clearSearch() {
-  searchKeyword.value = ''
-  searchNotifications()
-}
-
 // 跳转到通知详情
-function navigateToDetail(notification: NoticeRespVO) {
+function navigateToDetail(item: NoticeRespVO) {
+  const { id } = item
   uni.navigateTo({
-    url: `/pages-sub/notification/detail?id=${notification.id}`,
+    url: `/pages-sub/notification/detail?id=${id}`,
   })
 }
 
@@ -127,18 +137,18 @@ function getNotificationTypeText(type: number): string {
 function getNotificationTypeColor(type: number): string {
   if (isDark.value) {
     switch (type) {
-      case 1: return 'text-blue-400 bg-blue-500/12 border-blue-500/20'
-      case 2: return 'text-orange-400 bg-orange-500/12 border-orange-500/20'
-      case 3: return 'text-green-400 bg-green-500/12 border-green-500/20'
-      default: return 'text-gray-400 bg-white/6 border-white/12'
+      case 1: return 'text-blue-400 bg-blue-500/10'
+      case 2: return 'text-orange-400 bg-orange-500/10'
+      case 3: return 'text-green-400 bg-green-500/10'
+      default: return 'text-gray-400 bg-white/5'
     }
   }
   else {
     switch (type) {
-      case 1: return 'text-blue-600 bg-blue-50 border-blue-200' // 系统通知
-      case 2: return 'text-red-600 bg-red-50 border-red-200' // 公告
-      case 3: return 'text-green-600 bg-green-50 border-green-200' // 活动
-      default: return 'text-gray-600 bg-gray-50 border-gray-200'
+      case 1: return 'text-blue-600 bg-blue-50'
+      case 2: return 'text-orange-600 bg-orange-50'
+      case 3: return 'text-green-600 bg-green-50'
+      default: return 'text-gray-600 bg-gray-50'
     }
   }
 }
@@ -163,88 +173,70 @@ function getPlainTextContent(htmlContent: string): string {
 
 <template>
   <view class="min-h-screen">
-    <!-- 使用z-paging的全屏模式，搜索框放在slot="top"内 -->
     <z-paging
       ref="pagingRef"
       v-model="notificationList"
-      style="top: 0px"
-      :refresher-enabled="true"
-      :loading-more-enabled="true"
-      :auto-show-back-to-top="true"
-      :auto-clean-list-when-reload="true"
-      :refresher-threshold="80"
-      refresher-default-text="下拉刷新"
-      refresher-pulling-text="下拉刷新"
-      refresher-refreshing-text="正在刷新..."
-      refresher-complete-text="刷新完成"
-      loading-more-default-text="点击加载更多"
-      loading-more-loading-text="正在加载..."
-      loading-more-no-more-text="没有更多了"
-      loading-more-fail-text="加载失败，点击重试"
-      empty-view-text="暂无通知公告"
+      :default-page-size="10"
+      :bg-color="isDark ? '#020617' : '#f5f7fa'"
       @query="queryList"
     >
-      <!-- 搜索栏固定在顶部 -->
       <template #top>
-        <!-- 顶部搜索不再使用白底，保持与页面统一背景 -->
-        <view class="px-4 py-3">
-          <view class="flex items-center gap-3">
-            <view class="flex-1">
-              <wd-search
-                v-model="searchKeyword"
-                placeholder="搜索通知公告标题..."
-                cancel-txt="搜索"
-                :custom-style="isDark
-                  ? 'background-color: rgba(255,255,255,0.08); border-radius: 20rpx; color: #e5e7eb;'
-                  : 'border-radius: 20rpx'"
-                @search="searchNotifications"
-                @cancel="searchNotifications"
-              />
-            </view>
-          </view>
+        <view class="px-4 py-3" :class="isDark ? 'bg-[#020617]' : 'bg-[#f5f7fa]'">
+          <wd-search
+            v-model="searchKeyword"
+            placeholder="搜索通知公告"
+            hide-cancel
+            :custom-input-style="{
+              backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#fff',
+              borderRadius: '999px',
+              height: '40px',
+              border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid #e2e8f0',
+            }"
+            @search="handleSearch"
+            @clear="handleSearch"
+          />
         </view>
       </template>
 
-      <!-- 骨架屏 -->
-      <view v-if="firstLoad" class="p-4">
-        <wd-skeleton theme="paragraph" />
-      </view>
-
-      <!-- 通知公告列表内容 -->
-      <view v-else class="px-4 pt-2">
+      <view class="px-4 pb-4 space-y-3">
         <ThemeCard
-          v-for="notification in notificationList"
-          :key="notification.id"
-          card-class="mb-4 transition-all active:scale-98"
+          v-for="item in notificationList"
+          :key="item.id"
           :padding="false"
-          @click="navigateToDetail(notification)"
+          card-class="shadow-sm border border-slate-100 dark:border-slate-800 active:scale-[0.99] transition-transform duration-200"
+          @click="navigateToDetail(item)"
         >
-          <view class="p-4">
-            <view class="mb-3 flex items-start justify-between">
-              <view class="flex flex-1 items-start">
-                <view class="mr-3 h-8 w-8 flex items-center justify-center rounded-lg" :class="getNotificationTypeColor(notification.type)">
-                  <view class="h-4 w-4 rounded bg-current" />
-                </view>
-                <view class="flex-1">
-                  <view class="line-clamp-2 mb-2 text-base font-medium" :class="textPrimaryClass">
-                    {{ notification.title }}
-                  </view>
-                  <view class="line-clamp-3 text-sm leading-relaxed" :class="textSecondaryClass">
-                    {{ getPlainTextContent(notification.content) }}
-                  </view>
-                </view>
-              </view>
-              <view class="ml-3 rounded-full px-2 py-1 text-xs font-medium" :class="getNotificationTypeColor(notification.type)">
-                {{ getNotificationTypeText(notification.type) }}
-              </view>
+          <view class="p-4 flex gap-4">
+            <!-- 左侧图标容器 -->
+            <view 
+              class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+              :class="isDark ? 'bg-blue-500/10' : 'bg-blue-50'"
+            >
+              <wd-icon 
+                name="notification" 
+                size="20px" 
+                :color="isDark ? '#60a5fa' : '#3b82f6'" 
+              />
             </view>
 
-            <view class="flex items-center justify-between">
-              <view class="text-xs" :class="textMutedClass">
-                {{ formatNotificationTime(notification.createTime) }}
+            <view class="flex-1 min-w-0">
+              <view class="flex justify-between items-start mb-1.5 gap-2">
+                <view class="text-base font-medium truncate leading-tight" :class="textPrimaryClass">
+                  {{ item.title }}
+                </view>
+                <view class="text-xs flex-shrink-0" :class="textMutedClass">
+                  {{ formatStandardDateTime(item.createTime).split(' ')[0] }}
+                </view>
               </view>
-              <view class="text-xs" :class="isDark ? 'text-blue-400' : 'text-blue-500'">
-                查看详情 ›
+
+              <view class="text-sm line-clamp-2 leading-relaxed mb-2.5 opacity-80" :class="textSecondaryClass">
+                {{ getPlainTextContent(item.content) }}
+              </view>
+              
+              <view class="flex items-center">
+                 <view class="px-2 py-0.5 text-xs rounded-md" :class="getNotificationTypeColor(item.type)">
+                   {{ getNotificationTypeText(item.type) }}
+                 </view>
               </view>
             </view>
           </view>
@@ -255,5 +247,11 @@ function getPlainTextContent(htmlContent: string): string {
 </template>
 
 <style lang="scss" scoped>
-/* 使用UnoCSS原子类，无需自定义CSS */
+/* 覆盖 page 背景色 */
+:global(page) {
+  background-color: #f5f7fa;
+}
+:global(.dark page) {
+  background-color: #020617;
+}
 </style>

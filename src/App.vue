@@ -108,6 +108,11 @@ onLaunch(() => {
   const applyH5Theme = (mode: 'light' | 'dark') => {
     const el = document.documentElement
     el.setAttribute('data-theme', mode)
+    if (mode === 'dark') {
+      el.classList.add('dark')
+    } else {
+      el.classList.remove('dark')
+    }
   }
   applyH5Theme(appStore.theme)
   watch(() => appStore.theme, t => applyH5Theme(t))
@@ -153,35 +158,10 @@ image {
 }
 
 page {
-  /* #ifdef MP-WEIXIN */
-  /* 微信小程序浅色模式背景 */
-  background: #ecf1f9;
-  /* 深色模式：跟随系统，使用深色渐变背景 */
-  @media (prefers-color-scheme: dark) {
-    background: -webkit-linear-gradient(135deg, #0b1220 0%, #0d1426 20%, #0f182e 45%, #101a33 70%, #12203b 100%);
-  }
-  /* #endif */
-
-  /* #ifndef MP-WEIXIN */
-  /* 标准版本 */
-  background: -webkit-linear-gradient(135deg, #f3f7ff 0%, #f0f4ff 20%, #e8edff 45%, #e2e8ff 70%, #dde5ff 100%);
-  /* #endif */
-
+  /* Global styles are now handled in src/style/index.scss */
   min-height: 100vh;
-  background-attachment: fixed;
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
 }
 
-/* H5 下根据 data-theme 主动切换背景，避免仅依赖系统偏好 */
-/* #ifdef H5 */
-[data-theme='light'] page {
-  background: -webkit-linear-gradient(135deg, #f3f7ff 0%, #f0f4ff 20%, #e8edff 45%, #e2e8ff 70%, #dde5ff 100%);
-}
-[data-theme='dark'] page {
-  background: -webkit-linear-gradient(135deg, #0b1220 0%, #0d1426 20%, #0f182e 45%, #101a33 70%, #12203b 100%);
-}
-/* #endif */
 
 /* #ifdef H5 */
 uni-page-head {

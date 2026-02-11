@@ -53,8 +53,26 @@ export default defineConfig({
   ],
   theme: {
     colors: {
-      /** 主题色，用法如: text-primary */
-      primary: 'var(--wot-color-theme,#0957DE)',
+      /** Semantic Colors */
+      primary: 'var(--color-primary)',
+      success: 'var(--color-success)',
+      warning: 'var(--color-warning)',
+      danger: 'var(--color-danger)',
+      info: 'var(--color-info)',
+      
+      /** Backgrounds */
+      page: 'var(--bg-page)',
+      card: 'var(--bg-card)',
+      overlay: 'var(--bg-overlay)',
+      
+      /** Text */
+      main: 'var(--text-main)',
+      secondary: 'var(--text-secondary)',
+      placeholder: 'var(--text-placeholder)',
+      inverse: 'var(--text-inverse)',
+      
+      /** Borders */
+      border: 'var(--border-color)',
     },
     fontSize: {
       /** 提供更小号的字体，用法如：text-2xs */

@@ -1,4 +1,15 @@
-// 测试用的 iconfont，可生效
+// Global Theme Configuration
+@import './theme.css';
+
+// Apply global theme
+body, page {
+  background: var(--bg-page);
+  background-attachment: fixed;
+  background-size: 100% 100%;
+  color: var(--text-main);
+  transition: background 0.3s, color 0.3s;
+}
+
 // @import './iconfont.css';
 
 .test {
@@ -9,11 +20,3 @@
   color: red;
 }
 
-:root,
-page {
-  // 修改按主题色
-  // --wot-color-theme: #37c2bc;
-
-  // 修改按钮背景色
-  // --wot-button-primary-bg-color: green;
-}

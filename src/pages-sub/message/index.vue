@@ -8,8 +8,8 @@
 
 <script lang="ts" setup>
 import type { NotifyMessagePageReqVO, NotifyMessageRespVO } from '@/api/types/notify-message'
-import { computed } from 'vue'
-import { getMyNotifyMessagePage, getUnreadCount } from '@/api/notify-message'
+import { computed, watch } from 'vue'
+import { getMyNotifyMessagePage } from '@/api/notify-message'
 import ThemeCard from '@/components/ThemeCard.vue'
 import { useAppStore } from '@/store/app'
 import { formatRelativeTime } from '@/utils'
@@ -23,97 +23,67 @@ const messageList = ref<NotifyMessageRespVO[]>([])
 const pagingRef = ref()
 const firstLoad = ref(true)
 
-// 筛选状态
-const filterTab = ref<'all' | 'unread' | 'read'>('all')
-const unreadCount = ref(0)
-const total = ref(0)
+// 当前选中Tab：0全部，1未读，2已读
+const currentTab = ref(0)
+const tabs = ['全部', '未读', '已读']
 
-// 基础分页参数
-const baseParams = reactive({})
+// 主题适配：浅色/深色
+const appStore = useAppStore()
+const isDark = computed(() => appStore.theme === 'dark')
+const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-slate-800'))
+const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-slate-500'))
+const textMutedClass = computed(() => (isDark.value ? 'text-gray-500' : 'text-slate-400'))
 
-// 页面加载
-onLoad(() => {
-})
-
-onShow(() => {
-  loadUnreadCount()
-})
-
-// 加载未读消息数量
-async function loadUnreadCount() {
-  try {
-    const response = await getUnreadCount()
-
-    if (response.code === 0 && typeof response.data === 'number') {
-      unreadCount.value = response.data
-    }
-  }
-  catch (error) {
-    console.error('获取未读消息数量失败:', error)
-  }
+// 动态设置背景色
+function setPageBackgroundColor() {
+  const bgColor = isDark.value ? '#020617' : '#f5f7fa'
+  uni.setBackgroundColor({
+    backgroundColor: bgColor,
+    backgroundColorTop: bgColor,
+    backgroundColorBottom: bgColor,
+  })
 }
 
-// 加载消息提醒列表
+onShow(() => {
+  setPageBackgroundColor()
+})
+
+watch(() => isDark.value, () => {
+  setPageBackgroundColor()
+})
+
+// 加载消息列表
 async function queryList(pageNo: number, pageSize: number) {
   try {
-    // 根据筛选条件设置参数
     const params: NotifyMessagePageReqVO = {
       pageNo,
       pageSize,
-      ...baseParams,
     }
 
-    if (filterTab.value === 'unread') {
+    if (currentTab.value === 1) {
       params.readStatus = false
     }
-    else if (filterTab.value === 'read') {
+    else if (currentTab.value === 2) {
       params.readStatus = true
     }
 
     const response = await getMyNotifyMessagePage(params)
 
-    console.log('消息提醒列表查询响应:', response)
-
     if (response.code === 0 && response.data) {
       const { list } = response.data
-      total.value = response.data.total
-
-      if (firstLoad.value) {
-        firstLoad.value = false
-        // 首次加载后更新未读数量
-        await loadUnreadCount()
-      }
-
-      // 完成分页加载，z-paging会自动判断是否还有更多数据
+      if (firstLoad.value) firstLoad.value = false
       pagingRef.value?.complete(list)
-    }
-    else {
-      // 加载失败
+    } else {
       pagingRef.value?.complete(false)
-      uni.showToast({
-        title: response.msg || '加载失败',
-        icon: 'none',
-        duration: 2000,
-      })
     }
-  }
-  catch (error) {
-    console.error('❌ 加载消息提醒列表错误:', error)
+  } catch (error) {
     pagingRef.value?.complete(false)
-    uni.showToast({
-      title: '网络错误，请重试',
-      icon: 'none',
-      duration: 2000,
-    })
   }
 }
 
-// 切换筛选标签
-function switchFilterTab(tab: 'all' | 'unread' | 'read') {
-  if (filterTab.value === tab)
-    return
-
-  filterTab.value = tab
+// 切换Tab
+function handleTabChange(index: number) {
+  currentTab.value = index
   pagingRef.value?.reload()
 }
 
@@ -132,13 +102,6 @@ function formatMessageTime(createTime: string | number): string {
   return formatRelativeTime(createTime)
 }
 
-// 主题适配：浅色/深色
-const appStore = useAppStore()
-const isDark = computed(() => appStore.theme === 'dark')
-const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-gray-800'))
-const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-gray-700'))
-const textMutedClass = computed(() => (isDark.value ? 'text-gray-500' : 'text-gray-400'))
-
 // 获取消息类型文本
 function getMessageTypeText(templateType: number): string {
   switch (templateType) {
@@ -154,20 +117,20 @@ function getMessageTypeText(templateType: number): string {
 function getMessageTypeColor(templateType: number): string {
   if (isDark.value) {
     switch (templateType) {
-      case 1: return 'text-blue-400 bg-blue-500/12 border-blue-500/20'
-      case 2: return 'text-orange-400 bg-orange-500/12 border-orange-500/20'
-      case 3: return 'text-green-400 bg-green-500/12 border-green-500/20'
-      case 4: return 'text-purple-400 bg-purple-500/12 border-purple-500/20'
-      default: return 'text-gray-400 bg-white/6 border-white/12'
+      case 1: return 'text-blue-400 bg-blue-500/10'
+      case 2: return 'text-orange-400 bg-orange-500/10'
+      case 3: return 'text-green-400 bg-green-500/10'
+      case 4: return 'text-purple-400 bg-purple-500/10'
+      default: return 'text-gray-400 bg-white/5'
     }
   }
   else {
     switch (templateType) {
-      case 1: return 'text-blue-600 bg-blue-50 border-blue-200'
-      case 2: return 'text-orange-600 bg-orange-50 border-orange-200'
-      case 3: return 'text-green-600 bg-green-50 border-green-200'
-      case 4: return 'text-purple-600 bg-purple-50 border-purple-200'
-      default: return 'text-gray-600 bg-gray-50 border-gray-200'
+      case 1: return 'text-blue-600 bg-blue-50'
+      case 2: return 'text-orange-600 bg-orange-50'
+      case 3: return 'text-green-600 bg-green-50'
+      case 4: return 'text-purple-600 bg-purple-50'
+      default: return 'text-gray-600 bg-gray-50'
     }
   }
 }
@@ -192,113 +155,63 @@ function getPlainTextContent(htmlContent: string): string {
 
 <template>
   <view class="min-h-screen">
-    <!-- 使用z-paging的全屏模式，筛选标签放在slot="top"内 -->
     <z-paging
       ref="pagingRef"
       v-model="messageList"
-      style="top: 0px"
-      :refresher-enabled="true"
-      :loading-more-enabled="true"
-      :auto-show-back-to-top="true"
-      :auto-clean-list-when-reload="true"
-      :refresher-threshold="80"
-      refresher-default-text="下拉刷新"
-      refresher-pulling-text="下拉刷新"
-      refresher-refreshing-text="正在刷新..."
-      refresher-complete-text="刷新完成"
-      loading-more-default-text="点击加载更多"
-      loading-more-loading-text="正在加载..."
-      loading-more-no-more-text="没有更多了"
-      loading-more-fail-text="加载失败，点击重试"
-      empty-view-text="暂无消息提醒"
+      :default-page-size="10"
+      :bg-color="isDark ? '#020617' : '#f5f7fa'"
       @query="queryList"
     >
-      <!-- 筛选标签栏固定在顶部 -->
       <template #top>
-        <view class="px-4 py-3">
-          <view class="flex items-center justify-between">
-            <view class="flex rounded-lg p-1" :class="isDark ? 'bg-white/6' : 'bg-gray-100'">
-              <view
-                class="rounded-md px-4 py-2 text-sm font-medium transition-all"
-                :class="filterTab === 'all'
-                  ? (isDark ? 'bg-white/10 text-blue-400 shadow-sm' : 'bg-white text-blue-600 shadow-sm')
-                  : (isDark ? 'text-gray-400' : 'text-gray-600')"
-                @click="switchFilterTab('all')"
-              >
-                全部
-              </view>
-              <view
-                class="relative rounded-md px-4 py-2 text-sm font-medium transition-all"
-                :class="filterTab === 'unread'
-                  ? (isDark ? 'bg-white/10 text-blue-400 shadow-sm' : 'bg-white text-blue-600 shadow-sm')
-                  : (isDark ? 'text-gray-400' : 'text-gray-600')"
-                @click="switchFilterTab('unread')"
-              >
-                未读
-
-                <view v-if="unreadCount > 0" class="absolute h-5 w-5 flex items-center justify-center rounded-full bg-red-500 text-xs text-white -right-1 -top-1">
-                  <span class="px-1.5 py-0.5 text-white font-medium">
-                    {{ unreadCount > 99 ? '99+' : unreadCount }}
-                  </span>
-                </view>
-              </view>
-              <view
-                class="rounded-md px-4 py-2 text-sm font-medium transition-all"
-                :class="filterTab === 'read'
-                  ? (isDark ? 'bg-white/10 text-blue-400 shadow-sm' : 'bg-white text-blue-600 shadow-sm')
-                  : (isDark ? 'text-gray-400' : 'text-gray-600')"
-                @click="switchFilterTab('read')"
-              >
-                已读
-              </view>
-            </view>
-
-            <view class="text-sm" :class="textMutedClass">
-              共 {{ total }} 条消息
-            </view>
-          </view>
+        <view class="px-4 py-3 sticky top-0 z-10" :class="isDark ? 'bg-[#020617]' : 'bg-[#f5f7fa]'">
+          <wd-tabs 
+            v-model="currentTab" 
+            @change="handleTabChange"
+            :nav-style="{
+              background: 'transparent'
+            }"
+          >
+            <wd-tab 
+              v-for="(item, index) in tabs" 
+              :key="index" 
+              :title="item" 
+            />
+          </wd-tabs>
         </view>
       </template>
 
-      <!-- 骨架屏 -->
-      <view v-if="firstLoad" class="p-4">
-        <wd-skeleton theme="paragraph" />
-      </view>
-
-      <!-- 消息列表内容 -->
-      <view v-else class="px-4 pt-2">
+      <view class="px-4 pb-4 space-y-3">
         <ThemeCard
-          v-for="message in messageList"
-          :key="message.id"
-          card-class="mb-4 transition-all active:scale-98"
+          v-for="item in messageList"
+          :key="item.id"
           :padding="false"
-          @click="navigateToDetail(message)"
+          card-class="shadow-sm border border-slate-100 dark:border-slate-800 active:scale-[0.99] transition-transform duration-200"
+          @click="navigateToDetail(item)"
         >
-          <view class="p-4" :class="!message.readStatus ? (isDark ? 'bg-white/6' : 'bg-blue-50/30') : ''">
-            <view class="mb-3 flex items-start justify-between">
-              <view class="flex flex-1 items-start">
-                <view class="mr-3 h-10 w-10 flex flex-shrink-0 items-center justify-center border rounded-full" :class="getMessageTypeColor(message.templateType)">
-                  <view class="h-5 w-5 rounded bg-current" />
+          <view class="p-4 flex gap-4 bg-white dark:bg-slate-800 rounded-2xl">
+            <!-- 左侧图标容器 -->
+            <view 
+              class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+              :class="getMessageTypeColor(item.templateType)"
+            >
+              <wd-icon name="chat" size="20px" />
+            </view>
+
+            <view class="flex-1 min-w-0">
+              <view class="flex justify-between items-start mb-1.5 gap-2">
+                <view class="flex items-center gap-2">
+                  <view class="text-base font-medium truncate leading-tight" :class="[textPrimaryClass, !item.readStatus ? 'font-bold' : '']">
+                    {{ item.templateNickname || '系统通知' }}
+                  </view>
+                  <view v-if="!item.readStatus" class="w-2 h-2 rounded-full bg-red-500 flex-shrink-0" />
                 </view>
-                <view class="min-w-0 flex-1">
-                  <view class="mb-1 flex items-center justify-between">
-                    <view class="truncate text-sm font-medium" :class="textPrimaryClass">
-                      {{ message.templateNickname || '系统' }}
-                    </view>
-                    <view v-if="!message.readStatus" class="ml-2 h-2 w-2 flex-shrink-0 rounded-full bg-red-500" />
-                  </view>
-                  <view class="line-clamp-2 mb-2 text-sm leading-relaxed" :class="[textSecondaryClass, { 'font-medium': !message.readStatus }]">
-                    {{ getPlainTextContent(message.templateContent) }}
-                  </view>
-                  <view class="flex items-center justify-between">
-                    <view class="border rounded-full px-2 py-1 text-xs font-medium" :class="getMessageTypeColor(message.templateType)">
-                      {{ getMessageTypeText(message.templateType) }}
-                    </view>
-                    <view class="text-xs" :class="textMutedClass">
-                      {{ formatMessageTime(message.createTime) }}
-                    </view>
-                  </view>
+                <view class="text-xs flex-shrink-0" :class="textMutedClass">
+                  {{ formatRelativeTime(item.createTime) }}
                 </view>
+              </view>
+
+              <view class="text-sm line-clamp-2 leading-relaxed opacity-80" :class="textSecondaryClass">
+                {{ getPlainTextContent(item.templateContent) }}
               </view>
             </view>
           </view>
@@ -309,5 +222,18 @@ function getPlainTextContent(htmlContent: string): string {
 </template>
 
 <style lang="scss" scoped>
-/* 使用UnoCSS原子类，无需自定义CSS */
+/* 覆盖 page 背景色 */
+:global(page) {
+  background-color: #f5f7fa;
+}
+:global(.dark page) {
+  background-color: #020617;
+}
+
+:deep(.wd-tabs) {
+  background: transparent !important;
+}
+:deep(.wd-tabs__nav) {
+  background: transparent !important;
+}
 </style>
