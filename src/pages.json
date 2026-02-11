@@ -15,9 +15,9 @@
     }
   },
   "tabBar": {
-    "color": "#94a3b8",
-    "selectedColor": "#3b82f6",
-    "backgroundColor": "#ffffff",
+    "color": "#999999",
+    "selectedColor": "#018d71",
+    "backgroundColor": "#F8F8F8",
     "borderStyle": "black",
     "height": "50px",
     "fontSize": "10px",
