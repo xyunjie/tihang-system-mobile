@@ -2,6 +2,30 @@ import { defineStore } from 'pinia'
 
 // 本地存储键名
 const THEME_PREF_KEY = 'app_theme_preference'
+const THEME_COLOR_KEY = 'app_theme_color'
+
+export type ThemeColor = 'default' | 'blue' | 'green' | 'orange' | 'red' | 'purple'
+
+export const themeColorMap: Record<ThemeColor, string> = {
+  default: '#0957DE',
+  blue: '#0957DE',
+  green: '#07c160',
+  orange: '#fa8c16',
+  red: '#f5222d',
+  purple: '#722ed1',
+}
+
+function getStoredThemeColor(): ThemeColor {
+  try {
+    const val = uni.getStorageSync(THEME_COLOR_KEY)
+    if (val && Object.keys(themeColorMap).includes(val))
+      return val as ThemeColor
+  }
+  catch (e) {
+    // ignore
+  }
+  return 'default'
+}
 
 // 统一归一化主题偏好输入，兼容可能的对象包装
 function normalizePref(input: any): 'light' | 'dark' | 'system' | null {
@@ -111,9 +135,20 @@ export const useAppStore = defineStore('app', {
       systemTheme: initial as ThemeMode,
       // 主题偏好：默认跟随系统
       themePreference: (storedPref ?? 'system') as ThemePreference,
+      // 主题色
+      themeColor: getStoredThemeColor(),
     }
   },
   actions: {
+    setThemeColor(color: ThemeColor) {
+      this.themeColor = color
+      try {
+        uni.setStorageSync(THEME_COLOR_KEY, color)
+      }
+      catch (e) {
+        // ignore
+      }
+    },
     // 直接设定手动主题，同时更新偏好为手动
     setTheme(mode: ThemeMode) {
       this.themePreference = mode

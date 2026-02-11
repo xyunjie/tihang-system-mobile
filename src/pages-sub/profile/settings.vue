@@ -9,7 +9,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import ThemeCard from '@/components/ThemeCard.vue'
-import { useAppStore } from '@/store/app'
+import { useAppStore, themeColorMap, type ThemeColor } from '@/store/app'
 
 defineOptions({ name: 'SystemSettings' })
 
@@ -18,6 +18,27 @@ const isDark = computed(() => appStore.theme === 'dark')
 
 const titleClass = computed(() => isDark.value ? 'text-white/95' : 'text-gray-900')
 const textClass = computed(() => isDark.value ? 'text-white/70' : 'text-gray-600')
+
+// 主题色配置
+const themeColor = computed({
+  get: () => appStore.themeColor,
+  set: (val: ThemeColor) => appStore.setThemeColor(val),
+})
+
+const colorLabels: Record<string, string> = {
+  default: '默认',
+  blue: '科技蓝',
+  green: '微信绿',
+  orange: '活力橙',
+  red: '热烈红',
+  purple: '优雅紫',
+}
+
+const colorOptions = Object.entries(themeColorMap).map(([key, color]) => ({
+  value: key as ThemeColor,
+  color,
+  label: colorLabels[key] || key,
+}))
 
 type Pref = 'light' | 'dark' | 'system'
 const prefList: { key: Pref, label: string }[] = [
@@ -69,6 +90,29 @@ function handlePrefChange(val: Pref) {
               {{ opt.label }}
             </wd-radio>
           </wd-radio-group>
+        </view>
+      </ThemeCard>
+
+      <!-- 主题色 -->
+      <ThemeCard radius="rounded-2xl" padding="p-4">
+        <view class="flex items-center justify-between mb-3">
+          <view :class="titleClass" class="text-base font-semibold">
+            主题色
+          </view>
+          <view :class="textClass" class="text-xs">
+            {{ colorOptions.find(i => i.value === themeColor)?.label }}
+          </view>
+        </view>
+        <view class="flex flex-wrap gap-4">
+          <view
+            v-for="item in colorOptions"
+            :key="item.value"
+            class="w-8 h-8 rounded-full flex items-center justify-center border-2 transition-transform active:scale-95"
+            :style="{ backgroundColor: item.color, borderColor: themeColor === item.value ? 'currentColor' : 'transparent' }"
+            @click="themeColor = item.value"
+          >
+            <view v-if="themeColor === item.value" class="i-carbon-checkmark text-white text-lg font-bold" />
+          </view>
         </view>
       </ThemeCard>
     </view>

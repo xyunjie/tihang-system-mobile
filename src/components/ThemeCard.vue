@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useAppStore } from '@/store/app'
 
 defineOptions({ name: 'ThemeCard' })
 
@@ -16,28 +15,27 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'click'): void
 }>()
-const appStore = useAppStore()
-const isDark = computed(() => appStore.theme === 'dark')
+// const appStore = useAppStore()
+// const isDark = computed(() => appStore.theme === 'dark')
 
-// 默认灰色半透明背景；深色模式下为白色轻微透明以保持层次
+// 默认使用 bg-card
 const baseBgClass = computed(() => {
   if (props.bgClass)
     return props.bgClass
-  // 浅色模式：不透明白色，与页面卡片保持一致；深色模式保持轻微半透明以融入深色背景
-  return isDark.value ? 'bg-white/6' : 'bg-white'
+  return 'bg-card'
 })
 
-// 细边框与阴影，增强与背景的分层感
+// 边框适配主题色
 const borderClass = computed(() => {
   if (props.border === false)
     return ''
-  return isDark.value ? 'border border-white/8' : 'border border-gray-100'
+  return 'border border-border'
 })
 
 const shadowClass = computed(() => {
   if (props.shadow === false)
     return ''
-  return isDark.value ? 'shadow-lg' : 'shadow-md'
+  return 'shadow-md'
 })
 
 const radiusClass = computed(() => props.radius ?? 'rounded-2xl')

@@ -24,7 +24,10 @@ import ThemeCard from '@/components/ThemeCard.vue'
 import { getAttendanceBadgeBgClass } from '@/config/attendance'
 import { WECHAT_SHARE_IMAGE_URL } from '@/config/share'
 import { useAppStore } from '@/store/app'
+import { useUserStore } from '@/store/user'
 import { formatDateOnly, formatRelativeTime, formatStandardDateTime, formatTimeOnly, parseDateTime } from '@/utils'
+import dayjs from 'dayjs'
+import 'dayjs/locale/zh-cn'
 
 defineOptions({
   name: 'Home',
@@ -32,38 +35,58 @@ defineOptions({
 
 // 主题适配：浅色/深色
 const appStore = useAppStore()
+const userStore = useUserStore()
 const isDark = computed(() => appStore.theme === 'dark')
-// 底部覆盖层背景，叠在占位符之上但在 TabBar 之下
+
+// 问候语
+const greeting = computed(() => {
+  const hour = new Date().getHours()
+  if (hour < 6)
+    return '夜深了'
+  if (hour < 9)
+    return '早上好'
+  if (hour < 12)
+    return '上午好'
+  if (hour < 14)
+    return '中午好'
+  if (hour < 17)
+    return '下午好'
+  if (hour < 19)
+    return '傍晚好'
+  return '晚上好'
+})
+
+// 当前日期
+const currentDate = computed(() => {
+  dayjs.locale('zh-cn')
+  return dayjs().format('MM月DD日 dddd')
+})
+
+// 底部覆盖层背景
 const homeBottomStyle = computed(() => ({
-  background: 'var(--bg-primary)',
+  background: isDark.value
+    ? 'linear-gradient(180deg, rgba(15,23,42,1) 0%, rgba(15,23,42,0.85) 70%)'
+    : 'linear-gradient(180deg, rgba(241,245,249,1) 0%, rgba(241,245,249,0.85) 70%)',
 }))
-// 增强卡片边界与阴影，避免与背景融为一体
-const cardBgClass = computed(() => 'bg-surface-secondary border border-divider-light shadow-theme-md')
-const textPrimaryClass = computed(() => 'text-content-primary')
-const textSecondaryClass = computed(() => 'text-content-secondary')
-const textMutedClass = computed(() => 'text-content-tertiary')
-const borderMutedClass = computed(() => 'border-divider-light')
+
+const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-slate-800'))
+const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-slate-500'))
+const textMutedClass = computed(() => (isDark.value ? 'text-gray-500' : 'text-slate-400'))
+const borderMutedClass = computed(() => (isDark.value ? 'border-white/10' : 'border-gray-100'))
 const activeRowBgClass = computed(() => (isDark.value ? 'active:bg-white/5' : 'active:bg-gray-50'))
-const subTileBgClass = computed(() => 'bg-surface-tertiary border border-divider-light')
+const subTileBgClass = computed(() => (isDark.value ? 'bg-white/6 border border-white/8' : 'bg-slate-50 border border-slate-100'))
 
-// 骨架屏颜色（主题感知）
-const skBaseClass = computed(() => (isDark.value ? 'bg-white/15' : 'bg-gray-200'))
-const skStrongClass = computed(() => (isDark.value ? 'bg-white/20' : 'bg-gray-300'))
-const skBorderClass = computed(() => 'border-divider-light')
+// 骨架屏颜色
+const skBaseClass = computed(() => (isDark.value ? 'bg-white/10' : 'bg-gray-200'))
 
-// 中性小图标背景（主题感知）
-const iconMutedBgClass = computed(() => (isDark.value ? 'bg-white/35' : 'bg-gray-400'))
-// 强调型图标容器背景（通知列表左侧图标容器）
-const iconAccentContainerClass = computed(() => 'bg-theme-primary-light/10')
-
-// 今日考勤信息（考勤机自动记录）
+// 今日考勤信息
 const todayAttendance = reactive({
   date: formatDateOnly(Date.now()),
   clockInTime: '--:--',
   clockOutTime: '--:--',
   workDuration: '暂无数据',
   attendanceStatus: '暂无数据',
-  location: '考勤机：暂无数据',
+  location: '暂无位置信息',
   loading: false,
   result: 0,
 })
@@ -83,23 +106,15 @@ const articleLoading = ref(false)
 
 // 页面加载状态
 const pageLoading = ref(true)
-
-// 下拉刷新状态
 const isRefreshing = ref(false)
+const systemUserInfo = ref<any>({})
 
-// 测试 uni API 自动引入
 onLoad(() => {
-  // 设置页面加载状态
   pageLoading.value = true
-
-  // 加载今日考勤数据
-  loadTodayAttendance()
-  // 加载通知公告数据
-  loadNotificationList()
-  // 加载文章列表数据
-  loadArticleList()
-
-  // 所有数据加载完成后取消页面加载状态
+  // 初始化系统用户信息
+  const info = uni.getStorageSync('systemUserInfo')
+  if (info) systemUserInfo.value = info
+  
   Promise.allSettled([
     loadTodayAttendance(),
     loadNotificationList(),
@@ -113,12 +128,14 @@ onLoad(() => {
 
 onShow(() => {
   loadUnreadCount()
-  // 加载消息提醒数据
   loadMessageList()
+  setPageBackgroundColor()
+  // 每次显示时更新用户信息
+  const info = uni.getStorageSync('systemUserInfo')
+  if (info) systemUserInfo.value = info
 })
 
 // #ifdef MP-WEIXIN
-
 onShareAppMessage(() => ({
   title: '梯航小助手',
   path: '/pages/index/index',
@@ -132,16 +149,14 @@ onShareTimeline(() => ({
 }))
 // #endif
 
-// 下拉刷新处理
+// 下拉刷新
 async function handlePullDownRefresh() {
   if (isRefreshing.value) {
     uni.stopPullDownRefresh()
     return
   }
   isRefreshing.value = true
-
   try {
-    // 重新加载所有数据
     await Promise.all([
       loadTodayAttendance(),
       loadNotificationList(),
@@ -149,54 +164,31 @@ async function handlePullDownRefresh() {
       loadUnreadCount(),
       loadArticleList(),
     ])
-
-    uni.showToast({
-      title: '刷新成功',
-      icon: 'success',
-      duration: 1000,
-    })
+    uni.showToast({ title: '刷新成功', icon: 'success', duration: 1000 })
   }
   catch (error) {
-    uni.showToast({
-      title: '刷新失败，请重试',
-      icon: 'none',
-      duration: 2000,
-    })
+    uni.showToast({ title: '刷新失败', icon: 'none', duration: 2000 })
   }
   finally {
-    // 停止下拉刷新
     uni.stopPullDownRefresh()
-
-    // 延迟1秒重置防护状态，避免频繁误触
-    setTimeout(() => {
-      isRefreshing.value = false
-    }, 1000)
+    setTimeout(() => { isRefreshing.value = false }, 1000)
   }
 }
 
-// 页面下拉刷新
-onPullDownRefresh(() => {
-  handlePullDownRefresh()
-})
+onPullDownRefresh(handlePullDownRefresh)
 
-// 加载今日考勤数据
+// 加载数据逻辑
 async function loadTodayAttendance() {
   try {
     todayAttendance.loading = true
-
     const response = await getTodayAttendanceRecord()
     if (response.code === 0 && response.data) {
       const { onDuty, offDuty, result } = response.data
-      // 处理上班打卡
-      if (onDuty) {
+      if (onDuty)
         todayAttendance.clockInTime = formatAttendanceTime(onDuty.recognizeTime)
-      }
-
-      // 处理下班打卡
-      if (offDuty) {
+      if (offDuty)
         todayAttendance.clockOutTime = formatAttendanceTime(offDuty.recognizeTime)
-      }
-      // 计算工作时长
+      
       if (onDuty && offDuty) {
         todayAttendance.workDuration = calculateWorkDuration(onDuty.recognizeTime, offDuty.recognizeTime)
       }
@@ -204,752 +196,363 @@ async function loadTodayAttendance() {
         todayAttendance.workDuration = calculateCurrentWorkDuration(onDuty.recognizeTime)
       }
 
-      // 设置考勤状态
       todayAttendance.attendanceStatus = getAttendanceStatusText(result)
-      // 保存result值用于背景样式
       todayAttendance.result = result
-
-      // 设置设备信息
       if (onDuty?.deviceSn) {
-        todayAttendance.location = `考勤机: ${onDuty.deviceSn}`
+        todayAttendance.location = `设备: ${onDuty.deviceSn}`
       }
-    }
-    else {
-      // 无数据：统一显示“暂无数据”并将结果置为 0（未知）
-      todayAttendance.attendanceStatus = '暂无数据'
-      todayAttendance.result = 0
+    } else {
+       todayAttendance.attendanceStatus = '暂无数据'
+       todayAttendance.result = 0
     }
   }
   catch (error) {
-    console.error('加载考勤数据错误:', error) // 改进错误日志
-    todayAttendance.attendanceStatus = '加载失败'
-    todayAttendance.result = 0
+    console.error('加载考勤数据错误:', error)
   }
   finally {
     todayAttendance.loading = false
   }
 }
 
-// 格式化考勤时间
+// 辅助函数保持不变
 function formatAttendanceTime(dateTimeStr: string | number): string {
-  if (!dateTimeStr)
-    return '--:--'
-
-  const result = formatTimeOnly(dateTimeStr)
-  return result || '--:--'
+  if (!dateTimeStr) return '--:--'
+  return formatTimeOnly(dateTimeStr) || '--:--'
 }
 
-// 计算工作时长
 function calculateWorkDuration(startTime: string | number, endTime: string | number): string {
   try {
     const start = parseDateTime(startTime)
     const end = parseDateTime(endTime)
-
-    if (!start || !end) {
-      console.error('无法解析工作时间:', { startTime, endTime })
-      return '--'
-    }
-
+    if (!start || !end) return '--'
     const diffMs = end.getTime() - start.getTime()
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
     const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
-
     return `${diffHours}小时${diffMinutes}分钟`
-  }
-  catch (error) {
-    console.error('计算工作时长错误:', error)
-    return '--'
-  }
+  } catch { return '--' }
 }
 
-// 计算当前工作时长
 function calculateCurrentWorkDuration(startTime: string | number): string {
   try {
     const start = parseDateTime(startTime)
-
-    if (!start) {
-      console.error('无法解析开始时间:', startTime)
-      return '--'
-    }
-
+    if (!start) return '--'
     const now = new Date()
     const diffMs = now.getTime() - start.getTime()
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
     const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
-
     return `${diffHours}小时${diffMinutes}分钟`
-  }
-  catch (error) {
-    console.error('计算当前工作时长错误:', error)
-    return '--'
-  }
+  } catch { return '--' }
 }
 
-// 获取考勤状态文本
 function getAttendanceStatusText(result: number): string {
-  // 1正常，2迟到，3早退，4缺卡，5请假，6缺勤
-  switch (result) {
-    case 1:
-      return '考勤正常'
-    case 2:
-      return '迟到'
-    case 3:
-      return '早退'
-    case 4:
-      return '缺卡'
-    case 5:
-      return '请假'
-    case 6:
-      return '缺勤'
-    default:
-      return '暂无数据'
-  }
+  const map: Record<number, string> = { 1: '正常', 2: '迟到', 3: '早退', 4: '缺卡', 5: '请假', 6: '缺勤' }
+  return map[result] || '暂无数据'
 }
 
-function getAttendanceStatusTextBackground(result: number): string {
-  // 使用统一配置的徽标背景颜色映射
-  const res = getAttendanceBadgeBgClass(result)
-  return res
+function getAttendanceStatusColorClass(result: number): string {
+  const map: Record<number, string> = {
+    1: 'text-green-500 bg-green-50 border-green-200',
+    2: 'text-orange-500 bg-orange-50 border-orange-200',
+    3: 'text-orange-500 bg-orange-50 border-orange-200',
+    4: 'text-red-500 bg-red-50 border-red-200',
+    5: 'text-blue-500 bg-blue-50 border-blue-200',
+    6: 'text-red-500 bg-red-50 border-red-200',
+  }
+  if (isDark.value) {
+     const darkMap: Record<number, string> = {
+        1: 'text-green-400 bg-green-500/10 border-green-500/20',
+        2: 'text-orange-400 bg-orange-500/10 border-orange-500/20',
+        3: 'text-orange-400 bg-orange-500/10 border-orange-500/20',
+        4: 'text-red-400 bg-red-500/10 border-red-500/20',
+        5: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
+        6: 'text-red-400 bg-red-500/10 border-red-500/20',
+     }
+     return darkMap[result] || 'text-gray-400 bg-white/5 border-white/10'
+  }
+  return map[result] || 'text-gray-500 bg-gray-50 border-gray-200'
 }
 
-// 获取考勤结果的数值，用于背景样式判断
-function getAttendanceResultValue(): number {
-  // 优先使用保存的result值
-  if (todayAttendance.result > 0) {
-    return todayAttendance.result
-  }
-
-  // 如果没有result值，根据状态文本反推
-  if (todayAttendance.attendanceStatus !== '暂无数据' && todayAttendance.attendanceStatus !== '加载失败') {
-    switch (todayAttendance.attendanceStatus) {
-      case '考勤正常': return 1
-      case '迟到': return 2
-      case '早退': return 3
-      case '缺卡': return 4
-      case '请假': return 5
-      case '缺勤': return 6
-      case '上课': return 7
-      default: return 0
-    }
-  }
-  return 0
-}
-
-// 加载通知公告数据
 async function loadNotificationList() {
   try {
     notificationLoading.value = true
-
-    const response = await getNoticePage({
-      pageNo: 1,
-      pageSize: 3, // 首页只显示3条
-      status: 0, // 只显示启用的通知
-    })
-
-    if (response.code === 0 && response.data) {
-      notificationList.value = response.data.list
-    }
-  }
-  catch (error) {
-  }
-  finally {
-    notificationLoading.value = false
-  }
+    const response = await getNoticePage({ pageNo: 1, pageSize: 3, status: 0 })
+    if (response.code === 0 && response.data) notificationList.value = response.data.list
+  } finally { notificationLoading.value = false }
 }
 
-// 格式化通知公告时间
 function formatNotificationTime(createTime: string | number): string {
-  if (!createTime)
-    return ''
-
-  return formatStandardDateTime(createTime)
+  return createTime ? formatStandardDateTime(createTime) : ''
 }
 
-// 获取通知类型文本
 function getNotificationTypeText(type: number): string {
-  switch (type) {
-    case 1: return '系统通知'
-    case 2: return '系统公告'
-    default: return '通知'
-  }
+  return { 1: '通知', 2: '公告' }[type] || '消息'
 }
 
-// 获取通知类型颜色
 function getNotificationTypeColor(type: number): string {
   if (isDark.value) {
-    switch (type) {
-      case 1: return 'text-blue-300 bg-blue-500/20 border-blue-400/30'
-      case 2: return 'text-red-300 bg-red-500/20 border-red-400/30'
-      case 3: return 'text-green-300 bg-green-500/20 border-green-400/30'
-      default: return 'text-gray-400 bg-white/6 border-white/10'
-    }
+    return {
+      1: 'text-blue-400 bg-blue-500/10',
+      2: 'text-red-400 bg-red-500/10',
+    }[type] || 'text-gray-400 bg-white/5'
   }
-  else {
-    switch (type) {
-      case 1: return 'text-blue-700 bg-blue-50 border-blue-200' // 系统通知
-      case 2: return 'text-red-700 bg-red-50 border-red-200' // 公告
-      case 3: return 'text-green-700 bg-green-50 border-green-200' // 活动
-      default: return 'text-gray-600 bg-gray-50 border-gray-200'
-    }
-  }
+  return {
+    1: 'text-blue-600 bg-blue-50',
+    2: 'text-red-600 bg-red-50',
+  }[type] || 'text-gray-600 bg-gray-50'
 }
 
-// 将HTML内容转换为纯文本显示
 function getPlainTextContent(htmlContent: string): string {
-  if (!htmlContent)
-    return ''
-
-  // 移除HTML标签并解码HTML实体
-  return htmlContent
-    .replace(/<[^>]*>/g, '') // 移除HTML标签
-    .replace(/&nbsp;/g, ' ') // 替换非断空格
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, '\'')
-    .trim()
+  if (!htmlContent) return ''
+  return htmlContent.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()
 }
 
-// 加载消息提醒数据
 async function loadMessageList() {
   try {
     messageLoading.value = true
-
-    const response = await getMyNotifyMessagePage({
-      pageNo: 1,
-      pageSize: 3, // 首页只显示3条
-    })
-
-    if (response.code === 0 && response.data) {
-      messageList.value = response.data.list
-    }
-  }
-  catch (error) {
-  }
-  finally {
-    messageLoading.value = false
-  }
+    const response = await getMyNotifyMessagePage({ pageNo: 1, pageSize: 3 })
+    if (response.code === 0 && response.data) messageList.value = response.data.list
+  } finally { messageLoading.value = false }
 }
 
-// 加载未读消息数量
 async function loadUnreadCount() {
   try {
     const response = await getUnreadCount()
-
-    if (response.code === 0 && typeof response.data === 'number') {
-      unreadCount.value = response.data
-    }
-  }
-  catch (error) {
-    console.error('获取未读消息数量失败:', error)
-  }
+    if (response.code === 0 && typeof response.data === 'number') unreadCount.value = response.data
+  } catch (error) { console.error(error) }
 }
 
-// 格式化消息时间
 function formatMessageTime(createTime: string | number): string {
-  if (!createTime)
-    return ''
-
-  return formatRelativeTime(createTime)
+  return createTime ? formatRelativeTime(createTime) : ''
 }
 
-// 获取消息类型颜色
-function getMessageTypeColor(templateType: number): string {
-  if (isDark.value) {
-    switch (templateType) {
-      case 1: return 'text-blue-300 bg-blue-500/20' // 系统消息
-      case 2: return 'text-orange-300 bg-orange-500/20' // 审批消息
-      case 3: return 'text-green-300 bg-green-500/20' // 考勤消息
-      case 4: return 'text-cyan-300 bg-cyan-500/20' // 项目消息
-      default: return 'text-gray-400 bg-white/6'
-    }
-  }
-  else {
-    switch (templateType) {
-      case 1: return 'text-blue-700 bg-blue-50' // 系统消息
-      case 2: return 'text-orange-700 bg-orange-50' // 审批消息
-      case 3: return 'text-green-700 bg-green-50' // 考勤消息
-      case 4: return 'text-cyan-700 bg-cyan-50' // 项目消息
-      default: return 'text-gray-600 bg-gray-50'
-    }
-  }
-}
-
-// 跳转到指定页面
 function navigateTo(route: string) {
-  // 防抖：在 800ms 时间窗内忽略重复触发
   const NAV_DEBOUNCE_MS = 800
-  // 使用闭包外变量保存上次跳转时间（在 setup 作用域声明）
   ;(navigateTo as any)._lastTs = (navigateTo as any)._lastTs ?? 0
   const now = Date.now()
-  if (now - (navigateTo as any)._lastTs < NAV_DEBOUNCE_MS) {
-    return
-  }
+  if (now - (navigateTo as any)._lastTs < NAV_DEBOUNCE_MS) return
   ;(navigateTo as any)._lastTs = now
-
-  if (route) {
-    // 实际的路由跳转
-    uni.navigateTo({
-      url: route,
-      fail: () => {
-        uni.showToast({
-          title: '页面跳转失败',
-          icon: 'none',
-          duration: 2000,
-        })
-      },
-    })
-  }
+  if (route) uni.navigateTo({ url: route, fail: () => uni.showToast({ title: '跳转失败', icon: 'none' }) })
 }
 
-// 格式化时间显示
 function formatTimeDisplay(time: string) {
-  return time === '--:--' ? '未打卡' : time
+  return time === '--:--' ? '--:--' : time
 }
 
-// 加载文章列表数据
 async function loadArticleList() {
   try {
     articleLoading.value = true
-
-    const response = await getArticlePage({
-      pageNo: 1,
-      pageSize: 5, // 首页只显示5条
-    })
-
-    if (response.code === 0 && response.data) {
-      articleList.value = response.data.list
-    }
-  }
-  catch (error) {
-    // 如果接口失败，使用静态数据作为兜底
-    articleList.value = [] as ArticleSearchRespVO[]
-  }
-  finally {
-    articleLoading.value = false
-  }
+    const response = await getArticlePage({ pageNo: 1, pageSize: 5 })
+    if (response.code === 0 && response.data) articleList.value = response.data.list
+  } catch { articleList.value = [] }
+  finally { articleLoading.value = false }
 }
 
-// 格式化文章时间
 function formatArticleTime(createTime: string | number): string {
-  if (!createTime)
-    return ''
-
-  return formatStandardDateTime(createTime)
+  return createTime ? formatStandardDateTime(createTime) : ''
 }
 
-// 格式化数量显示
 function formatCount(count: number) {
-  if (count >= 1000) {
-    return `${(count / 1000).toFixed(1)}k`
-  }
-  return count.toString()
+  return count >= 1000 ? `${(count / 1000).toFixed(1)}k` : count.toString()
 }
+
+// 动态设置背景色，防止下拉露出不同底色
+function setPageBackgroundColor() {
+  const bgColor = isDark.value ? '#020617' : '#f5f7fa'
+  uni.setBackgroundColor({
+    backgroundColor: bgColor,
+    backgroundColorTop: bgColor,
+    backgroundColorBottom: bgColor,
+  })
+}
+
+// 监听主题变化
+watch(() => isDark.value, () => {
+  setPageBackgroundColor()
+})
 </script>
 
 <template>
-  <view class="relative min-h-screen">
-    <!-- 底部覆盖层：高度跟随 H5 TabBar 与安全区，避免白底 -->
-    <view class="home-bottom-bg" :style="homeBottomStyle" />
-    <!-- 页面初始加载骨架屏 -->
-    <view v-if="pageLoading" class="home-content min-h-screen px-4 pt-1">
-      <view class="space-y-6">
-        <!-- 考勤信息骨架屏 -->
-        <ThemeCard card-class="mb-6 animate-pulse" :padding="false">
-          <view class="px-4 py-3" :class="[skStrongClass]">
-            <view class="flex items-center justify-between">
-              <view class="h-6 w-32 rounded" :class="skStrongClass" />
-              <view class="h-8 w-20 rounded-full" :class="skStrongClass" />
-            </view>
-          </view>
-          <view class="p-4">
-            <view class="grid grid-cols-2 mb-4 gap-4">
-              <view class="text-center">
-                <view class="mx-auto mb-2 h-8 w-20 rounded" :class="skBaseClass" />
-                <view class="mx-auto h-4 w-16 rounded" :class="skBaseClass" />
-              </view>
-              <view class="text-center">
-                <view class="mx-auto mb-2 h-8 w-20 rounded" :class="skBaseClass" />
-                <view class="mx-auto h-4 w-16 rounded" :class="skBaseClass" />
-              </view>
-            </view>
-            <view class="rounded-xl p-3" :class="subTileBgClass">
-              <view class="mb-2 h-4 w-32 rounded" :class="skBaseClass" />
-              <view class="h-3 w-24 rounded" :class="skBaseClass" />
-            </view>
-          </view>
-        </ThemeCard>
+  <view class="relative min-h-screen bg-[#f5f7fa] dark:bg-slate-950">
+    <!-- 顶部背景 -->
+    <view class="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-[#2563eb] to-[#3b82f6] rounded-b-[2.5rem] shadow-sm z-0" />
 
-        <!-- 通知公告骨架屏 -->
-        <ThemeCard card-class="mb-6 animate-pulse" :padding="false">
-          <view class="border-b px-4 py-3" :class="[skBorderClass]">
-            <view class="flex items-center justify-between">
-              <view class="h-6 w-24 rounded" :class="skBaseClass" />
-              <view class="h-4 w-16 rounded" :class="skBaseClass" />
-            </view>
+    <!-- 头部区域 -->
+    <view class="relative z-10 pt-14 px-5 pb-8 text-white">
+      <view class="flex justify-between items-start mb-4">
+        <view>
+          <view class="text-2xl font-bold mb-1 opacity-95 tracking-wide text-shadow-sm">
+            {{ greeting }}，{{ systemUserInfo.nickname || userStore.userInfo.username || '用户' }}
           </view>
-          <view class="p-4 space-y-3">
-            <view v-for="n in 3" :key="n">
-              <view class="mb-2 flex items-start">
-                <view class="mr-3 h-8 w-8 rounded-lg" :class="skBaseClass" />
-                <view class="flex-1">
-                  <view class="mb-2 h-4 w-3/4 rounded" :class="skBaseClass" />
-                  <view class="h-3 w-full rounded" :class="skBaseClass" />
+          <view class="text-sm opacity-85 font-medium tracking-wide">
+            {{ currentDate }}
+          </view>
+        </view>
+        <view class="relative p-2.5 bg-white/15 rounded-full backdrop-blur-md border border-white/10 active:bg-white/25 transition-all shadow-sm" @click="navigateTo('/pages-sub/message/index')">
+          <view v-if="unreadCount > 0" class="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-blue-500 z-10" />
+          <wd-icon name="chat" size="22px" color="#fff" />
+        </view>
+      </view>
+    </view>
+
+    <!-- 核心考勤卡片 -->
+    <view class="relative z-10 px-4 -mt-6">
+      <ThemeCard card-class="mb-6 shadow-[0_8px_20px_-6px_rgba(0,0,0,0.1)] dark:shadow-blue-900/20 overflow-hidden border-0" :padding="false" @click="navigateTo('/pages-sub/attendance/record')">
+        <view class="flex items-stretch min-h-28">
+          <!-- 左侧状态指示条 -->
+          <view class="w-1.5" :class="todayAttendance.result === 1 ? 'bg-emerald-500' : (todayAttendance.result > 1 ? 'bg-orange-500' : 'bg-slate-300')" />
+          
+          <view class="flex-1 p-5 bg-white dark:bg-slate-800">
+            <view class="flex justify-between items-center mb-6">
+              <view class="flex items-center gap-2">
+                <view class="text-lg font-bold" :class="textPrimaryClass">今日考勤</view>
+                <view 
+                  class="px-2 py-0.5 text-xs rounded border"
+                  :class="getAttendanceStatusColorClass(todayAttendance.result)"
+                >
+                  {{ todayAttendance.attendanceStatus }}
                 </view>
-                <view class="ml-3 h-6 w-16 rounded-full" :class="skBaseClass" />
               </view>
-              <view class="h-3 w-20 rounded" :class="skBaseClass" />
+              <view class="flex items-center text-xs" :class="textSecondaryClass">
+                <wd-icon name="time" size="14px" class="mr-1 opacity-80" />
+                工时: {{ todayAttendance.workDuration }}
+              </view>
             </view>
-          </view>
-        </ThemeCard>
 
-        <!-- 消息提醒骨架屏 -->
-        <ThemeCard card-class="mb-6 animate-pulse" :padding="false">
-          <view class="border-b px-4 py-3" :class="[skBorderClass]">
-            <view class="flex items-center justify-between">
-              <view class="h-6 w-24 rounded" :class="skBaseClass" />
-              <view class="h-4 w-16 rounded" :class="skBaseClass" />
+            <view class="flex justify-between items-center">
+              <view class="flex-1">
+                <view class="text-xs mb-1.5 font-medium opacity-70" :class="textMutedClass">上班打卡</view>
+                <view class="text-xl font-bold font-mono tracking-tight" :class="todayAttendance.clockInTime !== '--:--' ? (isDark ? 'text-white' : 'text-slate-800') : textMutedClass">
+                  {{ todayAttendance.clockInTime }}
+                </view>
+              </view>
+              
+              <view class="mx-6 h-8 w-[1px] bg-slate-100 dark:bg-slate-700" />
+
+              <view class="flex-1 text-right">
+                <view class="text-xs mb-1.5 font-medium opacity-70" :class="textMutedClass">下班打卡</view>
+                <view class="text-xl font-bold font-mono tracking-tight" :class="todayAttendance.clockOutTime !== '--:--' ? (isDark ? 'text-white' : 'text-slate-800') : textMutedClass">
+                  {{ todayAttendance.clockOutTime }}
+                </view>
+              </view>
             </view>
           </view>
-          <view class="p-4 space-y-3">
-            <view v-for="n in 3" :key="n">
-              <view class="mb-2 flex items-start justify-between">
-                <view class="flex flex-1 items-start">
-                  <view class="mr-3 h-8 w-8 rounded-lg" :class="skBaseClass" />
-                  <view class="flex-1">
-                    <view class="mb-2 h-4 w-2/3 rounded" :class="skBaseClass" />
-                    <view class="h-3 w-full rounded" :class="skBaseClass" />
+        </view>
+      </ThemeCard>
+    </view>
+
+    <!-- 主要内容区 -->
+    <view class="px-4 pb-24 space-y-6">
+      
+      <!-- 通知与公告 -->
+      <view>
+        <view class="flex justify-between items-center mb-3 px-1">
+          <view class="text-base font-bold tracking-tight" :class="textPrimaryClass">通知公告</view>
+          <view class="text-xs text-blue-600 dark:text-blue-400 font-medium flex items-center active:opacity-70 transition-opacity" @click="navigateTo('/pages-sub/notification/index')">
+            全部 <wd-icon name="arrow-right" size="12px" class="ml-0.5" />
+          </view>
+        </view>
+        
+        <ThemeCard :padding="false" card-class="shadow-sm border border-slate-100 dark:border-slate-800">
+          <view v-if="notificationList.length > 0">
+            <view 
+              v-for="(item, index) in notificationList.slice(0, 3)" 
+              :key="item.id"
+              class="relative p-4 active:bg-slate-50 dark:active:bg-slate-800/50 transition-colors"
+              :class="{'border-b border-slate-100 dark:border-slate-800': index < 2}"
+              @click="navigateTo(`/pages-sub/notification/detail?id=${item.id}`)"
+            >
+              <view class="flex justify-between items-start gap-3">
+                <view class="flex-1 min-w-0">
+                  <view class="flex items-center gap-2 mb-1.5">
+                    <view class="px-1.5 py-0.5 text-[10px] font-medium rounded leading-none flex-shrink-0" :class="getNotificationTypeColor(item.type)">
+                      {{ getNotificationTypeText(item.type) }}
+                    </view>
+                    <view class="text-sm font-medium truncate" :class="textPrimaryClass">
+                      {{ item.title }}
+                    </view>
+                  </view>
+                  <view class="text-xs line-clamp-1 opacity-70" :class="textSecondaryClass">
+                    {{ getPlainTextContent(item.content) }}
                   </view>
                 </view>
-                <view class="ml-3 flex flex-col items-end">
-                  <view class="h-3 w-12 rounded" :class="skBaseClass" />
-                  <view class="mt-1 h-2 w-2 rounded-full" :class="skBaseClass" />
+                <view class="text-[10px] font-medium flex-shrink-0 mt-0.5 opacity-50" :class="textMutedClass">
+                  {{ formatNotificationTime(item.createTime).split(' ')[0] }}
                 </view>
               </view>
             </view>
           </view>
-        </ThemeCard>
-
-        <!-- 文章列表骨架屏 -->
-        <ThemeCard card-class="mb-6 animate-pulse" :padding="false">
-          <view class="border-b px-4 py-3" :class="[skBorderClass]">
-            <view class="flex items-center justify-between">
-              <view class="h-6 w-24 rounded" :class="skBaseClass" />
-              <view class="h-4 w-16 rounded" :class="skBaseClass" />
-            </view>
-          </view>
-          <view class="p-4 space-y-4">
-            <view v-for="n in 3" :key="n">
-              <view class="mb-2 flex items-start justify-between">
-                <view class="flex-1">
-                  <view class="mb-2 h-4 w-4/5 rounded" :class="skBaseClass" />
-                  <view class="h-3 w-full rounded" :class="skBaseClass" />
-                </view>
-                <view class="ml-3 h-6 w-16 rounded-full" :class="skBaseClass" />
-              </view>
-              <view class="flex items-center justify-between">
-                <view class="h-3 w-32 rounded" :class="skBaseClass" />
-                <view class="h-3 w-24 rounded" :class="skBaseClass" />
-              </view>
-            </view>
+          <view v-else class="py-10 flex flex-col items-center justify-center opacity-40">
+            <wd-icon name="info-circle" size="28px" class="mb-2" color="#94a3b8" />
+            <view class="text-xs text-slate-400 font-medium">暂无通知公告</view>
           </view>
         </ThemeCard>
       </view>
-    </view>
-    <!-- 主要内容区域 -->
-    <view
-      v-else class="home-content px-4 pt-1"
-    >
-      <!-- 第一部分：今日考勤信息 -->
-      <ThemeCard card-class="mb-6" :padding="false" @click="navigateTo('/pages-sub/attendance/record')">
-        <view class="bg-theme-primary px-4 py-3">
-          <view class="flex items-center justify-between">
-            <view class="text-lg text-white font-semibold">
-              {{ todayAttendance.date }}
-            </view>
-            <view class="flex items-center">
-              <view class="rounded-full px-3 py-1" :class="getAttendanceStatusTextBackground(getAttendanceResultValue())">
-                <text class="text-sm text-white font-medium">
-                  {{ todayAttendance.attendanceStatus }}
-                </text>
-              </view>
-            </view>
+
+      <!-- 最新资讯 -->
+      <view>
+        <view class="flex justify-between items-center mb-3 px-1">
+          <view class="text-base font-bold tracking-tight" :class="textPrimaryClass">最新资讯</view>
+          <view class="text-xs text-blue-600 dark:text-blue-400 font-medium flex items-center active:opacity-70 transition-opacity" @click="navigateTo('/pages-sub/article/index')">
+            全部 <wd-icon name="arrow-right" size="12px" class="ml-0.5" />
           </view>
         </view>
 
-        <view class="p-4">
-          <!-- 考勤机记录显示 -->
-          <view class="grid grid-cols-2 mb-4 gap-4">
-            <view class="text-center">
-              <view class="mb-2 text-2xl text-theme-success font-bold">
-                {{ formatTimeDisplay(todayAttendance.clockInTime) }}
-              </view>
-              <view class="text-sm" :class="textSecondaryClass">
-                上班记录
-              </view>
-            </view>
-            <view class="text-center">
-              <view class="mb-2 text-2xl text-theme-primary font-bold">
-                {{ formatTimeDisplay(todayAttendance.clockOutTime) }}
-              </view>
-              <view class="text-sm" :class="textSecondaryClass">
-                下班记录
-              </view>
-            </view>
-          </view>
-
-          <!-- 考勤信息详情 -->
-          <view class="rounded-xl p-3" :class="subTileBgClass">
-            <view class="mb-2 flex items-center justify-between">
-              <view class="flex items-center">
-                <view class="mr-2 h-5 w-5 rounded bg-theme-primary" />
-                <view class="text-sm font-medium" :class="textPrimaryClass">
-                  工作时长：{{ todayAttendance.workDuration }}
-                </view>
-              </view>
-            </view>
-            <view class="flex items-center text-xs" :class="textSecondaryClass">
-              <view class="mr-1 h-3 w-3 rounded" :class="iconMutedBgClass" />
-              <text>{{ todayAttendance.location }}</text>
-            </view>
-          </view>
-        </view>
-      </ThemeCard>
-
-      <!-- 第二部分：通知公告 -->
-      <ThemeCard card-class="mb-6" :padding="false">
-        <view class="border-b px-4 py-3" :class="[borderMutedClass]">
-          <view class="flex items-center justify-between">
-            <view class="text-lg font-semibold" :class="[textPrimaryClass]">
-              通知公告
-            </view>
-            <view class="flex items-center">
-              <view class="text-sm text-theme-primary" @click="navigateTo('/pages-sub/notification/index')">
-                查看全部 ›
-              </view>
-            </view>
-          </view>
-        </view>
-
-        <view class="p-4">
-          <view
-            v-for="(notification, index) in notificationList.slice(0, 3)"
-            :key="notification.id"
-            class="border-b pb-3 transition-all last:border-b-0 last:pb-0" :class="[borderMutedClass, activeRowBgClass, { 'mb-3': index < notificationList.slice(0, 3).length - 1 }]"
-            @click="navigateTo(`/pages-sub/notification/detail?id=${notification.id}`)"
+        <view class="space-y-3">
+          <ThemeCard 
+            v-for="article in articleList.slice(0, 5)" 
+            :key="article.id"
+            :padding="false"
+            card-class="shadow-sm border border-slate-100 dark:border-slate-800 active:scale-[0.99] transition-transform duration-200"
+            @click="navigateTo(`/pages-sub/article/detail?id=${article.id}`)"
           >
-            <view class="mb-2 flex items-start justify-between">
-              <view class="flex flex-1 items-start">
-                <view class="mr-3 h-8 w-8 flex items-center justify-center rounded-lg" :class="iconAccentContainerClass">
-                  <view class="h-4 w-4 rounded bg-theme-primary" />
-                </view>
-                <view class="flex-1">
-                  <view class="line-clamp-1 text-sm font-medium" :class="textPrimaryClass">
-                    {{ notification.title }}
-                  </view>
-                  <view class="line-clamp-2 mt-1 text-xs" :class="textSecondaryClass">
-                    {{ getPlainTextContent(notification.content) }}
-                  </view>
-                </view>
-              </view>
-              <view class="ml-3 flex flex-col items-end">
-                <view class="rounded-full px-2 py-1 text-xs font-medium" :class="getNotificationTypeColor(notification.type)">
-                  {{ getNotificationTypeText(notification.type) }}
-                </view>
-              </view>
+            <view class="p-4 flex gap-4 bg-white dark:bg-slate-800 rounded-2xl">
+               <view class="flex-1 flex flex-col justify-between min-h-[4.5rem]">
+                 <view class="text-sm font-medium line-clamp-2 leading-relaxed tracking-wide" :class="textPrimaryClass">
+                   {{ article.title }}
+                 </view>
+                 
+                 <view class="flex justify-between items-center mt-3 text-xs" :class="textMutedClass">
+                   <view class="flex items-center gap-2 opacity-80">
+                     <text class="font-medium">{{ article.authorName }}</text>
+                     <text class="opacity-30">|</text>
+                     <text>{{ formatArticleTime(article.createTime).split(' ')[0] }}</text>
+                   </view>
+                   <view class="flex items-center gap-1 opacity-60">
+                     <wd-icon name="view" size="14px" />
+                     <text>{{ formatCount(article.browse) }}</text>
+                   </view>
+                 </view>
+               </view>
             </view>
-
-            <view class="text-xs" :class="textMutedClass">
-              {{ formatNotificationTime(notification.createTime) }}
-            </view>
-          </view>
-
-          <!-- 没有通知时的显示 -->
-          <view v-if="notificationList.length === 0" class="py-6 text-center">
-            <view class="text-sm" :class="textSecondaryClass">
-              暂无通知公告
-            </view>
+          </ThemeCard>
+          
+          <view v-if="articleList.length === 0 && !articleLoading" class="py-12 text-center opacity-40">
+             <view class="text-sm text-slate-400 font-medium">暂无最新文章</view>
           </view>
         </view>
-      </ThemeCard>
+      </view>
 
-      <!-- 第三部分：消息提醒 -->
-      <ThemeCard card-class="mb-6" :padding="false">
-        <view class="border-b px-4 py-3" :class="[borderMutedClass]">
-          <view class="flex items-center justify-between">
-            <view class="text-lg font-semibold" :class="[textPrimaryClass]">
-              消息提醒
-            </view>
-            <view class="flex items-center">
-              <view v-if="unreadCount > 0" class="mr-2 h-5 w-5 flex items-center justify-center rounded-full bg-theme-error/100 text-xs text-white font-medium">
-                {{ unreadCount > 99 ? '99+' : unreadCount }}
-              </view>
-              <view class="text-sm text-theme-primary" @click="navigateTo('/pages-sub/message/index')">
-                查看全部 ›
-              </view>
-            </view>
-          </view>
-        </view>
-
-        <view class="p-4">
-          <view
-            v-for="(message, index) in messageList.slice(0, 3)"
-            :key="message.id"
-            class="border-b pb-3 transition-all last:border-b-0 last:pb-0" :class="[borderMutedClass, activeRowBgClass, { 'mb-3': index < messageList.slice(0, 3).length - 1 }]"
-            @click="navigateTo(`/pages-sub/message/detail?id=${message.id}`)"
-          >
-            <view class="mb-2 flex items-start justify-between">
-              <view class="flex flex-1 items-start">
-                <view class="mr-3 h-8 w-8 flex items-center justify-center rounded-lg" :class="getMessageTypeColor(message.templateType)">
-                  <view class="h-4 w-4 rounded bg-current" />
-                </view>
-                <view class="flex-1">
-                  <view class="line-clamp-1 text-sm font-medium" :class="[textPrimaryClass, { 'font-bold': !message.readStatus }]">
-                    {{ message.templateNickname || '系统' }}
-                  </view>
-                  <view class="line-clamp-2 mt-1 text-xs" :class="textSecondaryClass">
-                    {{ getPlainTextContent(message.templateContent) }}
-                  </view>
-                </view>
-              </view>
-              <view class="ml-3 flex flex-col items-end">
-                <view class="text-xs" :class="textMutedClass">
-                  {{ formatMessageTime(message.createTime) }}
-                </view>
-                <view v-if="!message.readStatus" class="mt-1 h-2 w-2 rounded-full bg-theme-error/100" />
-              </view>
-            </view>
-          </view>
-
-          <!-- 没有消息时的显示 -->
-          <view v-if="messageList.length === 0" class="py-6 text-center">
-            <view class="mx-auto mb-2 h-8 w-8 rounded-full bg-gray-200" />
-            <view class="text-sm" :class="textSecondaryClass">
-              暂无消息提醒
-            </view>
-          </view>
-        </view>
-      </ThemeCard>
-
-      <!-- 第四部分：文章列表 -->
-      <ThemeCard card-class="mb-6" :padding="false">
-        <view class="border-b px-4 py-3" :class="[borderMutedClass]">
-          <view class="flex items-center justify-between">
-            <view class="text-lg font-semibold" :class="[textPrimaryClass]">
-              最新文章
-            </view>
-            <view class="text-sm text-theme-primary" @click="navigateTo('/pages-sub/article/index')">
-              查看全部 ›
-            </view>
-          </view>
-        </view>
-
-        <view class="p-4">
-          <!-- 文章列表内容 -->
-          <view v-if="articleList.length > 0">
-            <view
-              v-for="(article, index) in articleList.slice(0, 5)"
-              :key="article.id"
-              class="border-b pb-4 transition-all last:border-b-0 last:pb-0" :class="[borderMutedClass, activeRowBgClass, { 'mb-4': index < articleList.slice(0, 5).length - 1 }]"
-              @click="navigateTo(`/pages-sub/article/detail?id=${article.id}`)"
-            >
-              <view class="mb-2 flex items-start justify-between">
-                <view class="flex-1">
-                  <view class="line-clamp-2 mb-1 text-sm font-medium" :class="textPrimaryClass">
-                    {{ article.title }}
-                  </view>
-                  <view class="line-clamp-2 text-xs" :class="textSecondaryClass">
-                    {{ article.blogAbstract }}
-                  </view>
-                </view>
-                <view class="ml-3 rounded-full px-2 py-1 text-xs font-medium" :class="[textSecondaryClass, isDark ? 'bg-white/5' : 'bg-gray-50']">
-                  {{ article.tagNames && article.tagNames[0] }}
-                </view>
-              </view>
-
-              <view class="flex items-center justify-between">
-                <view class="flex items-center text-xs" :class="textSecondaryClass">
-                  <view class="mr-2 h-3 w-3 rounded" :class="iconMutedBgClass" />
-                  <text class="mr-2">
-                    {{ article.authorName }}
-                  </text>
-                  <text class="mr-2">
-                    {{ formatArticleTime(article.createTime) }}
-                  </text>
-                </view>
-                <view class="flex items-center text-xs" :class="textMutedClass">
-                  <text class="mr-2">
-                    阅读 {{ formatCount(article.browse) }}
-                  </text>
-                  <text>点赞 {{ formatCount(article.love) }}</text>
-                </view>
-              </view>
-            </view>
-          </view>
-
-          <!-- 没有文章时的显示 -->
-          <view v-else class="py-8 text-center">
-            <view class="mx-auto mb-2 h-10 w-10 rounded-xl bg-gray-200" />
-            <view class="text-sm" :class="textSecondaryClass">
-              暂无文章内容
-            </view>
-          </view>
-        </view>
-      </ThemeCard>
     </view>
   </view>
 </template>
 
 <style lang="scss" scoped>
-/* 骨架屏动画样式 */
-@keyframes skeleton-loading {
-  0% {
-    background-position: -200px 0;
-  }
-  100% {
-    background-position: calc(200px + 100%) 0;
-  }
+/* 隐藏滚动条 */
+::-webkit-scrollbar {
+  display: none;
+  width: 0 !important;
+  height: 0 !important;
+  -webkit-appearance: none;
+  background: transparent;
 }
+</style>
 
-.skeleton-shimmer {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200px 100%;
-  animation: skeleton-loading 1.5s infinite;
+<style>
+/* 强制覆盖 page 背景色，解决 H5 端下拉露底问题 */
+page {
+  background-color: #f5f7fa;
 }
-
-@media (prefers-color-scheme: dark) {
-  .skeleton-shimmer {
-    background: linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0.18) 25%,
-      rgba(255, 255, 255, 0.12) 50%,
-      rgba(255, 255, 255, 0.18) 75%
-    );
-    background-size: 200px 100%;
-  }
+.dark page {
+  background-color: #020617;
 }
-
-.animate-pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-/* 滚动性能优化 */
-.min-h-screen {
-  -webkit-overflow-scrolling: touch;
-  will-change: scroll-position;
-  transform: translateZ(0);
-}
-
-/* UnoCSS原子类样式 */
 </style>

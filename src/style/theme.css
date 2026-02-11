@@ -1,0 +1,56 @@
+/* Global Design Tokens & Theme Configuration */
+:root, page {
+  /* --- Semantic Colors --- */
+  --color-primary: #0957DE;
+  --color-success: #28a745;
+  --color-warning: #ffc107;
+  --color-danger: #dc3545;
+  --color-info: #17a2b8;
+
+  /* --- Backgrounds --- */
+  --bg-page: linear-gradient(135deg, #f3f7ff 0%, #f0f4ff 20%, #e8edff 45%, #e2e8ff 70%, #dde5ff 100%);
+  --bg-card: #ffffff;
+  --bg-overlay: rgba(0, 0, 0, 0.5);
+
+  /* --- Text --- */
+  --text-main: #333333;
+  --text-secondary: #666666;
+  --text-placeholder: #999999;
+  --text-inverse: #ffffff;
+
+  /* --- Borders --- */
+  --border-color: #e5e5e5;
+  --border-color-light: #f0f0f0;
+
+  /* --- Wot-ui Overrides (Light) --- */
+  --wot-color-theme: var(--color-primary);
+  --wot-color-success: var(--color-success);
+  --wot-color-warning: var(--color-warning);
+  --wot-color-danger: var(--color-danger);
+  /* Map background colors if Wot-ui uses variables for them */
+}
+
+/* Dark Mode Overrides */
+/* Note: UnoCSS adds .dark class to html/body. UniApp might need it on page. */
+.dark, 
+.dark page,
+[data-theme="dark"] {
+  /* --- Backgrounds --- */
+  --bg-page: linear-gradient(135deg, #0b1220 0%, #0d1426 20%, #0f182e 45%, #101a33 70%, #12203b 100%);
+  --bg-card: #151515;
+  --bg-overlay: rgba(255, 255, 255, 0.1);
+
+  /* --- Text --- */
+  --text-main: #e5e5e5;
+  --text-secondary: #a3a3a3;
+  --text-placeholder: #666666;
+  --text-inverse: #000000;
+
+  /* --- Borders --- */
+  --border-color: #333333;
+  --border-color-light: #262626;
+
+  /* --- Wot-ui Overrides (Dark) --- */
+  /* Wot-ui has its own dark mode handling, but we can enforce some overrides if needed */
+  /* Generally wot-ui handles dark mode via its own internal variables when theme='dark' is set on config-provider */
+}

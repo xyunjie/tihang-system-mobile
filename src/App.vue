@@ -108,6 +108,11 @@ onLaunch(() => {
   const applyH5Theme = (mode: 'light' | 'dark') => {
     const el = document.documentElement
     el.setAttribute('data-theme', mode)
+    if (mode === 'dark') {
+      el.classList.add('dark')
+    } else {
+      el.classList.remove('dark')
+    }
   }
   applyH5Theme(appStore.theme)
   watch(() => appStore.theme, t => applyH5Theme(t))
@@ -119,12 +124,12 @@ onLaunch(() => {
     const isDark = mode === 'dark'
     uni.setNavigationBarColor({
       frontColor: isDark ? '#ffffff' : '#000000',
-      backgroundColor: isDark ? '#1e293b' : '#ffffff',
+      backgroundColor: isDark ? '#0f182e' : '#ffffff',
     })
     uni.setBackgroundColor({
-      backgroundColor: isDark ? '#0f172a' : '#f0f4f9',
-      backgroundColorTop: isDark ? '#0f172a' : '#e8f0fe',
-      backgroundColorBottom: isDark ? '#1e293b' : '#e8f5ff',
+      backgroundColor: isDark ? '#0b1220' : '#ecf1f9',
+      backgroundColorTop: isDark ? '#0b1220' : '#ecf1f9',
+      backgroundColorBottom: isDark ? '#0b1220' : '#ecf1f9',
     })
   }
   applyMpTheme(appStore.theme)
@@ -153,35 +158,10 @@ image {
 }
 
 page {
-  /* #ifdef MP-WEIXIN */
-  /* 微信小程序浅色模式背景 - 科技风渐变 */
-  background: linear-gradient(135deg, #e8f0fe 0%, #f0e8ff 50%, #e8f5ff 100%);
-  /* 深色模式：跟随系统，使用深色渐变背景 */
-  @media (prefers-color-scheme: dark) {
-    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #1e293b 100%);
-  }
-  /* #endif */
-
-  /* #ifndef MP-WEIXIN */
-  /* 标准版本 - 科技风渐变 */
-  background: linear-gradient(135deg, #e8f0fe 0%, #f0e8ff 50%, #e8f5ff 100%);
-  /* #endif */
-
+  /* Global styles are now handled in src/style/index.scss */
   min-height: 100vh;
-  background-attachment: fixed;
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
 }
 
-/* H5 下根据 data-theme 主动切换背景，避免仅依赖系统偏好 */
-/* #ifdef H5 */
-[data-theme='light'] page {
-  background: linear-gradient(135deg, #e8f0fe 0%, #f0e8ff 50%, #e8f5ff 100%);
-}
-[data-theme='dark'] page {
-  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #1e293b 100%);
-}
-/* #endif */
 
 /* #ifdef H5 */
 uni-page-head {

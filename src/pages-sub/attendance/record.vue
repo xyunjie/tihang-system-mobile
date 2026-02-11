@@ -7,21 +7,46 @@
 </route>
 
 <script setup lang="ts">
-import dayjs from 'dayjs'
 import { computed, ref, watch } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { getAttendanceRecord, getAttendanceStatistics, getCalendarStatistics } from '@/api/attendance'
 import ThemeCard from '@/components/ThemeCard.vue'
-import { getAttendanceDotClass, getAttendanceLabel, getAttendanceTagType } from '@/config/attendance'
 import { useAppStore } from '@/store/app'
+import dayjs from 'dayjs'
+import { getAttendanceDotClass, getAttendanceLabel, getAttendanceTagType } from '@/config/attendance'
 
-defineOptions({ name: 'AttendanceRecord' })
+defineOptions({
+  name: 'AttendanceRecord',
+})
 
 // 主题适配
 const appStore = useAppStore()
 const isDark = computed(() => appStore.theme === 'dark')
-const titleClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-gray-900'))
-const textClass = computed(() => (isDark.value ? 'text-gray-300' : 'text-gray-600'))
-const borderClass = computed(() => (isDark.value ? 'border-white/10' : 'border-gray-100'))
+const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-slate-800'))
+const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-slate-500'))
+const textMutedClass = computed(() => (isDark.value ? 'text-gray-500' : 'text-slate-400'))
+
+// 动态设置背景色
+function setPageBackgroundColor() {
+  const bgColor = isDark.value ? '#020617' : '#f5f7fa'
+  uni.setBackgroundColor({
+    backgroundColor: bgColor,
+    backgroundColorTop: bgColor,
+    backgroundColorBottom: bgColor,
+  })
+}
+
+onShow(() => {
+  setPageBackgroundColor()
+})
+
+watch(() => isDark.value, () => {
+  setPageBackgroundColor()
+})
+
+// 当前选中日期
+const currentDate = ref(dayjs().format('YYYY-MM-DD'))
+const currentMonth = ref(dayjs().format('YYYY-MM'))
 
 // 当日记录（后端接口数据）
 const dayRecord = ref<import('@/api/types/attendance').AttendanceArchiveRespVO | null>(null)
@@ -250,149 +275,179 @@ function tryNavigateToLeaveDetail() {
 </script>
 
 <template>
-  <view class="min-h-screen px-4 py-2">
-    <!-- 1. 年月 -->
-    <ThemeCard card-class="mb-4" :padding="false">
-      <!-- 日历面板：使用 uni-calendar 官方组件 -->
-      <view
-        class="calendar-override px-2 pb-2"
-        :class="isDark ? 'uni-calendar-dark' : ''"
-      >
-        <uni-calendar
-          :insert="true"
-          :lunar="false"
-          :start-date="minDateStr"
-          :end-date="maxDateStr"
-          :date="calendarDateStr"
-          :selected="selectedMarks"
-          :show-month="false"
-          @change="onUniCalendarChange"
-          @month-switch="onUniMonthSwitch"
-        />
-      </view>
-      <!-- 分隔符：位于日历与统计之间，使用统一边框色 -->
-      <wd-divider>考勤统计</wd-divider>
-      <!-- 2. 考勤统计（移动到日历下方） -->
-      <view class="grid grid-cols-5 gap-2 px-4 pb-3 pt-1 text-center">
-        <view class="flex flex-col items-center">
-          <text :class="textClass" class="text-xs">
-            正常
-          </text>
-          <text :class="isDark ? 'text-blue-400' : 'text-blue-600'" class="text-sm font-semibold">
+  <view class="min-h-screen pb-6 box-border flex flex-col" :class="isDark ? 'bg-[#020617]' : 'bg-[#f5f7fa]'">
+    <!-- 顶部日历区域 -->
+    <view class="flex-shrink-0">
+      <ThemeCard :padding="false" card-class="m-4 shadow-sm border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
+        <view class="p-4 bg-white dark:bg-slate-800">
+          <view
+            class="calendar-override"
+            :class="isDark ? 'uni-calendar-dark' : ''"
+          >
+            <uni-calendar
+              :insert="true"
+              :lunar="false"
+              :start-date="minDateStr"
+              :end-date="maxDateStr"
+              :date="calendarDateStr"
+              :selected="selectedMarks"
+              :show-month="false"
+              @change="onUniCalendarChange"
+              @month-switch="onUniMonthSwitch"
+            />
+          </view>
+        </view>
+      </ThemeCard>
+    </view>
+
+    <!-- 统计数据区域 -->
+    <view class="flex-shrink-0 px-4 mb-4">
+      <view class="flex justify-between items-center gap-3">
+        <view class="flex-1 p-3 rounded-xl flex flex-col items-center justify-center bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-800">
+          <view class="text-xl font-bold mb-1 font-mono tracking-tight" :class="isDark ? 'text-blue-400' : 'text-blue-600'">
             {{ periodSummary.normal }}
-          </text>
+          </view>
+          <view class="text-xs" :class="textSecondaryClass">
+            正常
+          </view>
         </view>
-        <view class="flex flex-col items-center">
-          <text :class="textClass" class="text-xs">
-            迟到
-          </text>
-          <text :class="isDark ? 'text-yellow-400' : 'text-yellow-600'" class="text-sm font-semibold">
+        <view class="flex-1 p-3 rounded-xl flex flex-col items-center justify-center bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-800">
+          <view class="text-xl font-bold mb-1 font-mono tracking-tight" :class="isDark ? 'text-yellow-400' : 'text-yellow-600'">
             {{ periodSummary.late }}
-          </text>
+          </view>
+          <view class="text-xs" :class="textSecondaryClass">
+            迟到
+          </view>
         </view>
-        <view class="flex flex-col items-center">
-          <text :class="textClass" class="text-xs">
-            早退
-          </text>
-          <text :class="isDark ? 'text-yellow-400' : 'text-yellow-600'" class="text-sm font-semibold">
+        <view class="flex-1 p-3 rounded-xl flex flex-col items-center justify-center bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-800">
+          <view class="text-xl font-bold mb-1 font-mono tracking-tight" :class="isDark ? 'text-yellow-400' : 'text-yellow-600'">
             {{ periodSummary.early }}
-          </text>
+          </view>
+          <view class="text-xs" :class="textSecondaryClass">
+            早退
+          </view>
         </view>
-        <view class="flex flex-col items-center">
-          <text :class="textClass" class="text-xs">
-            缺勤
-          </text>
-          <text :class="isDark ? 'text-red-400' : 'text-red-600'" class="text-sm font-semibold">
+        <view class="flex-1 p-3 rounded-xl flex flex-col items-center justify-center bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-800">
+          <view class="text-xl font-bold mb-1 font-mono tracking-tight" :class="isDark ? 'text-red-400' : 'text-red-600'">
             {{ periodSummary.absence }}
-          </text>
+          </view>
+          <view class="text-xs" :class="textSecondaryClass">
+            缺勤
+          </view>
         </view>
-        <view class="flex flex-col items-center">
-          <text :class="textClass" class="text-xs">
-            请假
-          </text>
-          <text :class="isDark ? 'text-green-400' : 'text-green-600'" class="text-sm font-semibold">
+        <view class="flex-1 p-3 rounded-xl flex flex-col items-center justify-center bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-800">
+          <view class="text-xl font-bold mb-1 font-mono tracking-tight" :class="isDark ? 'text-green-400' : 'text-green-600'">
             {{ periodSummary.leave }}
-          </text>
+          </view>
+          <view class="text-xs" :class="textSecondaryClass">
+            请假
+          </view>
         </view>
       </view>
-      <!-- 已移除：底部周/月视图切换区域（避免未定义变量引用） -->
-    </ThemeCard>
+    </view>
 
-    <!-- 合并：当日考勤记录卡片（上班时间 / 下班时间 / 时长与设备） -->
-    <ThemeCard :padding="false" :card-class="canNavigateToLeaveDetail ? 'cursor-pointer active:opacity-80' : ''" @click="tryNavigateToLeaveDetail">
-      <view class="flex items-center justify-between border-b px-4 py-3" :class="borderClass">
-        <view :class="titleClass" class="text-base font-semibold">
-          {{ selectedDateStr }}
-        </view>
-        <wd-tag v-if="selectedRecord" size="small" :type="statusTagType(selectedRecord.status)" plain>
-          {{ statusText(selectedRecord.status) }}
-        </wd-tag>
-        <wd-tag v-else size="small" type="default" plain>
-          暂无信息
-        </wd-tag>
-      </view>
-      <view class="p-4">
-        <!-- 无记录：展示统一占位 -->
-        <view v-if="!selectedRecord" class="py-2">
-          <text :class="textClass" class="text-sm">
+    <!-- 当日记录详情 -->
+    <view class="flex-1 px-4 min-h-0">
+      <ThemeCard :padding="false" card-class="shadow-sm border border-slate-100 dark:border-slate-800 rounded-2xl h-full flex flex-col">
+        <view 
+          class="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-white dark:bg-slate-800 rounded-t-2xl"
+          :class="canNavigateToLeaveDetail ? 'cursor-pointer active:opacity-80' : ''"
+          @click="tryNavigateToLeaveDetail"
+        >
+          <view class="font-bold text-base" :class="textPrimaryClass">
+            {{ selectedDateStr }}
+          </view>
+          <wd-tag v-if="selectedRecord" size="small" :type="statusTagType(selectedRecord.status)" plain>
+            {{ statusText(selectedRecord.status) }}
+          </wd-tag>
+          <wd-tag v-else size="small" type="default" plain>
             暂无信息
-          </text>
+          </wd-tag>
         </view>
 
-        <!-- 特殊状态：请假/缺勤/上课，只展示提示信息 -->
-        <view v-else-if="isSpecialStatus" class="mb-1">
-          <text :class="textClass" class="text-sm">
-            当日状态：{{ statusText(selectedRecord?.status || 0) }}
-          </text>
-          <view v-if="selectedRecord?.remark" :class="textClass" class="mt-1 text-sm">
-            备注：{{ selectedRecord.remark }}
+        <view class="p-5 flex-1 bg-white dark:bg-slate-800 rounded-b-2xl">
+          <!-- 无记录 -->
+          <view v-if="!selectedRecord" class="py-2 text-center">
+            <text class="text-sm" :class="textSecondaryClass">
+              暂无考勤信息
+            </text>
           </view>
-        </view>
 
-        <!-- 正常/迟到/早退/缺卡：展示上下班时间，并在对应时间后追加提示（统一字号） -->
-        <template v-else>
-          <view class="flex items-baseline gap-2">
-            <text class="text-sm" :class="textClass">
-              上班时间：
-            </text>
-            <text class="text-base font-semibold" :class="selectedRecord?.checkIn ? 'text-green-500' : (isDark ? 'text-gray-400' : 'text-gray-500')">
-              {{ checkInDisplay }}
-            </text>
+          <!-- 特殊状态 -->
+          <view v-else-if="isSpecialStatus" class="mb-1">
+             <view class="flex items-center gap-2 mb-2">
+               <text class="text-sm" :class="textSecondaryClass">当日状态：</text>
+               <text class="font-medium" :class="textPrimaryClass">{{ statusText(selectedRecord?.status || 0) }}</text>
+             </view>
+             <view v-if="selectedRecord?.remark" class="text-sm" :class="textSecondaryClass">
+                备注：{{ selectedRecord.remark }}
+             </view>
           </view>
-          <view class="mt-3 flex items-baseline gap-2">
-            <text class="text-sm" :class="textClass">
-              下班时间：
-            </text>
-            <text class="text-base font-semibold" :class="selectedRecord?.checkOut ? 'text-blue-500' : (isDark ? 'text-gray-400' : 'text-gray-500')">
-              {{ checkOutDisplay }}
-            </text>
-          </view>
-          <view class="mt-3 flex items-center gap-2">
-            <text :class="textClass" class="text-sm">
-              工作时长：
-            </text>
-            <text class="text-sm font-semibold" :class="isDark ? 'text-emerald-400' : 'text-emerald-600'">
-              {{ workDurationDisplay }}
-            </text>
-          </view>
-          <view class="mt-2 flex items-center gap-2">
-            <text :class="textClass" class="text-sm">
-              考勤设备：
-            </text>
-            <text class="text-sm" :class="isDark ? 'text-gray-300' : 'text-gray-700'">
-              {{ deviceInfoDisplay }}
-            </text>
-          </view>
-          <view v-if="selectedRecord?.remark" :class="textClass" class="mt-2 text-sm">
-            备注：{{ selectedRecord.remark }}
-          </view>
-        </template>
-      </view>
-    </ThemeCard>
+
+          <!-- 正常打卡记录 -->
+          <template v-else>
+            <view class="relative pl-6 pb-8 border-l-2 border-slate-100 dark:border-slate-700 last:border-0 last:pb-0">
+              <view class="absolute -left-[9px] top-0 w-4 h-4 rounded-full border-4 border-white dark:border-slate-800 bg-blue-500 shadow-sm" />
+              
+              <view class="mb-1 text-xs font-medium opacity-60" :class="textMutedClass">上班打卡</view>
+              <view class="flex items-baseline gap-2 mb-2">
+                <view class="text-2xl font-bold font-mono tracking-tight" :class="selectedRecord?.checkIn ? textPrimaryClass : textMutedClass">
+                  {{ checkInDisplay.split('（')[0] }}
+                </view>
+                <view v-if="checkInDisplay.includes('（')" class="text-xs text-orange-500">
+                  {{ checkInDisplay.split('（')[1].replace('）', '') }}
+                </view>
+              </view>
+              <view class="flex items-center gap-1.5 text-xs" :class="textSecondaryClass">
+                <wd-icon name="location" size="14px" />
+                <text>{{ dayRecord?.checkInDevice ? `设备: ${dayRecord.checkInDevice}` : '暂无位置信息' }}</text>
+              </view>
+            </view>
+
+            <view class="relative pl-6 pt-2 border-l-2 border-transparent">
+              <view class="absolute -left-[9px] top-2 w-4 h-4 rounded-full border-4 border-white dark:border-slate-800 bg-blue-500 shadow-sm" />
+              
+              <view class="mb-1 text-xs font-medium opacity-60" :class="textMutedClass">下班打卡</view>
+              <view class="flex items-baseline gap-2 mb-2">
+                <view class="text-2xl font-bold font-mono tracking-tight" :class="selectedRecord?.checkOut ? textPrimaryClass : textMutedClass">
+                  {{ checkOutDisplay.split('（')[0] }}
+                </view>
+                <view v-if="checkOutDisplay.includes('（')" class="text-xs text-orange-500">
+                  {{ checkOutDisplay.split('（')[1].replace('）', '') }}
+                </view>
+              </view>
+              <view class="flex items-center gap-1.5 text-xs" :class="textSecondaryClass">
+                <wd-icon name="location" size="14px" />
+                <text>{{ dayRecord?.checkOutDevice ? `设备: ${dayRecord.checkOutDevice}` : '暂无位置信息' }}</text>
+              </view>
+            </view>
+
+            <view class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
+              <view class="flex items-center gap-2">
+                <text class="text-sm" :class="textSecondaryClass">工作时长</text>
+                <text class="text-sm font-bold font-mono" :class="isDark ? 'text-emerald-400' : 'text-emerald-600'">{{ workDurationDisplay }}</text>
+              </view>
+            </view>
+          </template>
+        </view>
+      </ThemeCard>
+    </view>
   </view>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
+/* 覆盖 page 背景色 */
+:global(page) {
+  background-color: #f5f7fa;
+}
+:global(.dark page) {
+  background-color: #020617;
+}
+
+:deep(.wd-calendar-view) {
+  background: transparent !important;
+}
+
 /* 深色模式下，调整官方日历的文字与选中态颜色 */
 .uni-calendar-dark :deep(.uni-calendar__weeks-day-text) {
   color: #9ca3af; /* text-gray-400 */

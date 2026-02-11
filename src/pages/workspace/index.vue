@@ -6,6 +6,8 @@
     "navigationStyle": "default",
     "navigationBarTitleText": "工作台",
     "enablePullDownRefresh": true,
+    "navigationBarBackgroundColor": "#2563eb",
+    "navigationBarTextStyle": "white"
   }
 }
 </route>
@@ -39,24 +41,7 @@ const bpmCategories = ref<BpmCategoryRespVO[]>([])
 const processDefinitions = ref<ProcessDefinitionRespVO[]>([])
 const processDefinitionsLoading = ref(false)
 
-// 审批申请定义
-interface ApprovalItem {
-  id: string
-  type: string
-  title: string
-  applicant: string
-  applyTime: string
-  status: 'pending' | 'approved' | 'rejected' | 'withdrawn'
-  reason?: string
-  amount?: number
-  days?: number
-  description: string
-  urgency: 'low' | 'normal' | 'high' | 'urgent'
-  department?: string
-  avatar?: string
-}
-
-// 统计数据 - 直接使用API响应类型
+// 统计数据
 const statistics = ref<BpmTaskStatisticsRespVO>({
   pendingCount: 0,
   completedCount: 0,
@@ -67,18 +52,13 @@ const statistics = ref<BpmTaskStatisticsRespVO>({
 // 主题适配：浅色/深色
 const appStore = useAppStore()
 const isDark = computed(() => appStore.theme === 'dark')
-// 底部覆盖层背景，叠在占位符之上但在 TabBar 之下
-const wsBottomStyle = computed(() => ({
-  background: 'var(--bg-primary)',
-}))
-// 卡片与文本类
-const cardBgClass = computed(() => 'bg-surface-secondary border border-divider-light shadow-theme-md')
-const textPrimaryClass = computed(() => 'text-content-primary')
-const textSecondaryClass = computed(() => 'text-content-secondary')
-const borderMutedClass = computed(() => 'border-divider-light')
-const subTileBgClass = computed(() => 'bg-surface-tertiary border border-divider-light')
 
-// 按分类获取流程定义 - 根据获取的分类数据和流程定义的category进行匹配
+const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-slate-800'))
+const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-slate-500'))
+const borderMutedClass = computed(() => (isDark.value ? 'border-white/10' : 'border-gray-100'))
+const subTileBgClass = computed(() => (isDark.value ? 'bg-white/6 border border-white/8' : 'bg-slate-50 border border-slate-100'))
+
+// 按分类获取流程定义
 const processDefinitionsByCategory = computed(() => {
   const categoryMap: Record<string, {
     id: number
@@ -100,13 +80,10 @@ const processDefinitionsByCategory = computed(() => {
   // 然后将流程定义分配到对应的分类中
   processDefinitions.value.forEach((process) => {
     const categoryCode = process.category
-
-    // 如果找到匹配的分类，添加到该分类下
     if (categoryCode && categoryMap[categoryCode]) {
       categoryMap[categoryCode].processes.push(process)
     }
     else {
-      // 如果没有匹配的分类，创建一个"其他"分类
       if (!categoryMap.Other) {
         categoryMap.Other = {
           id: 0,
@@ -129,19 +106,16 @@ const processDefinitionsByCategory = computed(() => {
 
   return result
 })
+
 // 启动流程定义
 async function startProcess(processDefinition: ProcessDefinitionRespVO) {
   try {
-    // 根据 formType 判断表单类型
     if (processDefinition.formType === 20) {
-      // 业务表单：先显示预览弹窗
-      // 统一跳转到公共业务流程页面
       uni.navigateTo({
         url: `/pages-sub/bpm/business-process/index?processDefinitionId=${processDefinition.id}&processKey=${processDefinition.key}`,
       })
     }
     else if (processDefinition.formType === 10) {
-      // 自定义表单：跳转到自定义表单页面
       uni.navigateTo({
         url: `/pages-sub/bpm/custom-form/index?processDefinitionId=${processDefinition.id}&processKey=${processDefinition.key}`,
       })
@@ -168,23 +142,12 @@ async function loadBpmCategories() {
   pageState.categoriesLoading = true
   try {
     const response = await getCategorySimpleList()
-    console.log('审批分类加载成功:', response.data)
     if (response && response.code === 0) {
       bpmCategories.value = response.data || []
-    }
-    else {
-      uni.showToast({
-        title: response?.msg || '获取审批分类失败',
-        icon: 'none',
-      })
     }
   }
   catch (error) {
     console.error('获取审批分类异常:', error)
-    uni.showToast({
-      title: '网络异常，请重试',
-      icon: 'none',
-    })
   }
   finally {
     pageState.categoriesLoading = false
@@ -196,23 +159,12 @@ async function loadProcessDefinitions() {
   processDefinitionsLoading.value = true
   try {
     const response = await getProcessDefinitionList()
-    console.log('流程定义加载成功:', response.data)
     if (response && response.code === 0) {
       processDefinitions.value = response.data || []
-    }
-    else {
-      uni.showToast({
-        title: response?.msg || '获取流程定义失败',
-        icon: 'none',
-      })
     }
   }
   catch (error) {
     console.error('获取流程定义异常:', error)
-    uni.showToast({
-      title: '网络异常，请重试',
-      icon: 'none',
-    })
   }
   finally {
     processDefinitionsLoading.value = false
@@ -223,62 +175,34 @@ async function loadProcessDefinitions() {
 async function loadTaskStatistics() {
   try {
     const response = await getTaskStatistics()
-    console.log('任务统计数据加载成功:', response.data)
     if (response && response.code === 0) {
       statistics.value = response.data
-    }
-    else {
-      console.error('获取任务统计失败:', response?.msg)
-      uni.showToast({
-        title: response?.msg || '获取统计数据失败',
-        icon: 'none',
-      })
     }
   }
   catch (error) {
     console.error('获取任务统计异常:', error)
-    uni.showToast({
-      title: '网络异常，请重试',
-      icon: 'none',
-    })
   }
 }
 
-// 跳转到待办任务页面
 function navigateToTodoList() {
-  uni.navigateTo({
-    url: '/pages-sub/bpm/todo/index',
-  })
+  uni.navigateTo({ url: '/pages-sub/bpm/todo/index' })
 }
 
-// 跳转到已办任务页面
 function navigateToDoneList() {
-  uni.navigateTo({
-    url: '/pages-sub/bpm/done/index',
-  })
+  uni.navigateTo({ url: '/pages-sub/bpm/done/index' })
 }
 
-// 跳转到抄送列表页面
 function navigateToCopyList() {
-  uni.navigateTo({
-    url: '/pages-sub/bpm/copy/index',
-  })
+  uni.navigateTo({ url: '/pages-sub/bpm/copy/index' })
 }
 
-// 跳转到我的审批页面
 function navigateToMyApprovalList() {
-  uni.navigateTo({
-    url: '/pages-sub/bpm/my-approval/index',
-  })
+  uni.navigateTo({ url: '/pages-sub/bpm/my-approval/index' })
 }
 
-// 页面加载 - 微信小程序环境使用 onLoad 生命周期
-// 在微信小程序中，可以使用 onLoad 或 onShow 生命周期
-// 这里移除 onMounted，改为在需要时手动调用初始化函数
 async function initPage(loading: boolean = true) {
   pageState.loading = loading
   try {
-    // 并行加载审批分类、流程定义和任务统计数据
     await Promise.all([
       loadBpmCategories(),
       loadProcessDefinitions(),
@@ -293,47 +217,28 @@ async function initPage(loading: boolean = true) {
   }
 }
 
-// 页面下拉刷新处理
 async function handlePullDownRefresh() {
-  if (isRefreshing.value) {
-    return
-  }
-
-  console.log('开始下拉刷新...')
+  if (isRefreshing.value) return
   isRefreshing.value = true
   pageState.refreshing = true
-
   try {
-    // 重新加载所有数据
     await Promise.all([
       loadBpmCategories(),
       loadProcessDefinitions(),
       loadTaskStatistics(),
     ])
-
-    uni.showToast({
-      title: '刷新成功',
-      icon: 'success',
-      duration: 1500,
-    })
+    uni.showToast({ title: '刷新成功', icon: 'success', duration: 1500 })
   }
   catch (error) {
-    console.error('刷新失败:', error)
-    uni.showToast({
-      title: '刷新失败，请重试',
-      icon: 'none',
-      duration: 2000,
-    })
+    uni.showToast({ title: '刷新失败，请重试', icon: 'none', duration: 2000 })
   }
   finally {
     pageState.refreshing = false
     isRefreshing.value = false
-    // 停止下拉刷新
     uni.stopPullDownRefresh()
   }
 }
 
-// 在微信小程序中，可以通过 onLoad 调用
 onLoad(() => {
   initPage()
 })
@@ -342,177 +247,160 @@ onShow(() => {
   initPage(false)
 })
 
-// 页面下拉刷新
 onPullDownRefresh(() => {
   handlePullDownRefresh()
+})
+
+// 动态设置背景色
+function setPageBackgroundColor() {
+  const bgColor = isDark.value ? '#020617' : '#f5f7fa'
+  uni.setBackgroundColor({
+    backgroundColor: bgColor,
+    backgroundColorTop: bgColor,
+    backgroundColorBottom: bgColor,
+  })
+}
+
+watch(() => isDark.value, () => {
+  setPageBackgroundColor()
 })
 </script>
 
 <template>
-  <!-- 使用普通的view容器，不需要scroll-view -->
-  <view>
-    <!-- 加载状态 -->
-    <view v-if="pageState.loading" class="ws-content px-4 pt-4">
-      <wd-skeleton theme="paragraph" class="mt-2" />
+  <view class="relative min-h-screen bg-[#f5f7fa] dark:bg-slate-950">
+    <!-- 顶部背景 -->
+    <view class="absolute top-0 left-0 w-full h-40 bg-gradient-to-b from-[#2563eb] to-[#3b82f6] rounded-b-[1.5rem] shadow-sm z-0" />
+
+    <!-- 头部区域 (仅占位，用于撑开高度) -->
+    <view class="relative z-10 pt-14 px-5 pb-3 text-white">
+      <view class="flex justify-between items-center mb-1">
+         <!-- 可以放置一些顶部操作，目前留空或放标题 -->
+         <view class="text-xl font-bold opacity-95 tracking-wide text-shadow-sm">工作台</view>
+      </view>
     </view>
 
-    <view v-else class="ws-content px-4 pb-8 pt-4">
-      <!-- 统计卡片 -->
-      <view class="grid grid-cols-2 mb-5 gap-4">
-        <view
-          class="overflow-hidden rounded-2xl bg-theme-primary p-5 shadow-lg"
-          @click="navigateToTodoList"
-        >
-          <view class="flex items-start justify-between">
-            <view>
-              <view class="mb-1 text-sm text-white/90">
-                待办任务
-              </view>
-              <view class="text-3xl text-white font-bold">
-                {{ statistics.pendingCount }}
+    <!-- 核心统计卡片 (重叠布局) -->
+    <view class="relative z-10 px-4 mt-2">
+      <ThemeCard card-class="mb-6 shadow-[0_8px_20px_-6px_rgba(0,0,0,0.1)] dark:shadow-blue-900/20 overflow-hidden border-0" :padding="false">
+        <view class="grid grid-cols-4 py-6 bg-white dark:bg-slate-800">
+          <!-- 待办任务 -->
+          <view class="flex flex-col items-center justify-center gap-2 active:opacity-70 transition-opacity" @click="navigateToTodoList">
+            <view class="relative p-3 rounded-2xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">
+              <wd-icon name="fill-camera" size="24px" />
+              <view v-if="statistics.pendingCount > 0" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center text-[10px] bg-red-500 text-white rounded-full px-1 border-2 border-white dark:border-slate-800">
+                {{ statistics.pendingCount > 99 ? '99+' : statistics.pendingCount }}
               </view>
             </view>
-            <view class="h-11 w-11 flex items-center justify-center rounded-xl bg-white bg-opacity-20">
-              <wd-icon name="fill-camera" size="22px" color="#ffffff" />
-            </view>
+            <view class="text-xs font-medium" :class="textSecondaryClass">待办任务</view>
           </view>
-        </view>
 
-        <view
-          class="overflow-hidden rounded-2xl bg-theme-success p-5 shadow-lg"
-          @click="navigateToDoneList"
-        >
-          <view class="flex items-start justify-between">
-            <view>
-              <view class="mb-1 text-sm text-white/90">
-                已办任务
-              </view>
-              <view class="text-3xl text-white font-bold">
-                {{ statistics.completedCount }}
-              </view>
+          <!-- 已办任务 -->
+          <view class="flex flex-col items-center justify-center gap-2 active:opacity-70 transition-opacity" @click="navigateToDoneList">
+            <view class="p-3 rounded-2xl bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400">
+              <wd-icon name="check-outline" size="24px" />
             </view>
-            <view class="h-11 w-11 flex items-center justify-center rounded-xl bg-white bg-opacity-20">
-              <wd-icon name="check-outline" size="22px" color="#ffffff" />
-            </view>
+            <view class="text-xs font-medium" :class="textSecondaryClass">已办任务</view>
           </view>
-        </view>
 
-        <view
-          class="overflow-hidden rounded-2xl bg-theme-warning p-5 shadow-lg"
-          @click="navigateToCopyList"
-        >
-          <view class="flex items-start justify-between">
-            <view>
-              <view class="mb-1 text-sm text-white/90">
-                今日抄送
-              </view>
-              <view class="text-3xl text-white font-bold">
-                {{ statistics.ccCount }}
+          <!-- 今日抄送 -->
+          <view class="flex flex-col items-center justify-center gap-2 active:opacity-70 transition-opacity" @click="navigateToCopyList">
+             <view class="relative p-3 rounded-2xl bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400">
+              <wd-icon name="edit-outline" size="24px" />
+              <view v-if="statistics.ccCount > 0" class="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center text-[10px] bg-red-500 text-white rounded-full px-1 border-2 border-white dark:border-slate-800">
+                {{ statistics.ccCount > 99 ? '99+' : statistics.ccCount }}
               </view>
             </view>
-            <view class="h-11 w-11 flex items-center justify-center rounded-xl bg-white bg-opacity-20">
-              <wd-icon name="edit-outline" size="22px" color="#ffffff" />
-            </view>
+            <view class="text-xs font-medium" :class="textSecondaryClass">今日抄送</view>
           </view>
-        </view>
 
-        <view
-          class="overflow-hidden rounded-2xl bg-theme-info p-5 shadow-lg"
-          @click="navigateToMyApprovalList"
-        >
-          <view class="flex items-start justify-between">
-            <view>
-              <view class="mb-1 text-sm text-white/90">
-                我的审批
-              </view>
-              <view class="text-3xl text-white font-bold">
-                {{ statistics.todayCount }}
-              </view>
+          <!-- 我的审批 -->
+          <view class="flex flex-col items-center justify-center gap-2 active:opacity-70 transition-opacity" @click="navigateToMyApprovalList">
+            <view class="p-3 rounded-2xl bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400">
+              <wd-icon name="user" size="24px" />
             </view>
-            <view class="h-11 w-11 flex items-center justify-center rounded-xl bg-white bg-opacity-20">
-              <wd-icon name="home1" size="22px" color="#ffffff" />
-            </view>
+            <view class="text-xs font-medium" :class="textSecondaryClass">我的审批</view>
           </view>
         </view>
+      </ThemeCard>
+    </view>
+
+    <!-- 流程应用区域 -->
+    <view class="px-4 pb-24 space-y-5">
+      <!-- 加载状态 -->
+      <view v-if="pageState.loading" class="pt-4">
+        <wd-skeleton theme="paragraph" />
       </view>
 
-      <!-- 流程定义列表 -->
-      <view v-if="Object.keys(processDefinitionsByCategory).length > 0">
-        <!-- 按分类显示流程定义 -->
+      <view v-else-if="Object.keys(processDefinitionsByCategory).length > 0">
         <view
           v-for="(categoryData, categoryKey) in processDefinitionsByCategory"
           :key="categoryKey"
-          class="mb-4 last:mb-0"
         >
-          <!-- 分类卡片 -->
-          <ThemeCard :padding="false">
-            <!-- 卡片标题 -->
-            <view class="flex items-center justify-between border-b px-4 py-3" :class="[borderMutedClass, subTileBgClass]">
-              <view class="flex items-center">
-                <view class="text-base font-bold" :class="textPrimaryClass">
-                  {{ categoryData.name }}
-                </view>
-              </view>
-            </view>
-
-            <!-- 流程卡片网格 -->
-            <view class="grid grid-cols-4 gap-4 p-4">
+          <view class="flex items-center gap-2 mb-3 px-1">
+             <view class="w-1 h-4 rounded-full bg-blue-500" />
+             <view class="text-base font-bold tracking-tight" :class="textPrimaryClass">{{ categoryData.name }}</view>
+          </view>
+          
+          <ThemeCard :padding="false" card-class="shadow-sm border border-slate-100 dark:border-slate-800">
+            <view class="grid grid-cols-4 gap-y-6 py-5">
               <view
                 v-for="process in categoryData.processes"
                 :key="process.id"
-                class="flex flex-col items-center"
+                class="flex flex-col items-center gap-2 active:opacity-60 transition-opacity"
                 @click="startProcess(process)"
               >
                 <!-- 图标容器 -->
-                <view class="mb-2 h-16 w-16 flex items-center justify-center overflow-hidden rounded-2xl" :class="[subTileBgClass]">
-                  <view class="h-14 w-14 flex items-center justify-center rounded-xl bg-theme-primary shadow-md">
-                    <template v-if="process.icon">
-                      <image
-                        :src="process.icon"
-                        class="h-8 w-8 object-contain"
-                        mode="aspectFit"
-                      />
-                    </template>
-                    <template v-else>
-                      <text class="text-lg text-white font-bold">
-                        {{ process.name.slice(0, 2) }}
-                      </text>
-                    </template>
+                <view class="h-12 w-12 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm">
+                  <image
+                    v-if="process.icon"
+                    :src="process.icon"
+                    class="h-6 w-6 object-contain"
+                    mode="aspectFit"
+                  />
+                  <view v-else class="text-sm font-bold text-blue-600 dark:text-blue-400">
+                    {{ process.name.slice(0, 1) }}
                   </view>
                 </view>
 
                 <!-- 流程名称 -->
-                <view class="line-clamp-2 w-full text-center text-sm font-medium leading-tight" :class="[textPrimaryClass]">
-                  {{ process.name }}
+                <view class="px-2 w-full text-center">
+                  <view class="text-xs font-medium leading-tight truncate" :class="textSecondaryClass">
+                    {{ process.name }}
+                  </view>
                 </view>
               </view>
             </view>
           </ThemeCard>
         </view>
       </view>
+      
+      <!-- 空状态 -->
+      <view v-else class="py-12 flex flex-col items-center justify-center opacity-40">
+         <wd-icon name="search" size="32px" color="#94a3b8" class="mb-2" />
+         <view class="text-sm text-slate-400">暂无流程应用</view>
+      </view>
     </view>
 
-    <!-- 底部覆盖层：避免 H5 TabBar 占位符白底影响整体背景 -->
-    <view
-      class="ws-bottom-bg fixed bottom-0 left-0 right-0 z-0"
-      :style="wsBottomStyle"
-      style="height: calc(env(safe-area-inset-bottom) + 100rpx);"
-    />
   </view>
 </template>
 
-<style scoped>
-/* 只保留必要的动画，其他样式使用UnoCSS */
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+<style lang="scss" scoped>
+/* 隐藏滚动条 */
+::-webkit-scrollbar {
+  display: none;
+  width: 0 !important;
+  height: 0 !important;
+  -webkit-appearance: none;
+  background: transparent;
 }
+</style>
 
-.animate-spin {
-  animation: spin 1s linear infinite;
+<style>
+/* 强制覆盖 page 背景色 */
+page {
+  background-color: #f5f7fa;
+}
+.dark page {
+  background-color: #020617;
 }
 </style>
