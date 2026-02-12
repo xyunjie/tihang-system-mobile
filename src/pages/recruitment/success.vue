@@ -11,13 +11,20 @@
 
 <script setup lang="ts">
 import { onLoad } from '@dcloudio/uni-app'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { getRecruitmentStatusText, RecruitmentStatus } from '@/api/types/recruitment'
+import { useAppStore } from '@/store/app'
 
 // 纳新群链接
 const groupLink = ref('')
 // 审核状态
 const status = ref<number>(RecruitmentStatus.WAIT_AUDIT)
+
+const appStore = useAppStore()
+const isDark = computed(() => appStore.theme === 'dark')
+const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-slate-800'))
+const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-slate-500'))
+const textMutedClass = computed(() => (isDark.value ? 'text-gray-500' : 'text-slate-400'))
 
 // 页面加载时获取参数
 onLoad((options) => {
@@ -29,6 +36,19 @@ onLoad((options) => {
   }
 })
 
+function setPageBackgroundColor() {
+  const bgColor = isDark.value ? '#020617' : '#f5f7fa'
+  uni.setBackgroundColor({
+    backgroundColor: bgColor,
+    backgroundColorTop: bgColor,
+    backgroundColorBottom: bgColor,
+  })
+}
+
+watch(() => isDark.value, () => {
+  setPageBackgroundColor()
+})
+
 // 状态配置
 const statusConfig = computed(() => {
   switch (status.value) {
@@ -36,7 +56,7 @@ const statusConfig = computed(() => {
       return {
         icon: 'time',
         iconColor: '#f59e0b',
-        iconBg: 'bg-[#fef3c7]',
+        iconBg: 'bg-amber-50 dark:bg-amber-500/10',
         title: '等待审核',
         description: '您的纳新申请已成功提交！\n请耐心等待审核结果，我们会尽快处理。',
       }
@@ -44,7 +64,7 @@ const statusConfig = computed(() => {
       return {
         icon: 'check',
         iconColor: '#10b981',
-        iconBg: 'bg-[#d1fae5]',
+        iconBg: 'bg-emerald-50 dark:bg-emerald-500/10',
         title: '审核通过',
         description: '恭喜您！您的纳新申请已通过审核！\n请关注后续通知，准备参加面试/笔试。',
       }
@@ -52,7 +72,7 @@ const statusConfig = computed(() => {
       return {
         icon: 'close',
         iconColor: '#ef4444',
-        iconBg: 'bg-[#fee2e2]',
+        iconBg: 'bg-red-50 dark:bg-red-500/10',
         title: '审核不通过',
         description: '很抱歉，您的申请未通过审核。\n您可以修改信息后重新提交申请。',
       }
@@ -60,7 +80,7 @@ const statusConfig = computed(() => {
       return {
         icon: 'calendar',
         iconColor: '#3b82f6',
-        iconBg: 'bg-[#dbeafe]',
+        iconBg: 'bg-blue-50 dark:bg-blue-500/10',
         title: '待面试/待笔试',
         description: '您的申请已进入面试/笔试阶段！\n请关注群内通知，按时参加考核。',
       }
@@ -68,7 +88,7 @@ const statusConfig = computed(() => {
       return {
         icon: 'star-on',
         iconColor: '#8b5cf6',
-        iconBg: 'bg-[#ede9fe]',
+        iconBg: 'bg-violet-50 dark:bg-violet-500/10',
         title: '拟录取',
         description: '恭喜您！您已被拟录取！\n请关注后续通知。',
       }
@@ -76,7 +96,7 @@ const statusConfig = computed(() => {
       return {
         icon: 'info-circle',
         iconColor: '#6b7280',
-        iconBg: 'bg-[#f3f4f6]',
+        iconBg: 'bg-slate-100 dark:bg-white/10',
         title: getRecruitmentStatusText(status.value),
         description: '请关注后续通知。',
       }
@@ -126,7 +146,7 @@ function onResubmit() {
 </script>
 
 <template>
-  <view class="success-page min-h-screen bg-[#f5f7fa]">
+  <view class="success-page min-h-screen">
     <!-- 顶部 Header -->
     <view class="header-section relative overflow-hidden from-[#2563eb] to-[#1e40af] bg-gradient-to-br px-6 pb-20 pt-12">
       <!-- 装饰圆形 -->
@@ -138,7 +158,7 @@ function onResubmit() {
     <!-- 主要内容区域 -->
     <view class="relative z-10 mt-[-80px] px-4 pb-8">
       <!-- 状态卡片 -->
-      <view class="success-card rounded-2xl bg-white p-6 shadow-sm">
+      <view class="success-card rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-sm">
         <!-- 状态图标 -->
         <view class="mb-6 flex justify-center">
           <view class="h-20 w-20 flex items-center justify-center rounded-full" :class="statusConfig.iconBg">
@@ -147,24 +167,24 @@ function onResubmit() {
         </view>
 
         <!-- 状态标题 -->
-        <view class="mb-3 text-center text-xl text-gray-800 font-bold">
+        <view class="mb-3 text-center text-xl font-bold" :class="textPrimaryClass">
           {{ statusConfig.title }}
         </view>
 
         <!-- 状态描述 -->
-        <view class="mb-6 whitespace-pre-line text-center text-sm text-gray-500 leading-relaxed">
+        <view class="mb-6 whitespace-pre-line text-center text-sm leading-relaxed" :class="textMutedClass">
           {{ statusConfig.description }}
         </view>
 
         <!-- 提示信息卡片 -->
-        <view class="mb-6 rounded-xl bg-[#f0f7ff] p-4">
+        <view class="mb-6 rounded-xl bg-blue-50 dark:bg-blue-500/10 p-4">
           <view class="mb-2 flex items-center">
             <wd-icon name="info-circle" size="18px" color="#2563eb" />
-            <text class="ml-2 text-sm text-[#2563eb] font-medium">
+            <text class="ml-2 text-sm font-medium text-blue-600 dark:text-blue-400">
               温馨提示
             </text>
           </view>
-          <view class="text-xs text-gray-600 leading-relaxed">
+          <view class="text-xs leading-relaxed" :class="textSecondaryClass">
             <view class="mb-1">
               1. 请加入纳新群，以便及时获取审核进度和后续通知
             </view>
@@ -178,7 +198,7 @@ function onResubmit() {
         </view>
 
         <!-- 分隔线 -->
-        <view class="mb-6 h-px bg-gray-100" />
+        <view class="mb-6 h-px bg-gray-100 dark:bg-white/10" />
 
         <!-- 按钮区域 -->
         <view class="space-y-3">
@@ -198,12 +218,12 @@ function onResubmit() {
           <!-- 重新提交按钮（仅审核不通过时显示） -->
           <view
             v-if="showResubmitBtn"
-            class="resubmit-btn flex items-center justify-center border-2 border-[#2563eb] rounded-xl bg-white py-3.5"
+            class="resubmit-btn flex items-center justify-center border-2 border-[#2563eb] dark:border-blue-400 rounded-xl bg-white dark:bg-slate-800 py-3.5"
             hover-class="bg-[#f0f7ff]"
             @click="onResubmit"
           >
             <wd-icon name="edit" size="20px" color="#2563eb" />
-            <text class="ml-2 text-base text-[#2563eb] font-semibold">
+            <text class="ml-2 text-base font-semibold text-blue-600 dark:text-blue-400">
               修改并重新提交
             </text>
           </view>
@@ -211,7 +231,7 @@ function onResubmit() {
       </view>
 
       <!-- 底部装饰文字 -->
-      <view class="mt-8 text-center text-xs text-gray-400">
+      <view class="mt-8 text-center text-xs" :class="textMutedClass">
         感谢您的申请，期待与您的加入
       </view>
     </view>
@@ -242,5 +262,14 @@ function onResubmit() {
 
 .space-y-3 > view + view {
   margin-top: 12px;
+}
+</style>
+
+<style>
+page {
+  background-color: #f5f7fa;
+}
+.dark page {
+  background-color: #020617;
 }
 </style>

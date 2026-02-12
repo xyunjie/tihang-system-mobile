@@ -15,6 +15,7 @@
 import type { ArticleSearchRespVO } from '@/api/types/article'
 import type { NoticeRespVO } from '@/api/types/notice'
 import type { NotifyMessageRespVO } from '@/api/types/notify-message'
+import dayjs from 'dayjs'
 import { computed } from 'vue'
 import { getArticlePage } from '@/api/article'
 import { getTodayAttendanceRecord } from '@/api/attendance'
@@ -26,7 +27,6 @@ import { WECHAT_SHARE_IMAGE_URL } from '@/config/share'
 import { useAppStore } from '@/store/app'
 import { useUserStore } from '@/store/user'
 import { formatDateOnly, formatRelativeTime, formatStandardDateTime, formatTimeOnly, parseDateTime } from '@/utils'
-import dayjs from 'dayjs'
 import 'dayjs/locale/zh-cn'
 
 defineOptions({
@@ -62,23 +62,9 @@ const currentDate = computed(() => {
   return dayjs().format('MM月DD日 dddd')
 })
 
-// 底部覆盖层背景
-const homeBottomStyle = computed(() => ({
-  background: isDark.value
-    ? 'linear-gradient(180deg, rgba(15,23,42,1) 0%, rgba(15,23,42,0.85) 70%)'
-    : 'linear-gradient(180deg, rgba(241,245,249,1) 0%, rgba(241,245,249,0.85) 70%)',
-}))
-
 const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-slate-800'))
 const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-slate-500'))
 const textMutedClass = computed(() => (isDark.value ? 'text-gray-500' : 'text-slate-400'))
-const borderMutedClass = computed(() => (isDark.value ? 'border-white/10' : 'border-gray-100'))
-const activeRowBgClass = computed(() => (isDark.value ? 'active:bg-white/5' : 'active:bg-gray-50'))
-const subTileBgClass = computed(() => (isDark.value ? 'bg-white/6 border border-white/8' : 'bg-slate-50 border border-slate-100'))
-
-// 骨架屏颜色
-const skBaseClass = computed(() => (isDark.value ? 'bg-white/10' : 'bg-gray-200'))
-
 // 今日考勤信息
 const todayAttendance = reactive({
   date: formatDateOnly(Date.now()),
@@ -113,8 +99,9 @@ onLoad(() => {
   pageLoading.value = true
   // 初始化系统用户信息
   const info = uni.getStorageSync('systemUserInfo')
-  if (info) systemUserInfo.value = info
-  
+  if (info)
+    systemUserInfo.value = info
+
   Promise.allSettled([
     loadTodayAttendance(),
     loadNotificationList(),
@@ -132,7 +119,8 @@ onShow(() => {
   setPageBackgroundColor()
   // 每次显示时更新用户信息
   const info = uni.getStorageSync('systemUserInfo')
-  if (info) systemUserInfo.value = info
+  if (info)
+    systemUserInfo.value = info
 })
 
 // #ifdef MP-WEIXIN
@@ -171,6 +159,7 @@ async function handlePullDownRefresh() {
   }
   finally {
     uni.stopPullDownRefresh()
+    // eslint-disable-next-line style/max-statements-per-line
     setTimeout(() => { isRefreshing.value = false }, 1000)
   }
 }
@@ -188,7 +177,7 @@ async function loadTodayAttendance() {
         todayAttendance.clockInTime = formatAttendanceTime(onDuty.recognizeTime)
       if (offDuty)
         todayAttendance.clockOutTime = formatAttendanceTime(offDuty.recognizeTime)
-      
+
       if (onDuty && offDuty) {
         todayAttendance.workDuration = calculateWorkDuration(onDuty.recognizeTime, offDuty.recognizeTime)
       }
@@ -201,9 +190,10 @@ async function loadTodayAttendance() {
       if (onDuty?.deviceSn) {
         todayAttendance.location = `设备: ${onDuty.deviceSn}`
       }
-    } else {
-       todayAttendance.attendanceStatus = '暂无数据'
-       todayAttendance.result = 0
+    }
+    else {
+      todayAttendance.attendanceStatus = '暂无数据'
+      todayAttendance.result = 0
     }
   }
   catch (error) {
@@ -216,7 +206,8 @@ async function loadTodayAttendance() {
 
 // 辅助函数保持不变
 function formatAttendanceTime(dateTimeStr: string | number): string {
-  if (!dateTimeStr) return '--:--'
+  if (!dateTimeStr)
+    return '--:--'
   return formatTimeOnly(dateTimeStr) || '--:--'
 }
 
@@ -224,24 +215,28 @@ function calculateWorkDuration(startTime: string | number, endTime: string | num
   try {
     const start = parseDateTime(startTime)
     const end = parseDateTime(endTime)
-    if (!start || !end) return '--'
+    if (!start || !end)
+      return '--'
     const diffMs = end.getTime() - start.getTime()
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
     const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
     return `${diffHours}小时${diffMinutes}分钟`
-  } catch { return '--' }
+  }
+  catch { return '--' }
 }
 
 function calculateCurrentWorkDuration(startTime: string | number): string {
   try {
     const start = parseDateTime(startTime)
-    if (!start) return '--'
+    if (!start)
+      return '--'
     const now = new Date()
     const diffMs = now.getTime() - start.getTime()
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
     const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
     return `${diffHours}小时${diffMinutes}分钟`
-  } catch { return '--' }
+  }
+  catch { return '--' }
 }
 
 function getAttendanceStatusText(result: number): string {
@@ -259,15 +254,15 @@ function getAttendanceStatusColorClass(result: number): string {
     6: 'text-red-500 bg-red-50 border-red-200',
   }
   if (isDark.value) {
-     const darkMap: Record<number, string> = {
-        1: 'text-green-400 bg-green-500/10 border-green-500/20',
-        2: 'text-orange-400 bg-orange-500/10 border-orange-500/20',
-        3: 'text-orange-400 bg-orange-500/10 border-orange-500/20',
-        4: 'text-red-400 bg-red-500/10 border-red-500/20',
-        5: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
-        6: 'text-red-400 bg-red-500/10 border-red-500/20',
-     }
-     return darkMap[result] || 'text-gray-400 bg-white/5 border-white/10'
+    const darkMap: Record<number, string> = {
+      1: 'text-green-400 bg-green-500/10 border-green-500/20',
+      2: 'text-orange-400 bg-orange-500/10 border-orange-500/20',
+      3: 'text-orange-400 bg-orange-500/10 border-orange-500/20',
+      4: 'text-red-400 bg-red-500/10 border-red-500/20',
+      5: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
+      6: 'text-red-400 bg-red-500/10 border-red-500/20',
+    }
+    return darkMap[result] || 'text-gray-400 bg-white/5 border-white/10'
   }
   return map[result] || 'text-gray-500 bg-gray-50 border-gray-200'
 }
@@ -276,8 +271,10 @@ async function loadNotificationList() {
   try {
     notificationLoading.value = true
     const response = await getNoticePage({ pageNo: 1, pageSize: 3, status: 0 })
-    if (response.code === 0 && response.data) notificationList.value = response.data.list
-  } finally { notificationLoading.value = false }
+    if (response.code === 0 && response.data)
+      notificationList.value = response.data.list
+  }
+  finally { notificationLoading.value = false }
 }
 
 function formatNotificationTime(createTime: string | number): string {
@@ -302,7 +299,8 @@ function getNotificationTypeColor(type: number): string {
 }
 
 function getPlainTextContent(htmlContent: string): string {
-  if (!htmlContent) return ''
+  if (!htmlContent)
+    return ''
   return htmlContent.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()
 }
 
@@ -310,28 +308,31 @@ async function loadMessageList() {
   try {
     messageLoading.value = true
     const response = await getMyNotifyMessagePage({ pageNo: 1, pageSize: 3 })
-    if (response.code === 0 && response.data) messageList.value = response.data.list
-  } finally { messageLoading.value = false }
+    if (response.code === 0 && response.data)
+      messageList.value = response.data.list
+  }
+  finally { messageLoading.value = false }
 }
 
 async function loadUnreadCount() {
   try {
     const response = await getUnreadCount()
-    if (response.code === 0 && typeof response.data === 'number') unreadCount.value = response.data
-  } catch (error) { console.error(error) }
-}
-
-function formatMessageTime(createTime: string | number): string {
-  return createTime ? formatRelativeTime(createTime) : ''
+    if (response.code === 0 && typeof response.data === 'number')
+      unreadCount.value = response.data
+  }
+  catch (error) { console.error(error) }
 }
 
 function navigateTo(route: string) {
   const NAV_DEBOUNCE_MS = 800
   ;(navigateTo as any)._lastTs = (navigateTo as any)._lastTs ?? 0
   const now = Date.now()
-  if (now - (navigateTo as any)._lastTs < NAV_DEBOUNCE_MS) return
-  ;(navigateTo as any)._lastTs = now
-  if (route) uni.navigateTo({ url: route, fail: () => uni.showToast({ title: '跳转失败', icon: 'none' }) })
+  if (now - (navigateTo as any)._lastTs < NAV_DEBOUNCE_MS) {
+    return
+  // eslint-disable-next-line style/max-statements-per-line
+  }(navigateTo as any)._lastTs = now
+  if (route)
+    uni.navigateTo({ url: route, fail: () => uni.showToast({ title: '跳转失败', icon: 'none' }) })
 }
 
 function formatTimeDisplay(time: string) {
@@ -342,8 +343,10 @@ async function loadArticleList() {
   try {
     articleLoading.value = true
     const response = await getArticlePage({ pageNo: 1, pageSize: 5 })
-    if (response.code === 0 && response.data) articleList.value = response.data.list
-  } catch { articleList.value = [] }
+    if (response.code === 0 && response.data)
+      articleList.value = response.data.list
+  }
+  catch { articleList.value = [] }
   finally { articleLoading.value = false }
 }
 
@@ -374,21 +377,21 @@ watch(() => isDark.value, () => {
 <template>
   <view class="relative min-h-screen bg-[#f5f7fa] dark:bg-slate-950">
     <!-- 顶部背景 -->
-    <view class="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-[#2563eb] to-[#3b82f6] rounded-b-[2.5rem] shadow-sm z-0" />
+    <view class="absolute left-0 top-0 z-0 h-64 w-full rounded-b-[2.5rem] from-[#2563eb] to-[#3b82f6] bg-gradient-to-b shadow-sm" />
 
     <!-- 头部区域 -->
-    <view class="relative z-10 pt-14 px-5 pb-8 text-white">
-      <view class="flex justify-between items-start mb-4">
+    <view class="relative z-10 px-5 pb-8 pt-14 text-white">
+      <view class="mb-4 flex items-start justify-between">
         <view>
-          <view class="text-2xl font-bold mb-1 opacity-95 tracking-wide text-shadow-sm">
+          <view class="mb-1 text-2xl font-bold tracking-wide text-shadow-sm opacity-95">
             {{ greeting }}，{{ systemUserInfo.nickname || userStore.userInfo.username || '用户' }}
           </view>
-          <view class="text-sm opacity-85 font-medium tracking-wide">
+          <view class="text-sm font-medium tracking-wide opacity-85">
             {{ currentDate }}
           </view>
         </view>
-        <view class="relative p-2.5 bg-white/15 rounded-full backdrop-blur-md border border-white/10 active:bg-white/25 transition-all shadow-sm" @click="navigateTo('/pages-sub/message/index')">
-          <view v-if="unreadCount > 0" class="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-blue-500 z-10" />
+        <view class="relative border border-white/10 rounded-full bg-white/15 p-2.5 shadow-sm backdrop-blur-md transition-all active:bg-white/25" @click="navigateTo('/pages-sub/message/index')">
+          <view v-if="unreadCount > 0" class="absolute right-1 top-1 z-10 h-2.5 w-2.5 border-2 border-blue-500 rounded-full bg-red-500" />
           <wd-icon name="chat" size="22px" color="#fff" />
         </view>
       </view>
@@ -397,16 +400,18 @@ watch(() => isDark.value, () => {
     <!-- 核心考勤卡片 -->
     <view class="relative z-10 px-4 -mt-6">
       <ThemeCard card-class="mb-6 shadow-[0_8px_20px_-6px_rgba(0,0,0,0.1)] dark:shadow-blue-900/20 overflow-hidden border-0" :padding="false" @click="navigateTo('/pages-sub/attendance/record')">
-        <view class="flex items-stretch min-h-28">
+        <view class="min-h-28 flex items-stretch">
           <!-- 左侧状态指示条 -->
           <view class="w-1.5" :class="todayAttendance.result === 1 ? 'bg-emerald-500' : (todayAttendance.result > 1 ? 'bg-orange-500' : 'bg-slate-300')" />
-          
-          <view class="flex-1 p-5 bg-white dark:bg-slate-800">
-            <view class="flex justify-between items-center mb-6">
+
+          <view class="flex-1 bg-white p-5 dark:bg-slate-800">
+            <view class="mb-6 flex items-center justify-between">
               <view class="flex items-center gap-2">
-                <view class="text-lg font-bold" :class="textPrimaryClass">今日考勤</view>
-                <view 
-                  class="px-2 py-0.5 text-xs rounded border"
+                <view class="text-lg font-bold" :class="textPrimaryClass">
+                  今日考勤
+                </view>
+                <view
+                  class="border rounded px-2 py-0.5 text-xs"
                   :class="getAttendanceStatusColorClass(todayAttendance.result)"
                 >
                   {{ todayAttendance.attendanceStatus }}
@@ -418,19 +423,23 @@ watch(() => isDark.value, () => {
               </view>
             </view>
 
-            <view class="flex justify-between items-center">
+            <view class="flex items-center justify-between">
               <view class="flex-1">
-                <view class="text-xs mb-1.5 font-medium opacity-70" :class="textMutedClass">上班打卡</view>
-                <view class="text-xl font-bold font-mono tracking-tight" :class="todayAttendance.clockInTime !== '--:--' ? (isDark ? 'text-white' : 'text-slate-800') : textMutedClass">
+                <view class="mb-1.5 text-xs font-medium opacity-70" :class="textMutedClass">
+                  上班打卡
+                </view>
+                <view class="text-xl font-bold tracking-tight font-mono" :class="todayAttendance.clockInTime !== '--:--' ? (isDark ? 'text-white' : 'text-slate-800') : textMutedClass">
                   {{ todayAttendance.clockInTime }}
                 </view>
               </view>
-              
+
               <view class="mx-6 h-8 w-[1px] bg-slate-100 dark:bg-slate-700" />
 
               <view class="flex-1 text-right">
-                <view class="text-xs mb-1.5 font-medium opacity-70" :class="textMutedClass">下班打卡</view>
-                <view class="text-xl font-bold font-mono tracking-tight" :class="todayAttendance.clockOutTime !== '--:--' ? (isDark ? 'text-white' : 'text-slate-800') : textMutedClass">
+                <view class="mb-1.5 text-xs font-medium opacity-70" :class="textMutedClass">
+                  下班打卡
+                </view>
+                <view class="text-xl font-bold tracking-tight font-mono" :class="todayAttendance.clockOutTime !== '--:--' ? (isDark ? 'text-white' : 'text-slate-800') : textMutedClass">
                   {{ todayAttendance.clockOutTime }}
                 </view>
               </view>
@@ -442,96 +451,106 @@ watch(() => isDark.value, () => {
 
     <!-- 主要内容区 -->
     <view class="px-4 pb-24 space-y-6">
-      
       <!-- 通知与公告 -->
       <view>
-        <view class="flex justify-between items-center mb-3 px-1">
-          <view class="text-base font-bold tracking-tight" :class="textPrimaryClass">通知公告</view>
-          <view class="text-xs text-blue-600 dark:text-blue-400 font-medium flex items-center active:opacity-70 transition-opacity" @click="navigateTo('/pages-sub/notification/index')">
+        <view class="mb-3 flex items-center justify-between px-1">
+          <view class="text-base font-bold tracking-tight" :class="textPrimaryClass">
+            通知公告
+          </view>
+          <view class="flex items-center text-xs text-blue-600 font-medium transition-opacity dark:text-blue-400 active:opacity-70" @click="navigateTo('/pages-sub/notification/index')">
             全部 <wd-icon name="arrow-right" size="12px" class="ml-0.5" />
           </view>
         </view>
-        
+
         <ThemeCard :padding="false" card-class="shadow-sm border border-slate-100 dark:border-slate-800">
           <view v-if="notificationList.length > 0">
-            <view 
-              v-for="(item, index) in notificationList.slice(0, 3)" 
+            <view
+              v-for="(item, index) in notificationList.slice(0, 3)"
               :key="item.id"
-              class="relative p-4 active:bg-slate-50 dark:active:bg-slate-800/50 transition-colors"
-              :class="{'border-b border-slate-100 dark:border-slate-800': index < 2}"
+              class="relative p-4 transition-colors active:bg-slate-50 dark:active:bg-slate-800/50"
+              :class="{ 'border-b border-slate-100 dark:border-slate-800': index < 2 }"
               @click="navigateTo(`/pages-sub/notification/detail?id=${item.id}`)"
             >
-              <view class="flex justify-between items-start gap-3">
-                <view class="flex-1 min-w-0">
-                  <view class="flex items-center gap-2 mb-1.5">
-                    <view class="px-1.5 py-0.5 text-[10px] font-medium rounded leading-none flex-shrink-0" :class="getNotificationTypeColor(item.type)">
+              <view class="flex items-start justify-between gap-3">
+                <view class="min-w-0 flex-1">
+                  <view class="mb-1.5 flex items-center gap-2">
+                    <view class="flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium leading-none" :class="getNotificationTypeColor(item.type)">
                       {{ getNotificationTypeText(item.type) }}
                     </view>
-                    <view class="text-sm font-medium truncate" :class="textPrimaryClass">
+                    <view class="truncate text-sm font-medium" :class="textPrimaryClass">
                       {{ item.title }}
                     </view>
                   </view>
-                  <view class="text-xs line-clamp-1 opacity-70" :class="textSecondaryClass">
+                  <view class="line-clamp-1 text-xs opacity-70" :class="textSecondaryClass">
                     {{ getPlainTextContent(item.content) }}
                   </view>
                 </view>
-                <view class="text-[10px] font-medium flex-shrink-0 mt-0.5 opacity-50" :class="textMutedClass">
+                <view class="mt-0.5 flex-shrink-0 text-[10px] font-medium opacity-50" :class="textMutedClass">
                   {{ formatNotificationTime(item.createTime).split(' ')[0] }}
                 </view>
               </view>
             </view>
           </view>
-          <view v-else class="py-10 flex flex-col items-center justify-center opacity-40">
+          <view v-else class="flex flex-col items-center justify-center py-10 opacity-40">
             <wd-icon name="info-circle" size="28px" class="mb-2" color="#94a3b8" />
-            <view class="text-xs text-slate-400 font-medium">暂无通知公告</view>
+            <view class="text-xs text-slate-400 font-medium">
+              暂无通知公告
+            </view>
           </view>
         </ThemeCard>
       </view>
 
       <!-- 最新资讯 -->
       <view>
-        <view class="flex justify-between items-center mb-3 px-1">
-          <view class="text-base font-bold tracking-tight" :class="textPrimaryClass">最新资讯</view>
-          <view class="text-xs text-blue-600 dark:text-blue-400 font-medium flex items-center active:opacity-70 transition-opacity" @click="navigateTo('/pages-sub/article/index')">
+        <view class="mb-3 flex items-center justify-between px-1">
+          <view class="text-base font-bold tracking-tight" :class="textPrimaryClass">
+            最新资讯
+          </view>
+          <view class="flex items-center text-xs text-blue-600 font-medium transition-opacity dark:text-blue-400 active:opacity-70" @click="navigateTo('/pages-sub/article/index')">
             全部 <wd-icon name="arrow-right" size="12px" class="ml-0.5" />
           </view>
         </view>
 
         <view class="space-y-3">
-          <ThemeCard 
-            v-for="article in articleList.slice(0, 5)" 
+          <ThemeCard
+            v-for="article in articleList.slice(0, 5)"
             :key="article.id"
             :padding="false"
             card-class="shadow-sm border border-slate-100 dark:border-slate-800 active:scale-[0.99] transition-transform duration-200"
             @click="navigateTo(`/pages-sub/article/detail?id=${article.id}`)"
           >
-            <view class="p-4 flex gap-4 bg-white dark:bg-slate-800 rounded-2xl">
-               <view class="flex-1 flex flex-col justify-between min-h-[4.5rem]">
-                 <view class="text-sm font-medium line-clamp-2 leading-relaxed tracking-wide" :class="textPrimaryClass">
-                   {{ article.title }}
-                 </view>
-                 
-                 <view class="flex justify-between items-center mt-3 text-xs" :class="textMutedClass">
-                   <view class="flex items-center gap-2 opacity-80">
-                     <text class="font-medium">{{ article.authorName }}</text>
-                     <text class="opacity-30">|</text>
-                     <text>{{ formatArticleTime(article.createTime).split(' ')[0] }}</text>
-                   </view>
-                   <view class="flex items-center gap-1 opacity-60">
-                     <wd-icon name="view" size="14px" />
-                     <text>{{ formatCount(article.browse) }}</text>
-                   </view>
-                 </view>
-               </view>
+            <view class="flex gap-4 rounded-2xl bg-white p-4 dark:bg-slate-800">
+              <view class="min-h-[4.5rem] flex flex-1 flex-col justify-between">
+                <view class="line-clamp-2 text-sm font-medium leading-relaxed tracking-wide" :class="textPrimaryClass">
+                  {{ article.title }}
+                </view>
+
+                <view class="mt-3 flex items-center justify-between text-xs" :class="textMutedClass">
+                  <view class="flex items-center gap-2 opacity-80">
+                    <text class="font-medium">
+                      {{ article.authorName }}
+                    </text>
+                    <text class="opacity-30">
+                      |
+                    </text>
+                    <text>{{ formatArticleTime(article.createTime).split(' ')[0] }}</text>
+                  </view>
+                  <view class="flex items-center gap-1 opacity-60">
+                    <wd-icon name="view" size="14px" />
+                    <text>{{ formatCount(article.browse) }}</text>
+                  </view>
+                </view>
+              </view>
             </view>
           </ThemeCard>
-          
+
           <view v-if="articleList.length === 0 && !articleLoading" class="py-12 text-center opacity-40">
-             <view class="text-sm text-slate-400 font-medium">暂无最新文章</view>
+            <view class="text-sm text-slate-400 font-medium">
+              暂无最新文章
+            </view>
           </view>
         </view>
       </view>
-
     </view>
   </view>
 </template>

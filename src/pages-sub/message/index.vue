@@ -71,12 +71,15 @@ async function queryList(pageNo: number, pageSize: number) {
 
     if (response.code === 0 && response.data) {
       const { list } = response.data
-      if (firstLoad.value) firstLoad.value = false
+      if (firstLoad.value)
+        firstLoad.value = false
       pagingRef.value?.complete(list)
-    } else {
+    }
+    else {
       pagingRef.value?.complete(false)
     }
-  } catch (error) {
+  }
+  catch (error) {
     pagingRef.value?.complete(false)
   }
 }
@@ -160,21 +163,22 @@ function getPlainTextContent(htmlContent: string): string {
       v-model="messageList"
       :default-page-size="10"
       :bg-color="isDark ? '#020617' : '#f5f7fa'"
+      style="top: 0px;"
       @query="queryList"
     >
       <template #top>
-        <view class="px-4 py-3 sticky top-0 z-10" :class="isDark ? 'bg-[#020617]' : 'bg-[#f5f7fa]'">
-          <wd-tabs 
-            v-model="currentTab" 
-            @change="handleTabChange"
+        <view class="sticky top-0 z-10 px-4 py-3" :class="isDark ? 'bg-[#020617]' : 'bg-[#f5f7fa]'">
+          <wd-tabs
+            v-model="currentTab"
             :nav-style="{
-              background: 'transparent'
+              background: 'transparent',
             }"
+            @change="handleTabChange"
           >
-            <wd-tab 
-              v-for="(item, index) in tabs" 
-              :key="index" 
-              :title="item" 
+            <wd-tab
+              v-for="(item, index) in tabs"
+              :key="index"
+              :title="item"
             />
           </wd-tabs>
         </view>
@@ -188,29 +192,29 @@ function getPlainTextContent(htmlContent: string): string {
           card-class="shadow-sm border border-slate-100 dark:border-slate-800 active:scale-[0.99] transition-transform duration-200"
           @click="navigateToDetail(item)"
         >
-          <view class="p-4 flex gap-4 bg-white dark:bg-slate-800 rounded-2xl">
+          <view class="flex gap-4 rounded-2xl bg-white p-4 dark:bg-slate-800">
             <!-- 左侧图标容器 -->
-            <view 
-              class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+            <view
+              class="h-10 w-10 flex flex-shrink-0 items-center justify-center rounded-full"
               :class="getMessageTypeColor(item.templateType)"
             >
               <wd-icon name="chat" size="20px" />
             </view>
 
-            <view class="flex-1 min-w-0">
-              <view class="flex justify-between items-start mb-1.5 gap-2">
+            <view class="min-w-0 flex-1">
+              <view class="mb-1.5 flex items-start justify-between gap-2">
                 <view class="flex items-center gap-2">
-                  <view class="text-base font-medium truncate leading-tight" :class="[textPrimaryClass, !item.readStatus ? 'font-bold' : '']">
+                  <view class="truncate text-base font-medium leading-tight" :class="[textPrimaryClass, !item.readStatus ? 'font-bold' : '']">
                     {{ item.templateNickname || '系统通知' }}
                   </view>
-                  <view v-if="!item.readStatus" class="w-2 h-2 rounded-full bg-red-500 flex-shrink-0" />
+                  <view v-if="!item.readStatus" class="h-2 w-2 flex-shrink-0 rounded-full bg-red-500" />
                 </view>
-                <view class="text-xs flex-shrink-0" :class="textMutedClass">
+                <view class="flex-shrink-0 text-xs" :class="textMutedClass">
                   {{ formatRelativeTime(item.createTime) }}
                 </view>
               </view>
 
-              <view class="text-sm line-clamp-2 leading-relaxed opacity-80" :class="textSecondaryClass">
+              <view class="line-clamp-2 text-sm leading-relaxed opacity-80" :class="textSecondaryClass">
                 {{ getPlainTextContent(item.templateContent) }}
               </view>
             </view>

@@ -219,6 +219,7 @@ onShareTimeline(() => ({
       v-model="articles"
       :default-page-size="10"
       :bg-color="isDark ? '#020617' : '#f5f7fa'"
+      style="top: 0px;"
       @query="queryList"
     >
       <!-- 搜索栏固定在顶部 -->

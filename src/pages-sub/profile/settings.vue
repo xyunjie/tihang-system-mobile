@@ -7,9 +7,10 @@
 </route>
 
 <script setup lang="ts">
+import type { ThemeColor } from '@/store/app'
 import { computed } from 'vue'
 import ThemeCard from '@/components/ThemeCard.vue'
-import { useAppStore, themeColorMap, type ThemeColor } from '@/store/app'
+import { themeColorMap, useAppStore } from '@/store/app'
 
 defineOptions({ name: 'SystemSettings' })
 
@@ -95,7 +96,7 @@ function handlePrefChange(val: Pref) {
 
       <!-- 主题色 -->
       <ThemeCard radius="rounded-2xl" padding="p-4">
-        <view class="flex items-center justify-between mb-3">
+        <view class="mb-3 flex items-center justify-between">
           <view :class="titleClass" class="text-base font-semibold">
             主题色
           </view>
@@ -107,11 +108,11 @@ function handlePrefChange(val: Pref) {
           <view
             v-for="item in colorOptions"
             :key="item.value"
-            class="w-8 h-8 rounded-full flex items-center justify-center border-2 transition-transform active:scale-95"
+            class="h-8 w-8 flex items-center justify-center border-2 rounded-full transition-transform active:scale-95"
             :style="{ backgroundColor: item.color, borderColor: themeColor === item.value ? 'currentColor' : 'transparent' }"
             @click="themeColor = item.value"
           >
-            <view v-if="themeColor === item.value" class="i-carbon-checkmark text-white text-lg font-bold" />
+            <view v-if="themeColor === item.value" class="i-carbon-checkmark text-lg text-white font-bold" />
           </view>
         </view>
       </ThemeCard>

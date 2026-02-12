@@ -12,7 +12,7 @@
 <script setup lang="ts">
 import type { UserRecruitmentConfigRespVO, UserRecruitmentRespVO, UserRecruitmentSaveReqVO } from '@/api/types/recruitment'
 import { onLoad, onShow } from '@dcloudio/uni-app'
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useMessage } from 'wot-design-uni'
 import { getCityList, getProvinceList } from '@/api/area'
 import { getSocialAuthRedirect, getWxCode, getWxUserInfoApi } from '@/api/login'
@@ -21,6 +21,7 @@ import { getClassList, getCollegeList, getMajorList } from '@/api/school-dept'
 import { RecruitmentStatus } from '@/api/types/recruitment'
 import { uploadFile } from '@/api/user'
 import KspCropper from '@/components/ksp-cropper.vue'
+import { useAppStore } from '@/store/app'
 import { DictTypeEnum } from '@/utils/dictTypes'
 import { DictUtils } from '@/utils/dictUtils'
 import { getSocialType, isWechatBrowser } from '@/utils/platform'
@@ -28,6 +29,21 @@ import { showToast } from '@/utils/toast'
 
 // 初始化消息框
 const message = useMessage()
+
+const appStore = useAppStore()
+const isDark = computed(() => appStore.theme === 'dark')
+const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-slate-800'))
+const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-slate-500'))
+const textMutedClass = computed(() => (isDark.value ? 'text-gray-500' : 'text-slate-400'))
+
+function setPageBackgroundColor() {
+  const bgColor = isDark.value ? '#020617' : '#f5f7fa'
+  uni.setBackgroundColor({
+    backgroundColor: bgColor,
+    backgroundColorTop: bgColor,
+    backgroundColorBottom: bgColor,
+  })
+}
 
 // 页面状态
 const loading = ref(true)
@@ -731,6 +747,11 @@ onLoad(async (options) => {
 // 页面显示时获取纳新配置
 onShow(() => {
   // loadRecruitmentConfig()
+  setPageBackgroundColor()
+})
+
+watch(() => isDark.value, () => {
+  setPageBackgroundColor()
 })
 
 // 显示纳新须知
@@ -1052,7 +1073,7 @@ async function onSubmit() {
 </script>
 
 <template>
-  <view class="recruitment-page min-h-screen bg-[#f5f7fa]">
+  <view class="recruitment-page min-h-screen">
     <!-- 消息框组件 -->
     <wd-message-box />
 
@@ -1085,13 +1106,13 @@ async function onSubmit() {
 
     <!-- 重新提交提示 -->
     <view v-if="isResubmit && recruitmentConfig" class="relative z-20 mx-4 mb-4 mt-[-12px]">
-      <view class="flex items-center rounded-xl bg-[#fef3c7] px-4 py-3 shadow-sm">
+      <view class="flex items-center rounded-xl bg-amber-50 px-4 py-3 shadow-sm dark:bg-amber-500/10">
         <wd-icon name="warning" size="20px" color="#d97706" />
         <view class="ml-3 flex-1">
-          <view class="text-sm text-[#92400e] font-medium">
+          <view class="text-sm text-amber-700 font-medium dark:text-amber-300">
             您的申请未通过审核
           </view>
-          <view class="mt-1 text-xs text-[#b45309]">
+          <view class="mt-1 text-xs text-amber-600 dark:text-amber-300/80">
             请修改信息后重新提交，我们会尽快审核
           </view>
         </view>
@@ -1102,10 +1123,10 @@ async function onSubmit() {
     <view v-if="!loading && recruitmentConfig" class="relative z-10 mt-[-24px] px-4 pb-8">
       <wd-form ref="formRef" :model="formData" :rules="rules">
         <!-- 基本信息卡片 -->
-        <view class="form-card mb-4 rounded-2xl bg-white p-5 shadow-sm">
+        <view class="form-card mb-4 rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-800">
           <view class="card-header mb-4 flex items-center">
             <view class="mr-3 h-8 w-1 rounded-full bg-[#2563eb]" />
-            <text class="text-lg text-gray-800 font-semibold">
+            <text class="text-lg font-semibold" :class="textPrimaryClass">
               基本信息
             </text>
           </view>
@@ -1113,14 +1134,14 @@ async function onSubmit() {
           <!-- 证件照上传 -->
           <view class="photo-upload mb-6 flex items-center">
             <view
-              class="photo-box relative h-32 w-24 flex flex-shrink-0 cursor-pointer items-center justify-center overflow-hidden border-2 border-[#2563eb]/30 rounded-xl border-dashed bg-[#f0f7ff] transition-all"
+              class="photo-box relative h-32 w-24 flex flex-shrink-0 cursor-pointer items-center justify-center overflow-hidden border-2 border-[#2563eb]/30 rounded-xl border-dashed bg-[#f0f7ff] transition-all dark:border-[#2563eb]/40 dark:bg-blue-500/10"
               hover-class="border-[#2563eb]"
               @click="onSelectPhoto"
             >
               <!-- 上传中loading状态 -->
               <view v-if="uploadingPhoto" class="flex flex-col items-center">
                 <wd-loading color="#2563eb" size="28px" />
-                <text class="mt-2 text-xs text-[#2563eb]">
+                <text class="mt-2 text-xs text-blue-600 dark:text-blue-400">
                   上传中...
                 </text>
               </view>
@@ -1134,179 +1155,195 @@ async function onSubmit() {
               <!-- 默认上传提示 -->
               <view v-else class="flex flex-col items-center">
                 <wd-icon name="camera" size="28px" color="#2563eb" />
-                <text class="mt-2 text-xs text-[#2563eb]">
+                <text class="mt-2 text-xs text-blue-600 dark:text-blue-400">
                   上传照片
                 </text>
               </view>
             </view>
             <view class="ml-4 flex-1">
-              <text class="mb-1 block text-sm text-gray-700 font-medium">
+              <text class="mb-1 block text-sm font-medium" :class="textSecondaryClass">
                 一寸证件照 <text class="text-red-500">
                   *
                 </text>
               </text>
-              <text class="text-xs text-gray-400">
+              <text class="text-xs" :class="textMutedClass">
                 请上传清晰的正面免冠照片
               </text>
             </view>
           </view>
 
-          <wd-input
-            v-model="formData.name"
-            label="姓名"
-            placeholder="请输入真实姓名"
-            required
-            prop="name"
-          />
+          <view class="overflow-hidden border border-gray-100 rounded-xl dark:border-gray-700">
+            <wd-input
+              v-model="formData.name"
+              label-width="30%"
+              label="姓名"
+              placeholder="请输入真实姓名"
+              required
+              prop="name"
+              :no-border="false"
+            />
 
-          <wd-cell title="性别" required center>
-            <wd-radio-group v-model="formData.sex" shape="button">
-              <wd-radio :value="1">
-                男
-              </wd-radio>
-              <wd-radio :value="2">
-                女
-              </wd-radio>
-            </wd-radio-group>
-          </wd-cell>
+            <wd-cell title-width="30%" title="性别" required center>
+              <wd-radio-group v-model="formData.sex" shape="button" inline>
+                <wd-radio :value="1">
+                  男
+                </wd-radio>
+                <wd-radio :value="2">
+                  女
+                </wd-radio>
+              </wd-radio-group>
+            </wd-cell>
 
-          <wd-input
-            v-model="formData.studentId"
-            label="学号"
-            placeholder="请输入学号"
-            required
-            prop="studentId"
-          />
+            <wd-input
+              v-model="formData.studentId"
+              label="学号"
+              label-width="30%"
+              placeholder="请输入学号"
+              required
+              prop="studentId"
+              :no-border="false"
+            />
 
-          <wd-input
-            v-model="formData.phone"
-            label="手机号"
-            placeholder="请输入手机号"
-            required
-            prop="phone"
-          />
+            <wd-input
+              v-model="formData.phone"
+              label="手机号"
+              label-width="30%"
+              placeholder="请输入手机号"
+              required
+              prop="phone"
+              :no-border="false"
+            />
 
-          <wd-input
-            v-model="formData.qqNumber"
-            label="QQ号"
-            placeholder="请输入QQ号"
-            required
-            prop="qqNumber"
-          />
+            <wd-input
+              v-model="formData.qqNumber"
+              label="QQ号"
+              label-width="30%"
+              placeholder="请输入QQ号"
+              required
+              prop="qqNumber"
+              :no-border="false"
+            />
 
-          <wd-input
-            v-model="formData.email"
-            label="邮箱"
-            placeholder="请输入邮箱地址"
-            required
-            prop="email"
-          />
+            <wd-input
+              v-model="formData.email"
+              label="邮箱"
+              label-width="30%"
+              placeholder="请输入邮箱地址"
+              required
+              prop="email"
+              :no-border="false"
+            />
+          </view>
         </view>
 
         <!-- 个人详细信息卡片 -->
-        <view class="form-card mb-4 rounded-2xl bg-white p-5 shadow-sm">
+        <view class="form-card mb-4 rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-800">
           <view class="card-header mb-4 flex items-center">
             <view class="mr-3 h-8 w-1 rounded-full bg-[#2563eb]" />
-            <text class="text-lg text-gray-800 font-semibold">
+            <text class="text-lg font-semibold" :class="textPrimaryClass">
               个人详情
             </text>
           </view>
 
-          <wd-cell title="出生日期" required center>
-            <wd-datetime-picker
-              v-model="formData.birthday"
-              :min-date="946656000000"
-              type="date"
-              @confirm="onBirthdayChange"
-            />
-          </wd-cell>
+          <view class="overflow-hidden border border-gray-100 rounded-xl dark:border-gray-700">
+            <wd-cell title-width="30%" title="出生日期" required center>
+              <wd-datetime-picker
+                v-model="formData.birthday"
+                :min-date="946656000000"
+                type="date"
+                @confirm="onBirthdayChange"
+              />
+            </wd-cell>
 
-          <wd-cell title="民族" required center>
-            <wd-picker
-              v-model="formData.nation"
-              :columns="nationOptions"
-              @confirm="onNationChange"
-            />
-          </wd-cell>
+            <wd-cell title-width="30%" title="民族" required center>
+              <wd-picker
+                v-model="formData.nation"
+                :columns="nationOptions"
+                @confirm="onNationChange"
+              />
+            </wd-cell>
 
-          <wd-cell title="政治面貌" required center>
-            <wd-picker
-              v-model="formData.politicalOutlook"
-              :columns="politicalOptions"
-              @confirm="onPoliticalChange"
-            />
-          </wd-cell>
+            <wd-cell title-width="30%" title="政治面貌" required center>
+              <wd-picker
+                v-model="formData.politicalOutlook"
+                :columns="politicalOptions"
+                @confirm="onPoliticalChange"
+              />
+            </wd-cell>
 
-          <wd-cell title="省份" required center>
-            <wd-picker
-              v-model="formData.province"
-              :columns="provinceOptions"
-              placeholder="请选择省份"
-              @confirm="onProvinceChange"
-            />
-          </wd-cell>
+            <wd-cell title-width="30%" title="省份" required center>
+              <wd-picker
+                v-model="formData.province"
+                :columns="provinceOptions"
+                placeholder="请选择省份"
+                @confirm="onProvinceChange"
+              />
+            </wd-cell>
 
-          <wd-cell title="市/区" required center>
-            <wd-picker
-              v-model="formData.city"
-              :columns="cityOptions"
-              placeholder="请选择市或区"
-              :disabled="!selectedProvinceId"
-              @confirm="onCityChange"
-            />
-          </wd-cell>
+            <wd-cell title-width="30%" title="市/区" required center>
+              <wd-picker
+                v-model="formData.city"
+                :columns="cityOptions"
+                placeholder="请选择市或区"
+                :disabled="!selectedProvinceId"
+                @confirm="onCityChange"
+              />
+            </wd-cell>
+          </view>
         </view>
 
         <!-- 学院专业信息卡片 -->
-        <view class="form-card mb-4 rounded-2xl bg-white p-5 shadow-sm">
+        <view class="form-card mb-4 rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-800">
           <view class="card-header mb-4 flex items-center">
             <view class="mr-3 h-8 w-1 rounded-full bg-[#2563eb]" />
-            <text class="text-lg text-gray-800 font-semibold">
+            <text class="text-lg font-semibold" :class="textPrimaryClass">
               学院信息
             </text>
           </view>
 
-          <wd-cell title="学院" required center>
-            <wd-picker
-              v-model="selectedCollegeId"
-              :columns="collegeOptions"
-              placeholder="请选择学院"
-              @confirm="onCollegeChange"
-            />
-          </wd-cell>
+          <view class="overflow-hidden border border-gray-100 rounded-xl dark:border-gray-700">
+            <wd-cell title-width="30%" title="学院" required center>
+              <wd-picker
+                v-model="selectedCollegeId"
+                :columns="collegeOptions"
+                placeholder="请选择学院"
+                @confirm="onCollegeChange"
+              />
+            </wd-cell>
 
-          <wd-cell title="专业" required center>
-            <wd-picker
-              v-model="selectedMajorId"
-              :columns="majorOptions"
-              placeholder="请选择专业"
-              :disabled="!selectedCollegeId"
-              @confirm="onMajorChange"
-            />
-          </wd-cell>
+            <wd-cell title-width="30%" title="专业" required center>
+              <wd-picker
+                v-model="selectedMajorId"
+                :columns="majorOptions"
+                placeholder="请选择专业"
+                :disabled="!selectedCollegeId"
+                @confirm="onMajorChange"
+              />
+            </wd-cell>
 
-          <wd-cell title="班级" required center>
-            <wd-picker
-              v-model="selectedClassId"
-              :columns="classOptions"
-              placeholder="请选择班级"
-              :disabled="!selectedMajorId"
-              @confirm="onClassChange"
-            />
-          </wd-cell>
+            <wd-cell title-width="30%" title="班级" required center>
+              <wd-picker
+                v-model="selectedClassId"
+                :columns="classOptions"
+                placeholder="请选择班级"
+                :disabled="!selectedMajorId"
+                @confirm="onClassChange"
+              />
+            </wd-cell>
+          </view>
         </view>
 
         <!-- 个人能力与意向卡片 -->
-        <view class="form-card mb-4 rounded-2xl bg-white p-5 shadow-sm">
+        <view class="form-card mb-4 rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-800">
           <view class="card-header mb-4 flex items-center">
             <view class="mr-3 h-8 w-1 rounded-full bg-[#2563eb]" />
-            <text class="text-lg text-gray-800 font-semibold">
+            <text class="text-lg font-semibold" :class="textPrimaryClass">
               能力与意向
             </text>
           </view>
 
           <view class="textarea-section mb-4">
-            <view class="mb-2 text-sm text-gray-700 font-medium">
+            <view class="mb-2 text-sm font-medium" :class="textSecondaryClass">
               个人介绍 <text class="text-red-500">
                 *
               </text>
@@ -1322,7 +1359,7 @@ async function onSubmit() {
           </view>
 
           <view class="textarea-section mb-4">
-            <view class="mb-2 text-sm text-gray-700 font-medium">
+            <view class="mb-2 text-sm font-medium" :class="textSecondaryClass">
               加入原因 <text class="text-red-500">
                 *
               </text>
@@ -1338,7 +1375,7 @@ async function onSubmit() {
           </view>
 
           <view class="textarea-section mb-4">
-            <view class="mb-2 text-sm text-gray-700 font-medium">
+            <view class="mb-2 text-sm font-medium" :class="textSecondaryClass">
               个人技能 <text class="text-red-500">
                 *
               </text>
@@ -1354,7 +1391,7 @@ async function onSubmit() {
           </view>
 
           <view class="textarea-section">
-            <view class="mb-2 text-sm text-gray-700 font-medium">
+            <view class="mb-2 text-sm font-medium" :class="textSecondaryClass">
               兴趣方向 <text class="text-red-500">
                 *
               </text>
@@ -1382,7 +1419,7 @@ async function onSubmit() {
           >
             提交申请
           </wd-button>
-          <view class="mt-3 text-center text-xs text-gray-400">
+          <view class="mt-3 text-center text-xs" :class="textMutedClass">
             提交即表示您同意我们的信息收集与使用规范
           </view>
         </view>
@@ -1390,10 +1427,10 @@ async function onSubmit() {
     </view>
 
     <!-- 加载状态 -->
-    <view v-if="loading" class="fixed inset-0 z-50 flex items-center justify-center bg-white">
+    <view v-if="loading" class="fixed inset-0 z-50 flex items-center justify-center bg-white dark:bg-slate-800">
       <view class="text-center">
         <wd-loading color="#2563eb" />
-        <view class="mt-4 text-sm text-gray-500">
+        <view class="mt-4 text-sm" :class="textMutedClass">
           正在加载纳新配置...
         </view>
       </view>
@@ -1424,12 +1461,33 @@ async function onSubmit() {
   font-weight: 600 !important;
 }
 
+/* 统一 Input 和 Cell 的高度与内边距 */
+:deep(.wd-cell),
 :deep(.wd-input) {
-  padding: 12px 0;
+  min-height: 54px; /* 设定统一最小高度 */
+  display: flex;
+  align-items: center; /* 垂直居中 */
+}
+
+:deep(.wd-input) {
+  padding: 0 12px !important; /* 覆盖原有 padding，统一左右间距 */
+}
+
+:deep(.wd-cell__wrapper) {
+  padding: 0 !important; /* 移除内部 wrapper padding，由父级控制 */
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  width: 100%;
 }
 
 :deep(.wd-cell) {
-  padding: 4px 0;
+  padding: 0 12px !important; /* 统一左右间距 */
+}
+
+/* 深色模式下表单文字颜色适配 */
+.dark :deep(.wd-cell__title) {
+  color: #cbd5e1 !important; /* slate-300 */
 }
 
 :deep(.wd-textarea) {
@@ -1437,8 +1495,39 @@ async function onSubmit() {
   border-radius: 8px;
   padding: 12px;
 }
+.dark :deep(.wd-textarea) {
+  background: rgba(255, 255, 255, 0.04);
+}
 
+/* 修复单选框文字颜色 */
+.dark :deep(.wd-radio__label) {
+  color: #cbd5e1 !important;
+}
+
+/* 修复 Picker/Select 内部文字换行问题 */
+:deep(.wd-picker__text) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 修复 RadioGroup 垂直居中 */
+:deep(.wd-radio-group) {
+  display: flex;
+  align-items: center;
+}
+
+/* 修复 Input/Cell 样式覆盖 */
 .wd-input {
-  padding: 12px 0 !important;
+  padding: 0 12px !important;
+}
+</style>
+
+<style>
+page {
+  background-color: #f5f7fa;
+}
+.dark page {
+  background-color: #020617;
 }
 </style>

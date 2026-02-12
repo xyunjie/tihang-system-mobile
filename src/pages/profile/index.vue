@@ -128,7 +128,8 @@ function formatSex(sex: number) {
 }
 
 function formatDept(dept: { id: number, name: string, parentId: number }) {
-  if (!dept) return '暂无部门'
+  if (!dept)
+    return '暂无部门'
   if (dept.parentId && dept.parentId !== 0) {
     return `${dept.name}`
   }
@@ -136,7 +137,8 @@ function formatDept(dept: { id: number, name: string, parentId: number }) {
 }
 
 async function fetchUserInfo() {
-  if (loading.value) return
+  if (loading.value)
+    return
   loading.value = true
   try {
     const res = await _getUserInfo()
@@ -165,6 +167,7 @@ async function handlePullDownRefresh() {
   }
   finally {
     uni.stopPullDownRefresh()
+    // eslint-disable-next-line style/max-statements-per-line
     setTimeout(() => { isRefreshing.value = false }, 1000)
   }
 }
@@ -217,101 +220,104 @@ onShareTimeline(() => ({
 <template>
   <view class="relative min-h-screen bg-[#f5f7fa] dark:bg-slate-950">
     <!-- 顶部背景 -->
-    <view class="absolute top-0 left-0 w-full h-40 bg-gradient-to-b from-[#2563eb] to-[#3b82f6] rounded-b-[1.5rem] shadow-sm z-0" />
+    <view class="absolute left-0 top-0 z-0 h-40 w-full rounded-b-[1.5rem] from-[#2563eb] to-[#3b82f6] bg-gradient-to-b shadow-sm" />
 
     <!-- 头部区域 -->
-    <view class="relative z-10 pt-14 px-5 pb-3 text-white">
-      <view class="flex justify-between items-center mb-1">
-         <view class="text-xl font-bold opacity-95 tracking-wide text-shadow-sm">个人中心</view>
+    <view class="relative z-10 px-5 pb-3 pt-14 text-white">
+      <view class="mb-1 flex items-center justify-between">
+        <view class="text-xl font-bold tracking-wide text-shadow-sm opacity-95">
+          个人中心
+        </view>
       </view>
     </view>
 
     <!-- 用户信息卡片 -->
-    <view class="relative z-10 px-4 mt-2">
+    <view class="relative z-10 mt-2 px-4">
       <ThemeCard card-class="mb-6 shadow-[0_8px_20px_-6px_rgba(0,0,0,0.1)] dark:shadow-blue-900/20 overflow-hidden border-0" :padding="false">
-        <view class="p-5 bg-white dark:bg-slate-800">
-           <view class="flex items-center gap-4">
-             <view class="relative">
-               <image
-                  :src="systemUserInfo?.avatar || '/static/images/default-avatar.png'"
-                  class="h-16 w-16 rounded-full border-2 border-slate-100 dark:border-slate-700 shadow-sm"
-                  mode="aspectFill"
-               />
-               <view class="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white dark:border-slate-800 rounded-full" />
-             </view>
-             <view class="flex-1 min-w-0">
-               <view class="text-lg font-bold mb-1 truncate" :class="textPrimaryClass">
-                 {{ systemUserInfo?.nickname || systemUserInfo?.username || '未登录' }}
-               </view>
-               <view class="text-xs opacity-80 mb-2 truncate" :class="textSecondaryClass">
-                 {{ formatDept(systemUserInfo?.dept) }}
-               </view>
-               <view class="flex gap-2">
-                 <view class="px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-medium border border-blue-100 dark:border-blue-500/20">
-                   正常状态
-                 </view>
-                 <view v-if="systemUserInfo?.roles?.length" class="px-2 py-0.5 rounded bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[10px] font-medium border border-purple-100 dark:border-purple-500/20">
-                   {{ systemUserInfo.roles[0].name }}
-                 </view>
-               </view>
-             </view>
-           </view>
+        <view class="bg-white p-5 dark:bg-slate-800">
+          <view class="flex items-center gap-4">
+            <view class="relative">
+              <image
+                :src="systemUserInfo?.avatar || '/static/images/default-avatar.png'"
+                class="h-16 w-16 border-2 border-slate-100 rounded-full shadow-sm dark:border-slate-700"
+                mode="aspectFill"
+              />
+              <view class="absolute bottom-0 right-0 h-4 w-4 border-2 border-white rounded-full bg-green-500 dark:border-slate-800" />
+            </view>
+            <view class="min-w-0 flex-1">
+              <view class="mb-1 truncate text-lg font-bold" :class="textPrimaryClass">
+                {{ systemUserInfo?.nickname || systemUserInfo?.username || '未登录' }}
+              </view>
+              <view class="mb-2 truncate text-xs opacity-80" :class="textSecondaryClass">
+                {{ formatDept(systemUserInfo?.dept) }}
+              </view>
+              <view class="flex gap-2">
+                <view class="border border-blue-100 rounded bg-blue-50 px-2 py-0.5 text-[10px] text-blue-600 font-medium dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-400">
+                  正常状态
+                </view>
+                <view v-if="systemUserInfo?.roles?.length" class="border border-purple-100 rounded bg-purple-50 px-2 py-0.5 text-[10px] text-purple-600 font-medium dark:border-purple-500/20 dark:bg-purple-500/10 dark:text-purple-400">
+                  {{ systemUserInfo.roles[0].name }}
+                </view>
+              </view>
+            </view>
+          </view>
         </view>
       </ThemeCard>
     </view>
 
     <!-- 主要内容区 -->
     <view class="px-4 pb-24 space-y-4">
-       <!-- 快捷操作 -->
-       <ThemeCard :padding="false">
-         <view class="grid grid-cols-4 py-4">
-           <view
-              v-for="(action, index) in quickActions"
-              :key="index"
-              class="flex flex-col items-center gap-2 active:opacity-70 transition-opacity"
-              @click="action.handler"
-           >
-              <view class="h-10 w-10 flex items-center justify-center rounded-xl text-white shadow-sm" :class="action.color">
-                <wd-icon :name="action.icon" size="20px" />
+      <!-- 快捷操作 -->
+      <ThemeCard :padding="false">
+        <view class="grid grid-cols-4 py-4">
+          <view
+            v-for="(action, index) in quickActions"
+            :key="index"
+            class="flex flex-col items-center gap-2 transition-opacity active:opacity-70"
+            @click="action.handler"
+          >
+            <view class="h-10 w-10 flex items-center justify-center rounded-xl text-white shadow-sm" :class="action.color">
+              <wd-icon :name="action.icon" size="20px" />
+            </view>
+            <view class="text-xs font-medium" :class="textPrimaryClass">
+              {{ action.label }}
+            </view>
+          </view>
+        </view>
+      </ThemeCard>
+
+      <!-- 菜单列表 -->
+      <view v-for="(category, index) in menuItems" :key="index">
+        <view class="mb-2 px-1 text-xs font-bold opacity-60" :class="textSecondaryClass">
+          {{ category.category }}
+        </view>
+        <ThemeCard :padding="false" card-class="overflow-hidden">
+          <view class="divide-y" :class="borderMutedClass">
+            <view
+              v-for="(item, idx) in category.items"
+              :key="idx"
+              class="flex cursor-pointer items-center gap-3 px-4 py-4 transition-colors"
+              :class="activeRowBgClass"
+              @click="item.action"
+            >
+              <view class="flex-shrink-0 text-lg" :class="item.iconColor">
+                <wd-icon :name="item.icon" size="18px" />
               </view>
-              <view class="text-xs font-medium" :class="textPrimaryClass">{{ action.label }}</view>
-           </view>
-         </view>
-       </ThemeCard>
-
-       <!-- 菜单列表 -->
-       <view v-for="(category, index) in menuItems" :key="index">
-         <view class="mb-2 px-1 text-xs font-bold opacity-60" :class="textSecondaryClass">
-           {{ category.category }}
-         </view>
-         <ThemeCard :padding="false" card-class="overflow-hidden">
-           <view class="divide-y" :class="borderMutedClass">
-             <view
-               v-for="(item, idx) in category.items"
-               :key="idx"
-               class="flex items-center gap-3 px-4 py-4 transition-colors cursor-pointer"
-               :class="activeRowBgClass"
-               @click="item.action"
-             >
-               <view class="text-lg flex-shrink-0" :class="item.iconColor">
-                 <wd-icon :name="item.icon" size="18px" />
-               </view>
-               <view class="flex-1 min-w-0">
-                 <view class="flex items-center justify-between">
-                   <view class="text-sm font-medium" :class="[textPrimaryClass, item.danger ? 'text-red-500' : '']">
-                     {{ item.name }}
-                   </view>
-                   <view class="text-[10px] opacity-60" :class="textSecondaryClass">
-                     {{ item.desc }}
-                   </view>
-                 </view>
-               </view>
-               <wd-icon name="arrow-right" size="14px" class="text-slate-300" />
-             </view>
-           </view>
-         </ThemeCard>
-       </view>
-
+              <view class="min-w-0 flex-1">
+                <view class="flex items-center justify-between">
+                  <view class="text-sm font-medium" :class="[textPrimaryClass, item.danger ? 'text-red-500' : '']">
+                    {{ item.name }}
+                  </view>
+                  <view class="text-[10px] opacity-60" :class="textSecondaryClass">
+                    {{ item.desc }}
+                  </view>
+                </view>
+              </view>
+              <wd-icon name="arrow-right" size="14px" class="text-slate-300" />
+            </view>
+          </view>
+        </ThemeCard>
+      </view>
     </view>
   </view>
 </template>

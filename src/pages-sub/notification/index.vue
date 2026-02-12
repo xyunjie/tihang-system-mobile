@@ -178,6 +178,7 @@ function getPlainTextContent(htmlContent: string): string {
       v-model="notificationList"
       :default-page-size="10"
       :bg-color="isDark ? '#020617' : '#f5f7fa'"
+      style="top: 0px;"
       @query="queryList"
     >
       <template #top>
@@ -206,37 +207,37 @@ function getPlainTextContent(htmlContent: string): string {
           card-class="shadow-sm border border-slate-100 dark:border-slate-800 active:scale-[0.99] transition-transform duration-200"
           @click="navigateToDetail(item)"
         >
-          <view class="p-4 flex gap-4">
+          <view class="flex gap-4 p-4">
             <!-- 左侧图标容器 -->
-            <view 
-              class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+            <view
+              class="h-10 w-10 flex flex-shrink-0 items-center justify-center rounded-full"
               :class="isDark ? 'bg-blue-500/10' : 'bg-blue-50'"
             >
-              <wd-icon 
-                name="notification" 
-                size="20px" 
-                :color="isDark ? '#60a5fa' : '#3b82f6'" 
+              <wd-icon
+                name="notification"
+                size="20px"
+                :color="isDark ? '#60a5fa' : '#3b82f6'"
               />
             </view>
 
-            <view class="flex-1 min-w-0">
-              <view class="flex justify-between items-start mb-1.5 gap-2">
-                <view class="text-base font-medium truncate leading-tight" :class="textPrimaryClass">
+            <view class="min-w-0 flex-1">
+              <view class="mb-1.5 flex items-start justify-between gap-2">
+                <view class="truncate text-base font-medium leading-tight" :class="textPrimaryClass">
                   {{ item.title }}
                 </view>
-                <view class="text-xs flex-shrink-0" :class="textMutedClass">
+                <view class="flex-shrink-0 text-xs" :class="textMutedClass">
                   {{ formatStandardDateTime(item.createTime).split(' ')[0] }}
                 </view>
               </view>
 
-              <view class="text-sm line-clamp-2 leading-relaxed mb-2.5 opacity-80" :class="textSecondaryClass">
+              <view class="line-clamp-2 mb-2.5 text-sm leading-relaxed opacity-80" :class="textSecondaryClass">
                 {{ getPlainTextContent(item.content) }}
               </view>
-              
+
               <view class="flex items-center">
-                 <view class="px-2 py-0.5 text-xs rounded-md" :class="getNotificationTypeColor(item.type)">
-                   {{ getNotificationTypeText(item.type) }}
-                 </view>
+                <view class="rounded-md px-2 py-0.5 text-xs" :class="getNotificationTypeColor(item.type)">
+                  {{ getNotificationTypeText(item.type) }}
+                </view>
               </view>
             </view>
           </view>
