@@ -305,6 +305,28 @@
           }
         },
         {
+          "path": "project/detail",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "项目详情"
+          }
+        },
+        {
+          "path": "project/index",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "我的项目",
+            "navigationStyle": "custom"
+          }
+        },
+        {
+          "path": "project/team",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "队伍详情"
+          }
+        },
+        {
           "path": "summary/index",
           "type": "page",
           "style": {
