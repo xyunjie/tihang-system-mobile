@@ -247,3 +247,44 @@ export interface CommonResultLong {
   /* 返回消息 */
   msg: string
 }
+
+/**
+ * 纳新授权响应 VO
+ */
+export interface RecruitmentAuthRespVO {
+  /* 授权 Token */
+  token: string
+
+  /* Token 过期时间（时间戳，毫秒） */
+  expireTime: number
+
+  /* Token 有效时长（秒） */
+  expiresIn: number
+}
+
+/**
+ * 纳新 Token 状态响应 VO
+ */
+export interface RecruitmentTokenStatusRespVO {
+  /* Token 是否有效 */
+  valid: boolean
+
+  /* Token 过期时间（时间戳，毫秒） */
+  expireTime?: number
+
+  /* 剩余有效时长（秒） */
+  remainingSeconds?: number
+
+  /* 是否需要刷新（剩余时间小于10分钟） */
+  needRefresh: boolean
+
+  /* 新 Token（仅当 needRefresh=true 时返回） */
+  newToken?: string
+
+  /* 新 Token 过期时间（仅当 needRefresh=true 时返回） */
+  newExpireTime?: number
+
+  /* 新 Token 有效时长（秒，仅当 needRefresh=true 时返回） */
+  newExpiresIn?: number
+}
+

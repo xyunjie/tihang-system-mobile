@@ -21,6 +21,7 @@ import { getClassList, getCollegeList, getMajorList } from '@/api/school-dept'
 import { RecruitmentStatus } from '@/api/types/recruitment'
 import { uploadFile } from '@/api/user'
 import KspCropper from '@/components/ksp-cropper.vue'
+import { useRecruitmentToken } from '@/composables/useRecruitmentToken'
 import { useAppStore } from '@/store/app'
 import { DictTypeEnum } from '@/utils/dictTypes'
 import { DictUtils } from '@/utils/dictUtils'
@@ -29,6 +30,9 @@ import { showToast } from '@/utils/toast'
 
 // 初始化消息框
 const message = useMessage()
+
+// Token 管理
+const { token: recruitmentToken, ensureValidToken, loading: tokenLoading } = useRecruitmentToken()
 
 const appStore = useAppStore()
 const isDark = computed(() => appStore.theme === 'dark')
@@ -584,12 +588,15 @@ function handleNotSubscribed() {
 
 // 检查是否已提交过纳新申请
 async function checkSubmitStatus(): Promise<UserRecruitmentRespVO | null> {
-  if (!wxUserInfo.value?.openid) {
+  // 确保 Token 有效
+  const authToken = await ensureValidToken()
+  if (!authToken) {
+    console.warn('获取 Token 失败')
     return null
   }
 
   try {
-    const res = await getSubmitStatus(wxUserInfo.value.openid, getSocialType())
+    const res = await getSubmitStatus(authToken)
     if (res.code === 0 && res.data) {
       return res.data
     }
@@ -1024,27 +1031,22 @@ async function onSubmit() {
 
     submitting.value = true
 
-    // 如果还没有获取微信用户信息，先获取
-    if (!wxUserInfo.value || !wxUserInfo.value.openid) {
-      const success = await getWxUserInfo()
-      if (!success) {
-        showToast('获取微信用户信息失败，请重试')
-        return
-      }
+    // 确保 Token 有效
+    const authToken = await ensureValidToken()
+    if (!authToken) {
+      showToast('授权已过期，请刷新页面重试')
+      return
     }
 
-    // 准备提交数据，包含 openid、unionId 和 socialType
+    // 准备提交数据（openid/unionId 由后端从 Token 中获取）
     const submitData = {
       ...formData.value,
-      openid: formData.value.openid,
-      unionId: formData.value.unionId,
-      socialType: getSocialType(), // 34=微信小程序，31=微信H5（服务号）
     }
 
     // 根据是否为重新提交，调用不同的接口
     const response = isResubmit.value
-      ? await updateUserRecruitment(submitData)
-      : await createUserRecruitment(submitData)
+      ? await updateUserRecruitment(authToken, submitData)
+      : await createUserRecruitment(authToken, submitData)
 
     if (response.code === 0) {
       showToast('申请提交成功')

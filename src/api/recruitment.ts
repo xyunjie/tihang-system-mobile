@@ -1,20 +1,65 @@
-import type { CommonResultLong, UserRecruitmentConfigRespVO, UserRecruitmentRespVO, UserRecruitmentSaveReqVO } from '@/api/types/recruitment'
+import type { CommonResultLong, RecruitmentAuthRespVO, RecruitmentTokenStatusRespVO, UserRecruitmentConfigRespVO, UserRecruitmentRespVO, UserRecruitmentSaveReqVO } from '@/api/types/recruitment'
 import { http } from '@/http/http'
 
 /**
+ * 纳新授权，获取 Token
+ * @param code 微信授权码
+ * @param socialType 社交类型：34=微信小程序，31=微信H5（服务号）
+ */
+export function authRecruitment(code: string, socialType: number) {
+  return http.post<RecruitmentAuthRespVO>('/admin-api/system/user-recruitment/auth', null, {
+    params: { code, socialType },
+  })
+}
+
+/**
+ * 检查 Token 状态，如果快过期则自动刷新
+ * @param token 授权 Token
+ */
+export function checkTokenStatus(token: string) {
+  return http.get<RecruitmentTokenStatusRespVO>('/admin-api/system/user-recruitment/token-status', undefined, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+}
+
+/**
+ * 获取当前用户的纳新提交状态
+ * @param token 授权 Token
+ */
+export function getSubmitStatus(token: string) {
+  return http.get<UserRecruitmentRespVO>('/admin-api/system/user-recruitment/get-submit', undefined, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+}
+
+/**
  * 创建用户纳新登记
+ * @param token 授权 Token
  * @param data 纳新登记数据
  */
-export function createUserRecruitment(data: UserRecruitmentSaveReqVO) {
-  return http.post<CommonResultLong>('/admin-api/system/user-recruitment/create', data, undefined)
+export function createUserRecruitment(token: string, data: UserRecruitmentSaveReqVO) {
+  return http.post<CommonResultLong>('/admin-api/system/user-recruitment/create', data, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
 }
 
 /**
  * 更新用户纳新登记
+ * @param token 授权 Token
  * @param data 纳新登记数据
  */
-export function updateUserRecruitment(data: UserRecruitmentSaveReqVO) {
-  return http.put<CommonResultLong>('/admin-api/system/user-recruitment/update', data, undefined)
+export function updateUserRecruitment(token: string, data: UserRecruitmentSaveReqVO) {
+  return http.put<CommonResultLong>('/admin-api/system/user-recruitment/update', data, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
 }
 
 /**
@@ -24,11 +69,3 @@ export function getUserRecruitmentConfig() {
   return http.get<UserRecruitmentConfigRespVO>('/admin-api/system/user-recruitment-config/get-runtime')
 }
 
-/**
- * 获取当前用户的纳新提交状态
- * @param openid 微信 openid
- * @param socialType 社交类型：34=微信小程序，31=微信H5（服务号）
- */
-export function getSubmitStatus(openid: string, socialType: number) {
-  return http.get<UserRecruitmentRespVO>('/admin-api/system/user-recruitment/get-submit', { openid, socialType })
-}
