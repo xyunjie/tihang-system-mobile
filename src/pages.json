@@ -195,7 +195,8 @@
           "path": "article/index",
           "type": "page",
           "style": {
-            "navigationBarTitleText": "文章列表"
+            "navigationBarTitleText": "文章列表",
+            "navigationStyle": "custom"
           }
         },
         {

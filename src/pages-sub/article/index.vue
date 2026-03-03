@@ -1,14 +1,15 @@
 <route lang="jsonc">
 {
   "style": {
-    "navigationBarTitleText": "文章列表"
+    "navigationBarTitleText": "文章列表",
+    "navigationStyle": "custom"
   }
 }
 </route>
 
 <script lang="ts" setup>
 import type { ArticleSearchRespVO } from '@/api/types/article'
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { getArticlePage } from '@/api/article'
 import ThemeCard from '@/components/ThemeCard.vue'
 import { WECHAT_SHARE_IMAGE_URL } from '@/config/share'
@@ -30,6 +31,19 @@ const searchParams = reactive({
   tags: [] as string[],
 })
 
+// 分类标签列表
+const categoryTags = [
+  { name: '全部', value: '' },
+  { name: '技术分享', value: '技术分享' },
+  { name: '项目经验', value: '项目经验' },
+  { name: '学习笔记', value: '学习笔记' },
+  { name: '工作总结', value: '工作总结' },
+  { name: '团队建设', value: '团队建设' },
+]
+
+// 当前选中的分类
+const currentCategory = ref('')
+
 // 主题适配：浅色/深色
 const appStore = useAppStore()
 const isDark = computed(() => appStore.theme === 'dark')
@@ -37,22 +51,12 @@ const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-
 const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-slate-500'))
 const textMutedClass = computed(() => (isDark.value ? 'text-gray-500' : 'text-slate-400'))
 
-// 动态设置背景色
-function setPageBackgroundColor() {
-  const bgColor = isDark.value ? '#020617' : '#f5f7fa'
-  uni.setBackgroundColor({
-    backgroundColor: bgColor,
-    backgroundColorTop: bgColor,
-    backgroundColorBottom: bgColor,
-  })
-}
+// 状态栏高度
+const statusBarHeight = ref(0)
 
-onShow(() => {
-  setPageBackgroundColor()
-})
-
-watch(() => isDark.value, () => {
-  setPageBackgroundColor()
+onLoad(() => {
+  const systemInfo = uni.getSystemInfoSync()
+  statusBarHeight.value = systemInfo.statusBarHeight || 0
 })
 
 // 加载文章列表
@@ -65,8 +69,6 @@ async function queryList(pageNo: number, pageSize: number) {
       tags: searchParams.tags.length > 0 ? searchParams.tags : undefined,
     })
 
-    console.log('文章列表查询响应:', response)
-
     if (response.code === 0 && response.data) {
       const { list } = response.data
 
@@ -74,11 +76,9 @@ async function queryList(pageNo: number, pageSize: number) {
         firstLoad.value = false
       }
 
-      // 完成分页加载，z-paging会自动判断是否还有更多数据
       pagingRef.value?.complete(list)
     }
     else {
-      // 加载失败
       pagingRef.value?.complete(false)
       uni.showToast({
         title: response.msg || '加载失败',
@@ -104,24 +104,51 @@ function handleSearch(val: { value: string }) {
   pagingRef.value?.reload()
 }
 
+// 切换分类
+function handleCategoryChange(tag: string) {
+  currentCategory.value = tag
+  searchParams.tags = tag ? [tag] : []
+  pagingRef.value?.reload()
+}
+
 // 格式化时间
 function formatTime(createTime: string | number): string {
   if (!createTime)
     return ''
 
-  return formatStandardDateTime(createTime)
+  const date = new Date(createTime)
+  const now = new Date()
+  const diff = now.getTime() - date.getTime()
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+
+  if (days === 0)
+    return '今天'
+  if (days === 1)
+    return '昨天'
+  if (days < 7)
+    return `${days}天前`
+  if (days < 30)
+    return `${Math.floor(days / 7)}周前`
+
+  return formatStandardDateTime(createTime).split(' ')[0]
 }
 
 // 格式化数量
 function formatCount(count: number): string {
+  if (!count)
+    return '0'
+  if (count >= 10000) {
+    return `${(count / 10000).toFixed(1)}w`
+  }
   if (count >= 1000) {
     return `${(count / 1000).toFixed(1)}k`
   }
   return count.toString()
 }
 
-function getCategoryColor(tags: string[]): string {
-  if (!tags || tags.length === 0)
+// 获取分类标签颜色
+function getCategoryColor(tag: string): string {
+  if (!tag)
     return isDark.value ? 'text-gray-400 bg-white/6 border-white/12' : 'text-gray-600 bg-gray-50 border-gray-200'
 
   if (isDark.value) {
@@ -133,7 +160,7 @@ function getCategoryColor(tags: string[]): string {
       团队建设: 'text-red-400 bg-red-500/12 border-red-500/20',
       竞赛指导: 'text-indigo-400 bg-indigo-500/12 border-indigo-500/20',
     }
-    return tagColorDark[tags[0]] || 'text-gray-400 bg-white/6 border-white/12'
+    return tagColorDark[tag] || 'text-gray-400 bg-white/6 border-white/12'
   }
   else {
     const tagColorLight: Record<string, string> = {
@@ -144,23 +171,26 @@ function getCategoryColor(tags: string[]): string {
       团队建设: 'text-red-600 bg-red-50 border-red-200',
       竞赛指导: 'text-indigo-600 bg-indigo-50 border-indigo-200',
     }
-    return tagColorLight[tags[0]] || 'text-gray-600 bg-gray-50 border-gray-200'
+    return tagColorLight[tag] || 'text-gray-600 bg-gray-50 border-gray-200'
   }
 }
+
+// 判断是否为精选文章（浏览量前3或有封面图）
+function isFeaturedArticle(article: ArticleSearchRespVO, index: number): boolean {
+  return index === 0 && !!article.coverImage
+}
+
 let isNavigating = false
 // 跳转到文章详情
 function goToArticleDetail(articleId: number) {
-  if (isNavigating) {
-    // 如果已经在跳转，不再处理
+  if (isNavigating)
     return
-  }
 
   isNavigating = true
 
   uni.navigateTo({
     url: `/pages-sub/article/detail?id=${articleId}`,
     complete: () => {
-      // 无论成功或失败，跳转执行完成后恢复
       isNavigating = false
     },
     fail: (error) => {
@@ -179,15 +209,13 @@ function highlightSearchKeywords(text: string | undefined): string {
   if (!text)
     return ''
 
-  // 将HTML标签中的em标签转换为红色加粗样式
   return text.replace(
     /<em>(.*?)<\/em>/g,
-    '<span style="color: #ff0000; font-weight: bold;">$1</span>',
+    '<span style="color: #3b82f6; font-weight: 600;">$1</span>',
   )
 }
 
 // #ifdef MP-WEIXIN
-// 开启分享菜单，避免按钮灰色
 try {
   uni.showShareMenu({
     withShareTicket: true,
@@ -196,7 +224,6 @@ try {
 }
 catch (e) {}
 
-// 文章列表分享：静态路径
 onShareAppMessage(() => ({
   title: '文章列表',
   path: '/pages-sub/article/index',
@@ -212,134 +239,227 @@ onShareTimeline(() => ({
 </script>
 
 <template>
-  <view class="min-h-screen">
-    <!-- 使用z-paging的全屏模式，搜索框放在slot="top"内 -->
-    <z-paging
-      ref="pagingRef"
-      v-model="articles"
-      :default-page-size="10"
-      :bg-color="isDark ? '#020617' : '#f5f7fa'"
-      style="top: 0px;"
-      @query="queryList"
+  <view class="min-h-screen" :class="isDark ? 'bg-slate-950' : 'bg-[#f5f7fa]'">
+    <!-- 自定义导航栏 -->
+    <view
+      class="fixed top-0 left-0 right-0 z-50"
+      :style="{ paddingTop: `${statusBarHeight}px` }"
     >
-      <!-- 搜索栏固定在顶部 -->
-      <template #top>
-        <view class="px-4 py-3" :class="isDark ? 'bg-[#020617]' : 'bg-[#f5f7fa]'">
+      <!-- 渐变背景 -->
+      <view class="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-500" />
+
+      <!-- 装饰圆形 -->
+      <view class="absolute right-[-40px] top-[-20px] h-32 w-32 rounded-full bg-white/10" />
+      <view class="absolute left-[-30px] bottom-[-30px] h-24 w-24 rounded-full bg-white/5" />
+
+      <!-- 导航内容 -->
+      <view class="relative px-4 pb-3">
+        <!-- 标题行 -->
+        <view class="flex items-center justify-between py-2">
+          <view class="text-xl font-bold text-white">
+            文章列表
+          </view>
+          <view class="flex items-center gap-2">
+            <view
+              class="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 active:scale-95"
+              @click="uni.navigateBack()"
+            >
+              <wd-icon name="arrow-left" size="18px" color="#fff" />
+            </view>
+          </view>
+        </view>
+
+        <!-- 搜索框 -->
+        <view class="mt-2">
           <wd-search
             v-model="searchParams.keyword"
-            placeholder="搜索文章标题、内容"
+            placeholder="搜索文章标题、内容..."
             hide-cancel
             :custom-input-style="{
-              backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#fff',
-              borderRadius: '999px',
+              backgroundColor: 'rgba(255,255,255,0.95)',
+              borderRadius: '12px',
               height: '40px',
-              border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid #e2e8f0',
             }"
             @search="handleSearch"
             @clear="handleSearch"
           />
         </view>
-      </template>
 
-      <!-- 文章列表内容 -->
-      <view class="px-4 pb-4 space-y-3">
-        <ThemeCard
-          v-for="article in articles"
-          :key="article.id"
-          card-class="shadow-sm border border-slate-100 dark:border-slate-800 active:scale-[0.99] transition-transform duration-200"
-          :padding="false"
-          @click="goToArticleDetail(article.id)"
-        >
-          <view class="rounded-2xl bg-white p-4 dark:bg-slate-800">
-            <!-- 有封面图片的布局 -->
-            <view v-if="article.coverImage" class="flex gap-4">
-              <view class="min-h-[5rem] flex flex-1 flex-col justify-between">
-                <view>
-                  <view class="mb-1 flex items-center justify-between gap-2">
-                    <view class="line-clamp-2 text-sm font-medium leading-relaxed tracking-wide" :class="textPrimaryClass">
-                      <rich-text :nodes="highlightSearchKeywords(article.title)" />
-                    </view>
-                  </view>
-                  <view class="line-clamp-2 text-xs opacity-70" :class="textSecondaryClass">
-                    <rich-text :nodes="highlightSearchKeywords(article.blogAbstract)" />
-                  </view>
-                </view>
-
-                <view class="mt-2 flex items-center justify-between">
-                  <view class="flex items-center gap-2 text-xs opacity-80" :class="textMutedClass">
-                    <text class="font-medium">
-                      {{ article.authorName }}
-                    </text>
-                    <text class="opacity-30">
-                      |
-                    </text>
-                    <text>{{ formatTime(article.createTime).split(' ')[0] }}</text>
-                  </view>
-                  <view v-if="article.tagNames && article.tagNames.length > 0" class="border rounded px-2 py-0.5 text-[10px]" :class="getCategoryColor(article.tagNames)">
-                    {{ article.tagNames[0] }}
-                  </view>
-                </view>
-              </view>
-              <!-- 封面图片 -->
-              <view class="h-20 w-28 flex-shrink-0 overflow-hidden rounded-xl bg-gray-100 dark:bg-slate-700">
-                <image
-                  :src="article.coverImage"
-                  class="h-full w-full object-cover"
-                  mode="aspectFill"
-                />
-              </view>
+        <!-- 分类标签 -->
+        <scroll-view scroll-x class="mt-3 -mx-4 px-4 whitespace-nowrap" :show-scrollbar="false">
+          <view class="inline-flex gap-2">
+            <view
+              v-for="tag in categoryTags"
+              :key="tag.value"
+              class="flex-shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-all"
+              :class="currentCategory === tag.value
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'bg-white/20 text-white/90 active:bg-white/30'"
+              @click="handleCategoryChange(tag.value)"
+            >
+              {{ tag.name }}
             </view>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
 
-            <!-- 无封面图片的布局 -->
-            <view v-else>
-              <view class="mb-1 flex items-start justify-between gap-2">
-                <view class="line-clamp-2 text-sm font-medium leading-relaxed tracking-wide" :class="textPrimaryClass">
-                  <rich-text :nodes="highlightSearchKeywords(article.title)" />
-                </view>
-                <view v-if="article.tagNames && article.tagNames.length > 0" class="mt-0.5 flex-shrink-0 border rounded px-2 py-0.5 text-[10px]" :class="getCategoryColor(article.tagNames)">
-                  {{ article.tagNames[0] }}
-                </view>
+    <!-- 占位区域 -->
+    <view :style="{ height: `${statusBarHeight + 140}px` }" />
+
+    <!-- 文章列表 -->
+    <z-paging
+      ref="pagingRef"
+      v-model="articles"
+      :default-page-size="10"
+      :bg-color="isDark ? '#020617' : '#f5f7fa'"
+      :fixed="false"
+      @query="queryList"
+    >
+      <view class="px-4 pb-4 space-y-3">
+        <template v-for="(article, index) in articles" :key="article.id">
+          <!-- 精选文章大图展示 -->
+          <ThemeCard
+            v-if="isFeaturedArticle(article, index)"
+            :padding="false"
+            card-class="overflow-hidden shadow-lg border-0"
+            @click="goToArticleDetail(article.id)"
+          >
+            <!-- 封面图 -->
+            <view class="relative aspect-[16/9] overflow-hidden">
+              <image
+                :src="article.coverImage"
+                class="h-full w-full object-cover"
+                mode="aspectFill"
+              />
+              <!-- 渐变遮罩 -->
+              <view class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              <!-- 分类标签 -->
+              <view
+                v-if="article.tagNames && article.tagNames.length > 0"
+                class="absolute left-3 top-3 rounded-full bg-blue-500/90 px-2.5 py-1 text-[10px] font-medium text-white backdrop-blur-sm"
+              >
+                {{ article.tagNames[0] }}
               </view>
-
-              <view class="line-clamp-2 mb-3 text-xs opacity-70" :class="textSecondaryClass">
-                <rich-text :nodes="highlightSearchKeywords(article.blogAbstract)" />
-              </view>
-
-              <view class="flex items-center justify-between text-xs" :class="textMutedClass">
-                <view class="flex items-center gap-2 opacity-80">
-                  <text class="font-medium">
-                    {{ article.authorName }}
-                  </text>
-                  <text class="opacity-30">
-                    |
-                  </text>
-                  <text>{{ formatTime(article.createTime).split(' ')[0] }}</text>
+              <!-- 标题 -->
+              <view class="absolute bottom-0 left-0 right-0 p-4">
+                <view class="line-clamp-2 text-base font-bold leading-snug text-white">
+                  {{ article.title }}
                 </view>
-                <view class="flex items-center gap-3 opacity-60">
+                <view class="mt-2 flex items-center gap-3 text-xs text-white/80">
                   <view class="flex items-center gap-1">
-                    <wd-icon name="view" size="14px" />
+                    <wd-icon name="user" size="12px" color="rgba(255,255,255,0.8)" />
+                    <text>{{ article.authorName }}</text>
+                  </view>
+                  <view class="flex items-center gap-1">
+                    <wd-icon name="view" size="12px" color="rgba(255,255,255,0.8)" />
                     <text>{{ formatCount(article.browse) }}</text>
                   </view>
                   <view class="flex items-center gap-1">
-                    <wd-icon name="thumb-up" size="14px" />
+                    <wd-icon name="thumb-up" size="12px" color="rgba(255,255,255,0.8)" />
                     <text>{{ formatCount(article.love) }}</text>
                   </view>
                 </view>
               </view>
             </view>
-          </view>
-        </ThemeCard>
+          </ThemeCard>
+
+          <!-- 普通文章卡片 -->
+          <ThemeCard
+            v-else
+            :padding="false"
+            card-class="shadow-sm border border-slate-100 dark:border-slate-800 active:scale-[0.99] transition-transform duration-200"
+            @click="goToArticleDetail(article.id)"
+          >
+            <view class="rounded-2xl bg-white p-4 dark:bg-slate-800">
+              <!-- 有封面图：左图右文 -->
+              <view v-if="article.coverImage" class="flex gap-3">
+                <!-- 封面图 -->
+                <view class="h-[72px] w-[100px] flex-shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-slate-700">
+                  <image
+                    :src="article.coverImage"
+                    class="h-full w-full object-cover"
+                    mode="aspectFill"
+                  />
+                </view>
+                <!-- 文字内容 -->
+                <view class="min-h-[72px] flex flex-1 flex-col justify-between">
+                  <view>
+                    <view class="line-clamp-2 text-sm font-medium leading-snug" :class="textPrimaryClass">
+                      {{ article.title }}
+                    </view>
+                  </view>
+                  <view class="flex items-center justify-between">
+                    <view
+                      v-if="article.tagNames && article.tagNames.length > 0"
+                      class="rounded px-1.5 py-0.5 text-[10px]"
+                      :class="getCategoryColor(article.tagNames[0])"
+                    >
+                      {{ article.tagNames[0] }}
+                    </view>
+                    <view class="text-[10px]" :class="textMutedClass">
+                      {{ formatTime(article.createTime) }}
+                    </view>
+                  </view>
+                </view>
+              </view>
+
+              <!-- 无封面图：纯文字 -->
+              <view v-else>
+                <!-- 标题 + 标签 -->
+                <view class="mb-2 flex items-start justify-between gap-2">
+                  <view class="line-clamp-2 flex-1 text-sm font-medium leading-snug" :class="textPrimaryClass">
+                    <rich-text :nodes="highlightSearchKeywords(article.title)" />
+                  </view>
+                  <view
+                    v-if="article.tagNames && article.tagNames.length > 0"
+                    class="flex-shrink-0 rounded px-1.5 py-0.5 text-[10px]"
+                    :class="getCategoryColor(article.tagNames[0])"
+                  >
+                    {{ article.tagNames[0] }}
+                  </view>
+                </view>
+
+                <!-- 摘要 -->
+                <view v-if="article.blogAbstract" class="line-clamp-2 mb-2.5 text-xs leading-relaxed" :class="textSecondaryClass">
+                  <rich-text :nodes="highlightSearchKeywords(article.blogAbstract)" />
+                </view>
+
+                <!-- 底部信息 -->
+                <view class="flex items-center justify-between">
+                  <view class="flex items-center gap-2 text-xs" :class="textMutedClass">
+                    <view class="flex items-center gap-1">
+                      <wd-icon name="user" size="12px" />
+                      <text>{{ article.authorName }}</text>
+                    </view>
+                    <text class="opacity-30">|</text>
+                    <text>{{ formatTime(article.createTime) }}</text>
+                  </view>
+                  <view class="flex items-center gap-3 text-xs opacity-60" :class="textMutedClass">
+                    <view class="flex items-center gap-1">
+                      <wd-icon name="view" size="12px" />
+                      <text>{{ formatCount(article.browse) }}</text>
+                    </view>
+                    <view class="flex items-center gap-1">
+                      <wd-icon name="thumb-up" size="12px" />
+                      <text>{{ formatCount(article.love) }}</text>
+                    </view>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </ThemeCard>
+        </template>
       </view>
     </z-paging>
   </view>
 </template>
 
 <style lang="scss" scoped>
-/* 覆盖 page 背景色 */
-:global(page) {
-  background-color: #f5f7fa;
-}
-:global(.dark page) {
-  background-color: #020617;
+/* 隐藏滚动条 */
+::-webkit-scrollbar {
+  display: none;
+  width: 0 !important;
+  height: 0 !important;
 }
 </style>
