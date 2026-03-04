@@ -37,9 +37,9 @@
         "iconType": "unocss"
       },
       {
-        "pagePath": "pages/contact/index",
-        "text": "通讯录",
-        "icon": "i-carbon-user-multiple",
+        "pagePath": "pages/project/index",
+        "text": "项目",
+        "icon": "i-carbon-folder",
         "iconType": "unocss"
       },
       {
@@ -147,8 +147,11 @@
       "type": "page",
       "layout": "tabbar",
       "style": {
+        "navigationStyle": "default",
         "navigationBarTitleText": "项目",
-        "navigationStyle": "custom"
+        "enablePullDownRefresh": true,
+        "navigationBarBackgroundColor": "#2563eb",
+        "navigationBarTextStyle": "white"
       }
     },
     {
@@ -311,13 +314,6 @@
           "type": "page",
           "style": {
             "navigationBarTitleText": "系统设置"
-          }
-        },
-        {
-          "path": "project/detail",
-          "type": "page",
-          "style": {
-            "navigationBarTitleText": "项目详情"
           }
         },
         {
