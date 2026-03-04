@@ -93,6 +93,7 @@ const quickActions = [
   { icon: 'user', label: '编辑资料', color: 'bg-blue-500', handler: editProfile },
   { icon: 'lock-on', label: '账号安全', color: 'bg-green-500', handler: gotoSecurity },
   { icon: 'time', label: '考勤管理', color: 'bg-purple-500', handler: gotoAttendance },
+  { icon: 'user-multiple', label: '通讯录', color: 'bg-cyan-500', handler: () => uni.navigateTo({ url: '/pages/contact/index' }) },
   { icon: 'code', label: 'OJ信息', color: 'bg-orange-500', handler: gotoOJInfo },
 ]
 

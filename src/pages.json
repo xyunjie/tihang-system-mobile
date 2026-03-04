@@ -143,6 +143,15 @@
       }
     },
     {
+      "path": "pages/project/index",
+      "type": "page",
+      "layout": "tabbar",
+      "style": {
+        "navigationBarTitleText": "项目",
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/recruitment/index",
       "type": "page",
       "style": {
