@@ -325,6 +325,22 @@
           }
         },
         {
+          "path": "project/member",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "成员详情",
+            "navigationStyle": "default",
+            "enablePullDownRefresh": true
+          }
+        },
+        {
+          "path": "project/report-detail",
+          "type": "page",
+          "style": {
+            "navigationBarTitleText": "周报详情"
+          }
+        },
+        {
           "path": "project/team",
           "type": "page",
           "style": {

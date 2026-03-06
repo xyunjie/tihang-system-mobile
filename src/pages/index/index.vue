@@ -361,7 +361,11 @@ function formatCount(count: number) {
 // 动态设置背景色，防止下拉露出不同底色
 function setPageBackgroundColor() {
   const bgColor = isDark.value ? '#020617' : '#f5f7fa'
-  uni.setBackgroundColor({
+  // 某些 H5 运行环境可能不存在该 API，需兜底避免白屏
+  const api = (uni as any).setBackgroundColor
+  if (typeof api !== 'function')
+    return
+  api({
     backgroundColor: bgColor,
     backgroundColorTop: bgColor,
     backgroundColorBottom: bgColor,

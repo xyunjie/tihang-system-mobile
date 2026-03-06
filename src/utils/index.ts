@@ -4,9 +4,6 @@ import { isMpWeixin } from './platform'
 export { initAnalytics, trackEvent, trackPageView, setUserId } from './analytics'
 
 export function getLastPage() {
-  // getCurrentPages() 至少有1个元素，所以不再额外判断
-  // const lastPage = getCurrentPages().at(-1)
-  // 上面那个在低版本安卓中打包会报错，所以改用下面这个【虽然我加了 src/interceptions/prototype.ts，但依然报错】
   const pages = getCurrentPages()
   return pages[pages.length - 1]
 }
@@ -18,16 +15,20 @@ export function getLastPage() {
  */
 export function currRoute() {
   try {
-    const lastPage = getLastPage()
-    const $page = (lastPage as any)?.$page
-    const fullPath = $page && $page.fullPath
-    console.log('page:', $page)
-    if (fullPath) {
-      return getUrlObj(fullPath)
+    const lastPage = getLastPage() as any
+
+    // 某些场景下可能拿不到页面实例（比如刚启动 / 登录态切换），这里兜底避免异常导致白屏
+    if (!lastPage) {
+      return getUrlObj('/pages/index/index')
     }
+
+    const fullPath = lastPage?.$page?.fullPath
+    if (fullPath)
+      return getUrlObj(fullPath)
+
     // 如果没有 fullPath，备用方案
-    const route = lastPage.route || ''
-    const options = (lastPage as any).options || {}
+    const route = lastPage?.route || ''
+    const options = lastPage?.options || {}
     const path = route.startsWith('/') ? route : `/${route}`
     const queryString = Object.entries(options)
       .map(([key, value]) => `${key}=${encodeURIComponent(String(value))}`)
