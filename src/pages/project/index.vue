@@ -12,11 +12,11 @@
 </route>
 
 <script lang="ts" setup>
-import type { ProjectTeamInfo } from '@/api/types/project'
+import type { ProjectBaseInfo, ProjectTeamInfo } from '@/api/types/project'
 import { computed, ref, watch } from 'vue'
+import { getMyProjects, getMyTeams } from '@/api/project'
 import ThemeCard from '@/components/ThemeCard.vue'
 import { useAppStore } from '@/store/app'
-import { getTeamsByStatus } from './mockData'
 
 defineOptions({
   name: 'ProjectTab',
@@ -33,33 +33,21 @@ const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-
 const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-slate-500'))
 const textMutedClass = computed(() => (isDark.value ? 'text-gray-500' : 'text-slate-400'))
 
-// 当前日期
-const currentDate = computed(() => {
-  const now = new Date()
-  const month = now.getMonth() + 1
-  const date = now.getDate()
-  const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
-  return `${month}月${date}日 ${weekdays[now.getDay()]}`
-})
-
 // 队伍列表（按状态分组）
 const teamsData = ref<{
-  inProgress: Array<ProjectTeamInfo & { project: any }>
-  recruiting: Array<ProjectTeamInfo & { project: any }>
-  completed: Array<ProjectTeamInfo & { project: any }>
-  all: Array<ProjectTeamInfo & { project: any }>
+  inProgress: Array<ProjectTeamInfo & { project: ProjectBaseInfo }>
+  completed: Array<ProjectTeamInfo & { project: ProjectBaseInfo }>
+  all: Array<ProjectTeamInfo & { project: ProjectBaseInfo }>
 }>({
-    inProgress: [],
-    recruiting: [],
-    completed: [],
-    all: [],
+  inProgress: [],
+  completed: [],
+  all: [],
 })
 
 // 统计数据
 const stats = computed(() => ({
   total: teamsData.value.all.length,
   inProgress: teamsData.value.inProgress.length,
-  recruiting: teamsData.value.recruiting.length,
   completed: teamsData.value.completed.length,
 }))
 
@@ -78,20 +66,90 @@ async function handleRefresh() {
   uni.stopPullDownRefresh()
 }
 
+function normalizeProjectStatus(status?: string): 'started' | 'completed' | 'grouping' {
+  const raw = String(status || '').toLowerCase()
+  if (['completed', 'finished', 'done', 'ended', 'archived'].includes(raw))
+    return 'completed'
+  if (['in_progress', 'started', 'running', 'processing'].includes(raw))
+    return 'started'
+  return 'grouping'
+}
+
+function buildProjectFromTeamRaw(teamRaw: any, projectMap: Record<number, ProjectBaseInfo>): ProjectBaseInfo {
+  const projectId = Number(teamRaw?.competitionId || 0)
+  const projectFromMap = projectMap[projectId]
+  if (projectFromMap) {
+    return {
+      ...projectFromMap,
+      status: normalizeProjectStatus(projectFromMap.status),
+    }
+  }
+
+  return {
+    id: projectId,
+    name: teamRaw?.competitionName || '未命名项目',
+    year: undefined,
+    type: teamRaw?.type || '',
+    status: normalizeProjectStatus(teamRaw?.status),
+  }
+}
+
+function mapMyTeamToViewTeam(teamRaw: any, projectMap: Record<number, ProjectBaseInfo>): ProjectTeamInfo & { project: ProjectBaseInfo } {
+  const project = buildProjectFromTeamRaw(teamRaw, projectMap)
+  return {
+    id: Number(teamRaw?.id || 0),
+    projectId: Number(teamRaw?.competitionId || 0),
+    categoryId: Number(teamRaw?.categoryId || 0),
+    categoryName: teamRaw?.categoryName,
+    name: teamRaw?.name || '未命名队伍',
+    description: teamRaw?.description,
+    captainName: teamRaw?.members?.find((m: any) => m?.isCaptain)?.name,
+    recruitCount: teamRaw?.maxMembers,
+    currentCount: teamRaw?.currentMembers,
+    status: Number(teamRaw?.status || 0),
+    createTime: teamRaw?.createTime,
+    project,
+  }
+}
+
 // 加载队伍列表
 async function loadTeams(showLoading = true) {
   if (showLoading)
     loading.value = true
 
   try {
-    // 使用假数据
-    teamsData.value = getTeamsByStatus()
+    const [projectsRes, teamsRes] = await Promise.all([
+      getMyProjects(),
+      getMyTeams(),
+    ])
 
-    // 延迟模拟网络请求
-    await new Promise(resolve => setTimeout(resolve, 500))
+    const projectMap: Record<number, ProjectBaseInfo> = {}
+    if (projectsRes.code === 0 && projectsRes.data) {
+      projectsRes.data.forEach((p) => {
+        projectMap[p.id] = p
+      })
+    }
+
+    const allTeams = (teamsRes.code === 0 && teamsRes.data)
+      ? teamsRes.data.map(team => mapMyTeamToViewTeam(team, projectMap))
+      : []
+
+    const inProgress = allTeams.filter(team => team.project.status !== 'completed')
+    const completed = allTeams.filter(team => team.project.status === 'completed')
+
+    teamsData.value = {
+      inProgress,
+      completed,
+      all: allTeams,
+    }
   }
   catch (error) {
     console.error('加载队伍列表失败:', error)
+    teamsData.value = {
+      inProgress: [],
+      completed: [],
+      all: [],
+    }
   }
   finally {
     loading.value = false
@@ -102,11 +160,9 @@ async function loadTeams(showLoading = true) {
 // 获取项目状态颜色
 function getStatusColor(status: string): string {
   const statusColors: Record<string, string> = {
-    recruiting: isDark.value ? 'text-blue-400 bg-blue-500/10' : 'text-blue-600 bg-blue-50',
-    planning: isDark.value ? 'text-orange-400 bg-orange-500/10' : 'text-orange-600 bg-orange-50',
-    in_progress: isDark.value ? 'text-green-400 bg-green-500/10' : 'text-green-600 bg-green-50',
+    grouping: isDark.value ? 'text-blue-400 bg-blue-500/10' : 'text-blue-600 bg-blue-50',
+    started: isDark.value ? 'text-green-400 bg-green-500/10' : 'text-green-600 bg-green-50',
     completed: isDark.value ? 'text-gray-400 bg-white/10' : 'text-gray-600 bg-gray-50',
-    archived: isDark.value ? 'text-gray-400 bg-white/10' : 'text-gray-600 bg-gray-50',
   }
   return statusColors[status] || (isDark.value ? 'text-gray-400 bg-white/10' : 'text-gray-600 bg-gray-50')
 }
@@ -114,11 +170,9 @@ function getStatusColor(status: string): string {
 // 获取项目状态文本
 function getStatusText(status: string): string {
   const statusTexts: Record<string, string> = {
-    recruiting: '招募中',
-    planning: '计划中',
-    in_progress: '进行中',
+    grouping: '组队中',
+    started: '已开始',
     completed: '已结束',
-    archived: '已归档',
   }
   return statusTexts[status] || '未知'
 }
@@ -142,7 +196,10 @@ function goToTeamDetail(teamId: number) {
 // 动态设置背景色
 function setPageBackgroundColor() {
   const bgColor = isDark.value ? '#020617' : '#f5f7fa'
-  uni.setBackgroundColor({
+  const api = (uni as any).setBackgroundColor
+  if (typeof api !== 'function')
+    return
+  api({
     backgroundColor: bgColor,
     backgroundColorTop: bgColor,
     backgroundColorBottom: bgColor,
@@ -174,7 +231,7 @@ onMounted(() => {
     <!-- 核心统计卡片 (重叠布局) -->
     <view class="relative z-10 px-4 mt-2">
       <ThemeCard card-class="mb-6 shadow-[0_8px_20px_-6px_rgba(0,0,0,0.1)] dark:shadow-blue-900/20 overflow-hidden border-0" :padding="false">
-        <view class="grid grid-cols-3 py-6 bg-white dark:bg-slate-800">
+        <view class="grid grid-cols-2 py-6 bg-white dark:bg-slate-800">
           <!-- 进行中 -->
           <view class="flex flex-col items-center justify-center gap-2">
             <view class="p-3 rounded-2xl bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400">
@@ -183,20 +240,12 @@ onMounted(() => {
             <view class="text-xs font-medium" :class="textSecondaryClass">进行中 {{ stats.inProgress }}</view>
           </view>
 
-          <!-- 招募中 -->
-          <view class="flex flex-col items-center justify-center gap-2">
-            <view class="p-3 rounded-2xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">
-              <wd-icon name="user-circle" size="24px" />
-            </view>
-            <view class="text-xs font-medium" :class="textSecondaryClass">招募中 {{ stats.recruiting }}</view>
-          </view>
-
-          <!-- 已结束 -->
+          <!-- 已完成 -->
           <view class="flex flex-col items-center justify-center gap-2">
             <view class="p-3 rounded-2xl bg-gray-50 dark:bg-white/10 text-gray-600 dark:text-gray-400">
               <wd-icon name="stop" size="24px" />
             </view>
-            <view class="text-xs font-medium" :class="textSecondaryClass">已结束 {{ stats.completed }}</view>
+            <view class="text-xs font-medium" :class="textSecondaryClass">已完成 {{ stats.completed }}</view>
           </view>
         </view>
       </ThemeCard>
@@ -274,7 +323,7 @@ onMounted(() => {
                   </view>
                 </view>
 
-                <!-- 进度条（如果有） -->
+                <!-- 进度条 -->
                 <view class="h-1.5 rounded-full overflow-hidden" :class="isDark ? 'bg-slate-700' : 'bg-gray-200'">
                   <view
                     class="h-full rounded-full"
@@ -287,71 +336,12 @@ onMounted(() => {
           </view>
         </view>
 
-        <!-- 招募中的队伍 -->
-        <view v-if="stats.recruiting > 0">
-          <view class="mb-3 px-1">
-            <view class="flex items-center gap-2">
-              <view class="w-1 h-4 rounded-full bg-blue-500" />
-              <view class="text-sm font-semibold" :class="textPrimaryClass">招募中</view>
-            </view>
-          </view>
-          <view class="space-y-3">
-            <ThemeCard
-              v-for="team in teamsData.recruiting"
-              :key="team.id"
-              :padding="false"
-              card-class="shadow-sm border border-slate-100 dark:border-slate-800 active:scale-[0.99] transition-transform duration-200"
-              @click="goToTeamDetail(team.id)"
-            >
-              <view class="p-4">
-                <!-- 项目名称 + 状态 -->
-                <view class="flex items-center justify-between mb-2">
-                  <view class="flex items-center gap-2">
-                    <view class="rounded px-2 py-0.5 text-[10px] font-medium" :class="getStatusColor(team.project.status)">
-                      {{ getStatusText(team.project.status) }}
-                    </view>
-                    <view class="text-xs" :class="textMutedClass">
-                      {{ team.project.year }}年度
-                    </view>
-                  </view>
-                  <wd-icon name="arrow-right" size="16px" :color="isDark ? '#64748b' : '#94a3b8'" />
-                </view>
-
-                <!-- 项目名称 -->
-                <view class="text-sm font-semibold mb-1" :class="textPrimaryClass">
-                  {{ team.project.name }}
-                </view>
-
-                <!-- 队伍名称 + 成员数 -->
-                <view class="flex items-center gap-3 text-xs mb-2" :class="textSecondaryClass">
-                  <view class="flex items-center gap-1">
-                    <wd-icon name="user" size="12px" />
-                    <text>{{ team.name }}</text>
-                  </view>
-                  <view class="flex items-center gap-1">
-                    <wd-icon name="user-circle" size="12px" />
-                    <text>{{ team.currentCount }}/{{ team.recruitCount }}人</text>
-                  </view>
-                </view>
-
-                <!-- 招募进度 -->
-                <view class="h-1.5 rounded-full overflow-hidden" :class="isDark ? 'bg-slate-700' : 'bg-gray-200'">
-                  <view
-                    class="h-full rounded-full bg-blue-500"
-                    :style="{ width: `${(team.currentCount / team.recruitCount) * 100}%` }"
-                  />
-                </view>
-              </view>
-            </ThemeCard>
-          </view>
-        </view>
-
-        <!-- 已结束的队伍 -->
+        <!-- 已完成的队伍 -->
         <view v-if="stats.completed > 0">
           <view class="mb-3 px-1">
             <view class="flex items-center gap-2">
               <view class="w-1 h-4 rounded-full bg-gray-400" />
-              <view class="text-sm font-semibold" :class="textPrimaryClass">已结束</view>
+              <view class="text-sm font-semibold" :class="textPrimaryClass">已完成</view>
             </view>
           </view>
           <view class="space-y-3">
