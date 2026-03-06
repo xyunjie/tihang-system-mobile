@@ -1,12 +1,16 @@
 /**
  * 项目管理模块 - 假数据（以队伍为主体）
+ * 
+ * 状态定义：
+ * 项目状态：grouping(组队中), started(已开始), completed(已结束)
+ * 队伍状态：in_progress(进行中), completed(已完成)
  */
 
 import type { ProjectBaseInfo, ProjectStatistics, ProjectTeamInfo, ProjectTeamMember, ProjectTeamPlan, ProjectTeamReport } from '@/api/types/project'
 
 // 我参与的队伍列表（按状态排序）
 export const mockMyTeams: Array<ProjectTeamInfo & { project: ProjectBaseInfo }> = [
-  // 进行中的项目
+  // 进行中的队伍（项目状态：已开始）
   {
     id: 1,
     projectId: 1,
@@ -23,7 +27,7 @@ export const mockMyTeams: Array<ProjectTeamInfo & { project: ProjectBaseInfo }> 
       name: '天航工作室年度项目',
       goal: '建设全方位的学生能力培养平台，提升团队协作效率',
       description: '本项目旨在为工作室成员提供全面的项目管理、技能培训和团队协作支持。',
-      status: 'in_progress',
+      status: 'started',
       year: 2026,
       startTime: '2026-01-01 00:00:00',
       endTime: '2026-12-31 23:59:59',
@@ -47,7 +51,7 @@ export const mockMyTeams: Array<ProjectTeamInfo & { project: ProjectBaseInfo }> 
       name: '天航工作室年度项目',
       goal: '建设全方位的学生能力培养平台，提升团队协作效率',
       description: '本项目旨在为工作室成员提供全面的项目管理、技能培训和团队协作支持。',
-      status: 'in_progress',
+      status: 'started',
       year: 2026,
       startTime: '2026-01-01 00:00:00',
       endTime: '2026-12-31 23:59:59',
@@ -55,7 +59,6 @@ export const mockMyTeams: Array<ProjectTeamInfo & { project: ProjectBaseInfo }> 
       createTime: '2026-01-01 00:00:00',
     },
   },
-  // 招募中的项目
   {
     id: 6,
     projectId: 2,
@@ -72,7 +75,7 @@ export const mockMyTeams: Array<ProjectTeamInfo & { project: ProjectBaseInfo }> 
       name: '移动端应用开发',
       goal: '开发基于 uni-app 的跨平台移动应用',
       description: '使用 Vue 3 和 uni-app 框架开发移动端应用，支持 iOS 和 Android 平台。',
-      status: 'recruiting',
+      status: 'started',
       year: 2026,
       startTime: '2026-03-01 00:00:00',
       endTime: '2026-06-30 23:59:59',
@@ -80,7 +83,7 @@ export const mockMyTeams: Array<ProjectTeamInfo & { project: ProjectBaseInfo }> 
       createTime: '2026-03-01 00:00:00',
     },
   },
-  // 已结束的项目
+  // 已完成的队伍（项目状态：已结束）
   {
     id: 9,
     projectId: 4,
@@ -231,14 +234,12 @@ export const mockReports: ProjectTeamReport[] = [
 
 // 按状态分组的队伍
 export const getTeamsByStatus = () => {
-  const inProgress = mockMyTeams.filter(t => t.project.status === 'in_progress')
-  const recruiting = mockMyTeams.filter(t => t.project.status === 'recruiting')
+  const inProgress = mockMyTeams.filter(t => t.project.status === 'started')
   const completed = mockMyTeams.filter(t => t.project.status === 'completed')
 
   return {
     inProgress,
-    recruiting,
     completed,
-    all: [...inProgress, ...recruiting, ...completed],
+    all: [...inProgress, ...completed],
   }
 }
