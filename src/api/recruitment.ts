@@ -5,11 +5,10 @@ import { http } from '@/http/http'
  * 纳新授权，获取 Token
  * @param code 微信授权码
  * @param socialType 社交类型：34=微信小程序，31=微信H5（服务号）
+ * @param state 微信授权回调的 state 参数
  */
-export function authRecruitment(code: string, socialType: number) {
-  return http.post<RecruitmentAuthRespVO>('/admin-api/system/user-recruitment/auth', null, {
-    params: { code, socialType },
-  })
+export function authRecruitment(code: string, socialType: number, state?: string) {
+  return http.post<RecruitmentAuthRespVO>('/admin-api/system/user-recruitment/auth', null,{ code, socialType, state })
 }
 
 /**
@@ -18,10 +17,8 @@ export function authRecruitment(code: string, socialType: number) {
  */
 export function checkTokenStatus(token: string) {
   return http.get<RecruitmentTokenStatusRespVO>('/admin-api/system/user-recruitment/token-status', undefined, {
-    headers: {
       Authorization: `Bearer ${token}`,
-    },
-  })
+    })
 }
 
 /**
@@ -30,10 +27,8 @@ export function checkTokenStatus(token: string) {
  */
 export function getSubmitStatus(token: string) {
   return http.get<UserRecruitmentRespVO>('/admin-api/system/user-recruitment/get-submit', undefined, {
-    headers: {
       Authorization: `Bearer ${token}`,
-    },
-  })
+    })
 }
 
 /**
@@ -43,10 +38,8 @@ export function getSubmitStatus(token: string) {
  */
 export function createUserRecruitment(token: string, data: UserRecruitmentSaveReqVO) {
   return http.post<CommonResultLong>('/admin-api/system/user-recruitment/create', data, {
-    headers: {
       Authorization: `Bearer ${token}`,
-    },
-  })
+    })
 }
 
 /**
@@ -55,11 +48,9 @@ export function createUserRecruitment(token: string, data: UserRecruitmentSaveRe
  * @param data 纳新登记数据
  */
 export function updateUserRecruitment(token: string, data: UserRecruitmentSaveReqVO) {
-  return http.put<CommonResultLong>('/admin-api/system/user-recruitment/update', data, {
-    headers: {
+  return http.put<CommonResultLong>('/admin-api/system/user-recruitment/update', data, undefined, {
       Authorization: `Bearer ${token}`,
-    },
-  })
+    })
 }
 
 /**

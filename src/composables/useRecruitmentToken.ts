@@ -94,15 +94,16 @@ export function useRecruitmentToken() {
   /**
    * 通过微信授权获取新 Token
    */
-  async function authByWxCode(): Promise<string | null> {
+  async function authByWxCode(state: string): Promise<string | null> {
     const code = await getWxCode()
+    console.log('获取到微信 code:', code)
     if (!code) {
       console.warn('获取微信 code 失败')
       return null
     }
 
     try {
-      const res = await authRecruitment(code, getSocialType())
+      const res = await authRecruitment(code, getSocialType(), state)
       if (res.code === 0 && res.data) {
         save(res.data.token, res.data.expireTime)
         return res.data.token
@@ -124,7 +125,7 @@ export function useRecruitmentToken() {
    * - 如果本地 Token 快过期（<10分钟），检查并刷新
    * - 如果本地 Token 无效，重新授权
    */
-  async function ensureValidToken(): Promise<string | null> {
+  async function ensureValidToken(state: string): Promise<string | null> {
     loading.value = true
 
     try {
@@ -134,7 +135,7 @@ export function useRecruitmentToken() {
       // 2. 如果本地无 Token 或已过期，重新授权
       if (!isLocalValid()) {
         console.log('本地 Token 无效，重新授权')
-        return await authByWxCode()
+        return await authByWxCode(state)
       }
 
       // 3. 检查是否快过期（剩余时间小于 10 分钟）
@@ -166,7 +167,7 @@ export function useRecruitmentToken() {
 
       // 5. 检查失败，重新授权
       console.log('Token 检查失败，重新授权')
-      return await authByWxCode()
+      return await authByWxCode(state)
     }
     catch (e) {
       console.error('确保 Token 有效失败:', e)

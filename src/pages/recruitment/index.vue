@@ -39,6 +39,7 @@ const isDark = computed(() => appStore.theme === 'dark')
 const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-slate-800'))
 const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-slate-500'))
 const textMutedClass = computed(() => (isDark.value ? 'text-gray-500' : 'text-slate-400'))
+const stateRef = ref('') // 微信授权回调的 state 参数
 
 function setPageBackgroundColor() {
   const bgColor = isDark.value ? '#020617' : '#f5f7fa'
@@ -88,6 +89,7 @@ const formData = ref<UserRecruitmentSaveReqVO>(
     imageUrl: '',
     province: '',
     city: '',
+    socialType: getSocialType(),
   },
 )
 
@@ -498,7 +500,6 @@ async function initWxAuthH5() {
     currentUrl.searchParams.delete('code')
     currentUrl.searchParams.delete('state')
     const redirectUri = currentUrl.toString()
-
     // 获取微信授权链接
     const res = await getSocialAuthRedirect({
       type: getSocialType(), // 31 = 微信H5服务号
@@ -520,39 +521,16 @@ async function initWxAuthH5() {
 
 // 处理微信授权回调（H5 微信浏览器环境）
 async function handleWxAuthCallback(code: string, state?: string) {
-  try {
-    const res = await getWxUserInfoApi({
-      type: getSocialType(), // 31 = 微信H5服务号
-      code,
-      state,
-    })
-
-    if (res.code === 0 && res.data) {
-      wxUserInfo.value = {
-        openid: res.data.openid,
-        unionId: res.data.unionId,
-        subscribe: res.data.subscribe,
-      }
-      formData.value.openid = res.data.openid
-      formData.value.unionId = res.data.unionId || ''
-
-      console.log('微信用户信息获取成功:', {
-        openid: res.data.openid,
-        unionId: res.data.unionId,
-        subscribe: res.data.subscribe,
-      })
-
-      return true
-    }
-    else {
-      console.error('获取微信用户信息失败:', res.msg)
-      return false
-    }
-  }
-  catch (error) {
-    console.error('处理微信授权回调失败:', error)
+  if (!code) {
+    console.warn('微信授权回调缺少 code 参数')
     return false
   }
+  if (!state) {
+    console.warn('微信授权回调缺少 state 参数')
+    return false
+  }
+  stateRef.value = state
+  return true
 }
 
 // 服务号二维码链接
@@ -592,7 +570,8 @@ function handleNotSubscribed() {
 // 检查是否已提交过纳新申请
 async function checkSubmitStatus(): Promise<UserRecruitmentRespVO | null> {
   // 确保 Token 有效
-  const authToken = await ensureValidToken()
+  const authToken = await ensureValidToken(stateRef.value)
+  console.log('检查提交状态，获取到 Token:', authToken)
   if (!authToken) {
     console.warn('获取 Token 失败')
     return null
@@ -636,6 +615,7 @@ async function fillFormData(data: UserRecruitmentRespVO) {
     imageUrl: data.imageUrl,
     province: data.province,
     city: data.city,
+    socialType: getSocialType(),
   }
 
   // 回填省份并加载城市
@@ -693,17 +673,6 @@ onLoad(async (options) => {
         showToast('获取微信用户信息失败，请重试')
         return
       }
-
-      // 授权成功后，检查是否关注了服务号
-      if (!wxUserInfo.value?.subscribe) {
-        // 未关注服务号，先加载纳新配置（用于获取服务号二维码等信息）
-        await loadRecruitmentConfig()
-        // 显示引导关注弹窗
-        handleNotSubscribed()
-        return
-      }
-
-      // 已关注服务号，继续加载其他数据
     }
     else {
       // 没有 code 参数，需要跳转到微信授权页面
@@ -1035,7 +1004,7 @@ async function onSubmit() {
     submitting.value = true
 
     // 确保 Token 有效
-    const authToken = await ensureValidToken()
+    const authToken = await ensureValidToken(stateRef.value)
     if (!authToken) {
       showToast('授权已过期，请刷新页面重试')
       return
