@@ -11,6 +11,13 @@ export function getMyProjects() {
 }
 
 /**
+ * 获取我参与的队伍列表（含项目信息）
+ */
+export function getMyTeams() {
+  return http.get<any[]>('/admin-api/project/base-info/my-teams')
+}
+
+/**
  * 获取项目详情
  */
 export function getProjectDetail(id: number) {
@@ -27,17 +34,58 @@ export function getProjectStatistics(id: number) {
 // ==================== 队伍信息 ====================
 
 /**
- * 获取项目的队伍列表
+ * 获取项目的队伍列表（后端仅提供 page，这里做 list 兼容）
  */
-export function getTeamList(projectId: number) {
-  return http.get<ProjectTeamInfo[]>('/admin-api/project/team-info/list', { projectId })
+export async function getTeamList(projectId: number, pageNo = 1, pageSize = 100) {
+  const response = await http.get<PageResult<ProjectTeamInfo>>('/admin-api/project/team-info/page', {
+    projectId,
+    pageNo,
+    pageSize,
+  })
+  return {
+    ...response,
+    data: response.data?.list || [],
+  }
 }
 
 /**
- * 获取我参与的队伍
+ * 获取我在指定项目参与的队伍（基于 my-teams 本地筛选）
  */
-export function getMyTeam(projectId: number) {
-  return http.get<ProjectTeamInfo>('/admin-api/project/team-info/my-team', { projectId })
+export async function getMyTeam(projectId: number) {
+  const response = await getMyTeams()
+  if (response.code !== 0 || !response.data) {
+    return {
+      ...response,
+      data: null,
+    }
+  }
+
+  const target = response.data.find((item: any) => Number(item.competitionId) === Number(projectId))
+  if (!target) {
+    return {
+      ...response,
+      data: null,
+    }
+  }
+
+  const teamInfo: ProjectTeamInfo = {
+    id: target.id,
+    projectId: target.competitionId,
+    categoryId: target.categoryId,
+    categoryName: target.categoryName,
+    name: target.name,
+    description: target.description,
+    captainName: target.members?.find((m: any) => m.isCaptain)?.name,
+    recruitCount: target.maxMembers,
+    currentCount: target.currentMembers,
+    status: target.status,
+    createTime: target.createTime,
+  }
+
+  return {
+    ...response,
+    data: teamInfo,
+  }
 }
 
 /**
@@ -50,33 +98,51 @@ export function getTeamDetail(id: number) {
 // ==================== 队伍成员 ====================
 
 /**
- * 获取队伍成员列表
+ * 获取队伍成员列表（后端仅提供 page，这里做 list 兼容）
  */
-export function getTeamMemberList(teamId: number) {
-  return http.get<ProjectTeamMember[]>('/admin-api/project/team-member/list', { teamId })
+export async function getTeamMemberList(teamId: number, pageNo = 1, pageSize = 200) {
+  const response = await http.get<PageResult<ProjectTeamMember>>('/admin-api/project/team-member/page', {
+    teamId,
+    pageNo,
+    pageSize,
+  })
+  return {
+    ...response,
+    data: response.data?.list || [],
+  }
 }
 
 /**
  * 加入队伍
  */
 export function joinTeam(data: { teamId: number }) {
-  return http.post<number>('/admin-api/project/team-member/join', data)
+  return http.post<number>('/admin-api/project/team-member/join', undefined, {
+    teamId: data.teamId,
+  })
 }
 
 /**
- * 退出队伍
+ * 退出队伍（后端接口为 /quit，参数是成员ID）
  */
-export function leaveTeam(teamId: number) {
-  return http.delete<boolean>(`/admin-api/project/team-member/leave?teamId=${teamId}`)
+export function leaveTeam(data: { id: number; quitReason?: string }) {
+  return http.put<boolean>('/admin-api/project/team-member/quit', data)
 }
 
 // ==================== 队伍计划 ====================
 
 /**
- * 获取队伍计划列表
+ * 获取队伍计划列表（后端仅提供 page，这里做 list 兼容）
  */
-export function getPlanList(teamId: number) {
-  return http.get<ProjectTeamPlan[]>('/admin-api/project/team-plan/list', { teamId })
+export async function getPlanList(teamId: number, pageNo = 1, pageSize = 200) {
+  const response = await http.get<PageResult<ProjectTeamPlan>>('/admin-api/project/team-plan/page', {
+    teamId,
+    pageNo,
+    pageSize,
+  })
+  return {
+    ...response,
+    data: response.data?.list || [],
+  }
 }
 
 /**
@@ -89,21 +155,28 @@ export function getPlanDetail(id: number) {
 /**
  * 创建计划
  */
-export function createPlan(data: Partial<ProjectTeamPlan>) {
+export function createPlan(data: Record<string, any>) {
   return http.post<number>('/admin-api/project/team-plan/create', data)
 }
 
 /**
  * 更新计划
  */
-export function updatePlan(data: Partial<ProjectTeamPlan>) {
+export function updatePlan(data: Record<string, any>) {
   return http.put<boolean>('/admin-api/project/team-plan/update', data)
+}
+
+/**
+ * 删除计划
+ */
+export function deletePlan(id: number) {
+  return http.delete<boolean>(`/admin-api/project/team-plan/delete?id=${id}`)
 }
 
 /**
  * 更新计划进度
  */
-export function updatePlanProgress(data: { id: number; progress: number; status?: number }) {
+export function updatePlanProgress(data: { id: number; progress: number; status?: string | number }) {
   return http.put<boolean>('/admin-api/project/team-plan/update-progress', data)
 }
 

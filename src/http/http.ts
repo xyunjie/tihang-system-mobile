@@ -51,8 +51,7 @@ async function refreshToken(): Promise<IUserInfoVo> {
   const storedRefreshToken = userStore.userInfo.refreshToken || uni.getStorageSync('refreshToken')
 
   if (!storedRefreshToken) {
-    // 需要进行登录
-    return
+    throw new Error('缺少 refreshToken，无法刷新登录态')
   }
 
   // 创建刷新Promise

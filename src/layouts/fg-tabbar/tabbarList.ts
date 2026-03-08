@@ -35,9 +35,9 @@ export const tabbarList: TabBar['list'] = [
     iconType: 'unocss',
   },
   {
-    pagePath: 'pages/contact/index',
-    text: '通讯录',
-    icon: 'i-carbon-user-multiple',
+    pagePath: 'pages/project/index',
+    text: '项目',
+    icon: 'i-carbon-folder',
     iconType: 'unocss',
   },
   {

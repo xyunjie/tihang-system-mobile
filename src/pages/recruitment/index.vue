@@ -42,7 +42,10 @@ const textMutedClass = computed(() => (isDark.value ? 'text-gray-500' : 'text-sl
 
 function setPageBackgroundColor() {
   const bgColor = isDark.value ? '#020617' : '#f5f7fa'
-  uni.setBackgroundColor({
+  const api = (uni as any).setBackgroundColor
+  if (typeof api !== 'function')
+    return
+  api({
     backgroundColor: bgColor,
     backgroundColorTop: bgColor,
     backgroundColorBottom: bgColor,
