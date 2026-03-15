@@ -15,13 +15,12 @@ import { onLoad, onShow } from '@dcloudio/uni-app'
 import { computed, ref, watch } from 'vue'
 import { useMessage } from 'wot-design-uni'
 import { getCityList, getProvinceList } from '@/api/area'
-import { getSocialAuthRedirect, getWxCode, getWxUserInfoApi } from '@/api/login'
+import { getSocialAuthRedirect, getWxUserInfoApi } from '@/api/login'
 import { createUserRecruitment, getSubmitStatus, getUserRecruitmentConfig, updateUserRecruitment } from '@/api/recruitment'
 import { getClassList, getCollegeList, getMajorList } from '@/api/school-dept'
 import { RecruitmentStatus } from '@/api/types/recruitment'
 import { uploadFile } from '@/api/user'
 import KspCropper from '@/components/ksp-cropper.vue'
-import { useRecruitmentToken } from '@/composables/useRecruitmentToken'
 import { useAppStore } from '@/store/app'
 import { DictTypeEnum } from '@/utils/dictTypes'
 import { DictUtils } from '@/utils/dictUtils'
@@ -31,15 +30,11 @@ import { showToast } from '@/utils/toast'
 // 初始化消息框
 const message = useMessage()
 
-// Token 管理
-const { token: recruitmentToken, ensureValidToken, loading: tokenLoading } = useRecruitmentToken()
-
 const appStore = useAppStore()
 const isDark = computed(() => appStore.theme === 'dark')
 const textPrimaryClass = computed(() => (isDark.value ? 'text-gray-100' : 'text-slate-800'))
 const textSecondaryClass = computed(() => (isDark.value ? 'text-gray-400' : 'text-slate-500'))
 const textMutedClass = computed(() => (isDark.value ? 'text-gray-500' : 'text-slate-400'))
-const stateRef = ref('') // 微信授权回调的 state 参数
 
 function setPageBackgroundColor() {
   const bgColor = isDark.value ? '#020617' : '#f5f7fa'
@@ -525,11 +520,6 @@ async function handleWxAuthCallback(code: string, state?: string) {
     console.warn('微信授权回调缺少 code 参数')
     return false
   }
-  if (!state) {
-    console.warn('微信授权回调缺少 state 参数')
-    return false
-  }
-  stateRef.value = state
   return true
 }
 
@@ -569,16 +559,13 @@ function handleNotSubscribed() {
 
 // 检查是否已提交过纳新申请
 async function checkSubmitStatus(): Promise<UserRecruitmentRespVO | null> {
-  // 确保 Token 有效
-  const authToken = await ensureValidToken(stateRef.value)
-  console.log('检查提交状态，获取到 Token:', authToken)
-  if (!authToken) {
-    console.warn('获取 Token 失败')
+  if (!wxUserInfo.value?.openid) {
+    console.warn('缺少 openid，无法检查提交状态')
     return null
   }
 
   try {
-    const res = await getSubmitStatus(authToken)
+    const res = await getSubmitStatus(wxUserInfo.value.openid, wxUserInfo.value.unionId)
     if (res.code === 0 && res.data) {
       return res.data
     }
@@ -668,7 +655,7 @@ onLoad(async (options) => {
     // 检查是否从微信授权回调返回（URL 中包含 code 和 state 参数）
     if (options?.code) {
       // 从微信授权回调返回，处理获取用户信息
-      const success = await handleWxAuthCallback(options.code, options.state)
+      const success = await handleWxAuthCallback(options.code)
       if (!success) {
         showToast('获取微信用户信息失败，请重试')
         return
@@ -1003,22 +990,23 @@ async function onSubmit() {
 
     submitting.value = true
 
-    // 确保 Token 有效
-    const authToken = await ensureValidToken(stateRef.value)
-    if (!authToken) {
-      showToast('授权已过期，请刷新页面重试')
+    if (!wxUserInfo.value?.openid) {
+      showToast('获取微信用户信息失败，请刷新页面重试')
       return
     }
 
-    // 准备提交数据（openid/unionId 由后端从 Token 中获取）
+    // 准备提交数据（直接携带 openid/unionId）
     const submitData = {
       ...formData.value,
+      openid: wxUserInfo.value.openid,
+      unionId: wxUserInfo.value.unionId || '',
+      socialType: getSocialType(),
     }
 
     // 根据是否为重新提交，调用不同的接口
     const response = isResubmit.value
-      ? await updateUserRecruitment(authToken, submitData)
-      : await createUserRecruitment(authToken, submitData)
+      ? await updateUserRecruitment(submitData)
+      : await createUserRecruitment(submitData)
 
     if (response.code === 0) {
       showToast('申请提交成功')
