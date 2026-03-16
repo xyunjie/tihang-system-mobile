@@ -520,7 +520,27 @@ async function handleWxAuthCallback(code: string, state?: string) {
     console.warn('微信授权回调缺少 code 参数')
     return false
   }
-  return true
+  try {
+    const res = await getWxUserInfoApi({
+      type: getSocialType(),
+      code,
+    })
+    if (res.code === 0 && res.data) {
+      wxUserInfo.value = {
+        openid: res.data.openid,
+        unionId: res.data.unionId,
+        subscribe: res.data.subscribe,
+      }
+      formData.value.openid = res.data.openid
+      formData.value.unionId = res.data.unionId || ''
+      return true
+    }
+    return false
+  }
+  catch (error) {
+    console.error('获取微信用户信息失败:', error)
+    return false
+  }
 }
 
 // 服务号二维码链接
