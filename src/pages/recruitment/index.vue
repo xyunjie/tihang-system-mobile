@@ -589,7 +589,7 @@ async function checkSubmitStatus(): Promise<UserRecruitmentRespVO | null> {
   }
 
   try {
-    const res = await getSubmitStatus(wxUserInfo.value.openid, getSocialType())
+    const res = await getSubmitStatus(wxUserInfo.value.openid, wxUserInfo.value.unionId)
     if (res.code === 0 && res.data) {
       return res.data
     }
