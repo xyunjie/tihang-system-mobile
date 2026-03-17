@@ -1,4 +1,85 @@
 /**
+ * 审核状态枚举
+ */
+export enum RecruitmentStatus {
+  WAIT_AUDIT = 0,
+  PASS = 1,
+  REFUSE = 2,
+  WAIT_INTERVIEW = 3,
+  FIT_ADMIT = 10,
+}
+
+export function getRecruitmentStatusText(status: number): string {
+  switch (status) {
+    case RecruitmentStatus.WAIT_AUDIT: return '等待审核'
+    case RecruitmentStatus.PASS: return '审核通过'
+    case RecruitmentStatus.REFUSE: return '审核不通过'
+    case RecruitmentStatus.WAIT_INTERVIEW: return '待面试/待笔试'
+    case RecruitmentStatus.FIT_ADMIT: return '拟录取'
+    default: return '未知状态'
+  }
+}
+
+/**
+ * 纳新归档信息响应 VO
+ */
+export interface UserRecruitmentArchivesRespVO {
+  id: number
+  name: string
+  studentId: string
+  email: string
+  phone: string
+  qqNumber: string
+  birthday: string
+  sex: number
+  nation: string
+  politicalOutlook: string
+  userIntroduce: string
+  joinReason: string
+  personalSkills: string
+  interestDirection: string
+  grade: number
+  schoolDeptId: number
+  schoolDeptName: string
+  settingId: number
+  settingName: string
+  imageUrl: string
+  province: string
+  city: string
+  /* 审核状态，对应 RecruitmentStatus 枚举 */
+  status: number
+  openid: string
+  unionId?: string
+  /* 系统密码，仅拟录取成员有值 */
+  password?: string | null
+  createTime: string
+  time: string
+  location: string
+}
+
+export type CommonResultLong = number
+
+/**
+ * 用户纳新提交状态响应 VO
+ */
+export interface UserRecruitmentRespVO {
+  id: number
+  status: number
+  openid?: string
+  unionId?: string
+}
+
+/**
+ * 纳新计划配置响应 VO
+ */
+export interface UserRecruitmentConfigRespVO {
+  id?: number
+  groupLink?: string
+  isOpen?: boolean
+  [key: string]: any
+}
+
+/**
  * 用户纳新登记新增/修改 Request VO
  */
 export interface UserRecruitmentSaveReqVO {

@@ -10,7 +10,7 @@
 <script lang="ts" setup>
 import type { ArticleSearchRespVO } from '@/api/types/article'
 import { computed, ref, watch } from 'vue'
-import { getArticlePage } from '@/api/article'
+import { getArticlePage, getArticleTagSimpleList } from '@/api/article'
 import ThemeCard from '@/components/ThemeCard.vue'
 import { WECHAT_SHARE_IMAGE_URL } from '@/config/share'
 import { useAppStore } from '@/store/app'
@@ -32,14 +32,7 @@ const searchParams = reactive({
 })
 
 // 分类标签列表
-const categoryTags = [
-  { name: '全部', value: '' },
-  { name: '技术分享', value: '技术分享' },
-  { name: '项目经验', value: '项目经验' },
-  { name: '学习笔记', value: '学习笔记' },
-  { name: '工作总结', value: '工作总结' },
-  { name: '团队建设', value: '团队建设' },
-]
+const categoryTags = ref([{ name: '全部', value: '' }])
 
 // 当前选中的分类
 const currentCategory = ref('')
@@ -54,9 +47,22 @@ const textMutedClass = computed(() => (isDark.value ? 'text-gray-500' : 'text-sl
 // 状态栏高度
 const statusBarHeight = ref(0)
 
-onLoad(() => {
+onLoad(async () => {
   const systemInfo = uni.getSystemInfoSync()
   statusBarHeight.value = systemInfo.statusBarHeight || 0
+
+  try {
+    const res = await getArticleTagSimpleList()
+    if (res.code === 0 && res.data) {
+      categoryTags.value = [
+        { name: '全部', value: '' },
+        ...res.data.map(t => ({ name: t.tagName, value: t.tagCode })),
+      ]
+    }
+  }
+  catch (e) {
+    console.error('获取标签列表失败:', e)
+  }
 })
 
 // 加载文章列表
@@ -146,33 +152,31 @@ function formatCount(count: number): string {
   return count.toString()
 }
 
-// 获取分类标签颜色
+// 获取分类标签颜色（循环使用6种颜色）
+const tagColorsDark = [
+  'text-blue-400 bg-blue-500/12 border-blue-500/20',
+  'text-green-400 bg-green-500/12 border-green-500/20',
+  'text-purple-400 bg-purple-500/12 border-purple-500/20',
+  'text-orange-400 bg-orange-500/12 border-orange-500/20',
+  'text-red-400 bg-red-500/12 border-red-500/20',
+  'text-indigo-400 bg-indigo-500/12 border-indigo-500/20',
+]
+const tagColorsLight = [
+  'text-blue-600 bg-blue-50 border-blue-200',
+  'text-green-600 bg-green-50 border-green-200',
+  'text-purple-600 bg-purple-50 border-purple-200',
+  'text-orange-600 bg-orange-50 border-orange-200',
+  'text-red-600 bg-red-50 border-red-200',
+  'text-indigo-600 bg-indigo-50 border-indigo-200',
+]
+
 function getCategoryColor(tag: string): string {
   if (!tag)
     return isDark.value ? 'text-gray-400 bg-white/6 border-white/12' : 'text-gray-600 bg-gray-50 border-gray-200'
 
-  if (isDark.value) {
-    const tagColorDark: Record<string, string> = {
-      技术分享: 'text-blue-400 bg-blue-500/12 border-blue-500/20',
-      项目经验: 'text-green-400 bg-green-500/12 border-green-500/20',
-      学习笔记: 'text-purple-400 bg-purple-500/12 border-purple-500/20',
-      工作总结: 'text-orange-400 bg-orange-500/12 border-orange-500/20',
-      团队建设: 'text-red-400 bg-red-500/12 border-red-500/20',
-      竞赛指导: 'text-indigo-400 bg-indigo-500/12 border-indigo-500/20',
-    }
-    return tagColorDark[tag] || 'text-gray-400 bg-white/6 border-white/12'
-  }
-  else {
-    const tagColorLight: Record<string, string> = {
-      技术分享: 'text-blue-600 bg-blue-50 border-blue-200',
-      项目经验: 'text-green-600 bg-green-50 border-green-200',
-      学习笔记: 'text-purple-600 bg-purple-50 border-purple-200',
-      工作总结: 'text-orange-600 bg-orange-50 border-orange-200',
-      团队建设: 'text-red-600 bg-red-50 border-red-200',
-      竞赛指导: 'text-indigo-600 bg-indigo-50 border-indigo-200',
-    }
-    return tagColorLight[tag] || 'text-gray-600 bg-gray-50 border-gray-200'
-  }
+  const index = categoryTags.value.findIndex(t => t.name === tag || t.value === tag)
+  const colorIndex = index <= 0 ? 0 : (index - 1) % 6
+  return isDark.value ? tagColorsDark[colorIndex] : tagColorsLight[colorIndex]
 }
 
 // 判断是否为精选文章（浏览量前3或有封面图）
@@ -254,21 +258,6 @@ onShareTimeline(() => ({
 
       <!-- 导航内容 -->
       <view class="relative px-4 pb-3">
-        <!-- 标题行 -->
-        <view class="flex items-center justify-between py-2">
-          <view class="text-xl font-bold text-white">
-            文章列表
-          </view>
-          <view class="flex items-center gap-2">
-            <view
-              class="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 active:scale-95"
-              @click="uni.navigateBack()"
-            >
-              <wd-icon name="arrow-left" size="18px" color="#fff" />
-            </view>
-          </view>
-        </view>
-
         <!-- 搜索框 -->
         <view class="mt-2">
           <wd-search
@@ -313,7 +302,7 @@ onShareTimeline(() => ({
       v-model="articles"
       :default-page-size="10"
       :bg-color="isDark ? '#020617' : '#f5f7fa'"
-      :fixed="false"
+      style="top: 115px;"
       @query="queryList"
     >
       <view class="px-4 pb-4 space-y-3">

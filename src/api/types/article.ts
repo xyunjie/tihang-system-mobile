@@ -108,3 +108,9 @@ export interface CommonResultArticleDetailRespVO {
   data: ArticleDetailRespVO
   msg: string
 }
+
+// 文章标签简单列表项
+export interface ArticleTagSimpleRespVO {
+  tagCode: string
+  tagName: string
+}

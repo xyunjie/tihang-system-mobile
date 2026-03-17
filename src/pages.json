@@ -164,6 +164,15 @@
       "notLogin": true
     },
     {
+      "path": "pages/recruitment/result",
+      "type": "page",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "录取结果"
+      },
+      "notLogin": true
+    },
+    {
       "path": "pages/recruitment/success",
       "type": "page",
       "style": {

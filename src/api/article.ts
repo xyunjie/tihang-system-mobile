@@ -1,6 +1,7 @@
 import type {
   ArticleDetailRespVO,
   ArticleSearchPageReqVO,
+  ArticleTagSimpleRespVO,
   PageResultArticleSearchRespVO,
 } from './types/article'
 import { http } from '@/http/http'
@@ -19,4 +20,11 @@ export function getArticleDetail(id: number) {
   return http.get<ArticleDetailRespVO>('/admin-api/blog/article/detail', {
     id,
   })
+}
+
+/**
+ * 获取文章标签简单列表
+ */
+export function getArticleTagSimpleList() {
+  return http.get<ArticleTagSimpleRespVO[]>('/admin-api/blog/article-tag/simple-list')
 }

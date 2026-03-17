@@ -1,4 +1,4 @@
-import type { CommonResultLong, UserRecruitmentConfigRespVO, UserRecruitmentRespVO, UserRecruitmentSaveReqVO } from '@/api/types/recruitment'
+import type { CommonResultLong, UserRecruitmentArchivesRespVO, UserRecruitmentConfigRespVO, UserRecruitmentRespVO, UserRecruitmentSaveReqVO } from '@/api/types/recruitment'
 import { http } from '@/http/http'
 
 /**
@@ -34,4 +34,12 @@ export function updateUserRecruitment(data: UserRecruitmentSaveReqVO) {
  */
 export function getUserRecruitmentConfig() {
   return http.get<UserRecruitmentConfigRespVO>('/admin-api/system/user-recruitment-config/get-runtime')
+}
+
+/**
+ * 根据 openid 获取纳新归档信息
+ * @param openid 微信 openid
+ */
+export function getRecruitmentArchivesByOpenid(openid: string) {
+  return http.get<UserRecruitmentArchivesRespVO | null>('/admin-api/system/user-recruitment-archives/get-by-openid', { openid })
 }
