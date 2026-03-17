@@ -165,16 +165,4 @@ export enum RecruitmentStatus {
 /**
  * 纳新状态文案
  */
-export function getRecruitmentStatusText(status?: number) {
-  switch (status) {
-    case RecruitmentStatus.APPLY:
-      return '审核中'
-    case RecruitmentStatus.PASS:
-      return '已通过'
-    case RecruitmentStatus.REFUSE:
-      return '已拒绝'
-    default:
-      return '未知'
-  }
-}
 
