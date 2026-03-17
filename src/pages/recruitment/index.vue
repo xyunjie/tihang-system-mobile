@@ -15,7 +15,7 @@ import { onLoad, onShow } from '@dcloudio/uni-app'
 import { computed, ref, watch } from 'vue'
 import { useMessage } from 'wot-design-uni'
 import { getCityList, getProvinceList } from '@/api/area'
-import { getSocialAuthRedirect, getWxUserInfoApi } from '@/api/login'
+import { getSocialAuthRedirect, getWxCode, getWxUserInfoApi } from '@/api/login'
 import { createUserRecruitment, getSubmitStatus, getUserRecruitmentConfig, updateUserRecruitment } from '@/api/recruitment'
 import { getClassList, getCollegeList, getMajorList } from '@/api/school-dept'
 import { RecruitmentStatus } from '@/api/types/recruitment'
@@ -38,10 +38,7 @@ const textMutedClass = computed(() => (isDark.value ? 'text-gray-500' : 'text-sl
 
 function setPageBackgroundColor() {
   const bgColor = isDark.value ? '#020617' : '#f5f7fa'
-  const api = (uni as any).setBackgroundColor
-  if (typeof api !== 'function')
-    return
-  api({
+  uni.setBackgroundColor({
     backgroundColor: bgColor,
     backgroundColorTop: bgColor,
     backgroundColorBottom: bgColor,
@@ -84,7 +81,6 @@ const formData = ref<UserRecruitmentSaveReqVO>(
     imageUrl: '',
     province: '',
     city: '',
-    socialType: getSocialType(),
   },
 )
 
@@ -495,6 +491,7 @@ async function initWxAuthH5() {
     currentUrl.searchParams.delete('code')
     currentUrl.searchParams.delete('state')
     const redirectUri = currentUrl.toString()
+
     // 获取微信授权链接
     const res = await getSocialAuthRedirect({
       type: getSocialType(), // 31 = 微信H5服务号
@@ -516,11 +513,39 @@ async function initWxAuthH5() {
 
 // 处理微信授权回调（H5 微信浏览器环境）
 async function handleWxAuthCallback(code: string, state?: string) {
-  if (!code) {
-    console.warn('微信授权回调缺少 code 参数')
+  try {
+    const res = await getWxUserInfoApi({
+      type: getSocialType(), // 31 = 微信H5服务号
+      code,
+      state,
+    })
+
+    if (res.code === 0 && res.data) {
+      wxUserInfo.value = {
+        openid: res.data.openid,
+        unionId: res.data.unionId,
+        subscribe: res.data.subscribe,
+      }
+      formData.value.openid = res.data.openid
+      formData.value.unionId = res.data.unionId || ''
+
+      console.log('微信用户信息获取成功:', {
+        openid: res.data.openid,
+        unionId: res.data.unionId,
+        subscribe: res.data.subscribe,
+      })
+
+      return true
+    }
+    else {
+      console.error('获取微信用户信息失败:', res.msg)
+      return false
+    }
+  }
+  catch (error) {
+    console.error('处理微信授权回调失败:', error)
     return false
   }
-  return true
 }
 
 // 服务号二维码链接
@@ -560,7 +585,6 @@ function handleNotSubscribed() {
 // 检查是否已提交过纳新申请
 async function checkSubmitStatus(): Promise<UserRecruitmentRespVO | null> {
   if (!wxUserInfo.value?.openid) {
-    console.warn('缺少 openid，无法检查提交状态')
     return null
   }
 
@@ -602,7 +626,6 @@ async function fillFormData(data: UserRecruitmentRespVO) {
     imageUrl: data.imageUrl,
     province: data.province,
     city: data.city,
-    socialType: getSocialType(),
   }
 
   // 回填省份并加载城市
@@ -655,11 +678,22 @@ onLoad(async (options) => {
     // 检查是否从微信授权回调返回（URL 中包含 code 和 state 参数）
     if (options?.code) {
       // 从微信授权回调返回，处理获取用户信息
-      const success = await handleWxAuthCallback(options.code)
+      const success = await handleWxAuthCallback(options.code, options.state)
       if (!success) {
         showToast('获取微信用户信息失败，请重试')
         return
       }
+
+      // 授权成功后，检查是否关注了服务号
+      if (!wxUserInfo.value?.subscribe) {
+        // 未关注服务号，先加载纳新配置（用于获取服务号二维码等信息）
+        await loadRecruitmentConfig()
+        // 显示引导关注弹窗
+        handleNotSubscribed()
+        return
+      }
+
+      // 已关注服务号，继续加载其他数据
     }
     else {
       // 没有 code 参数，需要跳转到微信授权页面
@@ -990,17 +1024,21 @@ async function onSubmit() {
 
     submitting.value = true
 
-    if (!wxUserInfo.value?.openid) {
-      showToast('获取微信用户信息失败，请刷新页面重试')
-      return
+    // 如果还没有获取微信用户信息，先获取
+    if (!wxUserInfo.value || !wxUserInfo.value.openid) {
+      const success = await getWxUserInfo()
+      if (!success) {
+        showToast('获取微信用户信息失败，请重试')
+        return
+      }
     }
 
-    // 准备提交数据（直接携带 openid/unionId）
+    // 准备提交数据，包含 openid、unionId 和 socialType
     const submitData = {
       ...formData.value,
-      openid: wxUserInfo.value.openid,
-      unionId: wxUserInfo.value.unionId || '',
-      socialType: getSocialType(),
+      openid: formData.value.openid,
+      unionId: formData.value.unionId,
+      socialType: getSocialType(), // 34=微信小程序，31=微信H5（服务号）
     }
 
     // 根据是否为重新提交，调用不同的接口
