@@ -96,6 +96,17 @@
       "notLogin": true
     },
     {
+      "path": "pages/login/first-password",
+      "type": "page",
+      "layout": "default",
+      "style": {
+        "navigationStyle": "default",
+        "navigationBarTitleText": "首次登录修改密码",
+        "enablePullDownRefresh": false,
+        "disableScroll": true
+      }
+    },
+    {
       "path": "pages/login/forgot",
       "type": "page",
       "layout": "default",

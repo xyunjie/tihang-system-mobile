@@ -16,6 +16,18 @@ import { useUserStore } from '@/store'
 import { currRoute } from '@/utils'
 
 const userStore = useUserStore()
+const firstPasswordRoute = '/pages/login/first-password'
+
+function redirectToFirstPassword() {
+  uni.redirectTo({
+    url: firstPasswordRoute,
+    fail: () => {
+      uni.reLaunch({
+        url: firstPasswordRoute,
+      })
+    },
+  })
+}
 
 function redirectToTarget(target?: string) {
   const dest = target || '/pages/index/index'
@@ -74,6 +86,12 @@ onLoad(async (options) => {
       }
       catch {}
       uni.hideLoading()
+
+      if (res.data.firstLogin) {
+        redirectToFirstPassword()
+        return
+      }
+
       uni.showToast({ icon: 'success', title: '登录成功', duration: 1200 })
       setTimeout(() => {
         redirectToTarget(redirect)

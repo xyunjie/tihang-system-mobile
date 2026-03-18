@@ -9,6 +9,7 @@ export interface IUserInfoVo {
   accessToken: string
   refreshToken?: string
   expiresTime?: number // 改为数字类型，存储时间戳
+  firstLogin?: boolean
   // 扩展字段：微信用户信息
   wxNickName?: string
   wxAvatarUrl?: string
@@ -33,6 +34,7 @@ export interface IUserLogin {
   accessToken: string
   refreshToken: string
   expiresTime: number // 改为数字类型，存储时间戳
+  firstLogin?: boolean
 }
 
 /**

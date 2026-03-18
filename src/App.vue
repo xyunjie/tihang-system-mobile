@@ -9,12 +9,15 @@ import 'abortcontroller-polyfill/dist/abortcontroller-polyfill-only'
 
 const isDev = import.meta.env.DEV
 const loginRoute = import.meta.env.VITE_LOGIN_URL
+const firstPasswordRoute = '/pages/login/first-password'
 
 function getTokens() {
   const userStore = useUserStore()
   const accessToken = userStore.userInfo.accessToken || uni.getStorageSync('accessToken')
   const refreshToken = userStore.userInfo.refreshToken || uni.getStorageSync('refreshToken')
-  return { accessToken, refreshToken }
+  const storedFirstLogin = uni.getStorageSync('firstLogin')
+  const firstLogin = userStore.userInfo.firstLogin === true || storedFirstLogin === true || storedFirstLogin === 'true'
+  return { accessToken, refreshToken, firstLogin }
 }
 
 function tryAutoLogin() {
@@ -51,7 +54,18 @@ function checkInitialAuth() {
         return
       }
 
-      const { accessToken, refreshToken } = getTokens()
+      const { accessToken, refreshToken, firstLogin } = getTokens()
+
+      if (accessToken && firstLogin) {
+        if (currentPath === firstPasswordRoute) {
+          return
+        }
+
+        uni.reLaunch({
+          url: firstPasswordRoute,
+        })
+        return
+      }
 
       if (accessToken) {
         return
@@ -110,7 +124,8 @@ onLaunch(() => {
     el.setAttribute('data-theme', mode)
     if (mode === 'dark') {
       el.classList.add('dark')
-    } else {
+    }
+    else {
       el.classList.remove('dark')
     }
   }
@@ -161,7 +176,6 @@ page {
   /* Global styles are now handled in src/style/index.scss */
   min-height: 100vh;
 }
-
 
 /* #ifdef H5 */
 uni-page-head {

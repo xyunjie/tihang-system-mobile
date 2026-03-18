@@ -16,7 +16,6 @@
 <script setup lang="ts">
 import type { ILoginForm } from '@/api/types/login'
 import { computed, onMounted, reactive, ref } from 'vue'
-import { getSocialAuthRedirect } from '@/api/login'
 import ThemeCard from '@/components/ThemeCard.vue'
 import { useUserStore } from '@/store'
 import { useAppStore } from '@/store/app'
@@ -25,6 +24,8 @@ import { getWeChatAuthLink } from '@/utils/wechat'
 
 const userStore = useUserStore()
 const redirectUrl = ref('')
+const firstPasswordRoute = '/pages/login/first-password'
+const skipWxAutoAuthOnceKey = 'skipWxAutoAuthOnce'
 
 // 防止返回和防止绕过登录的逻辑
 let isLoggedIn = false // 标记是否已成功登录
@@ -66,7 +67,26 @@ onMounted(() => {
   }
 })
 
+function getLoginState() {
+  const accessToken = userStore.userInfo.accessToken || uni.getStorageSync('accessToken')
+  const storedFirstLogin = uni.getStorageSync('firstLogin')
+  const firstLogin = userStore.userInfo.firstLogin === true || storedFirstLogin === true || storedFirstLogin === 'true'
+  return { accessToken, firstLogin }
+}
+
 // 登录成功后的统一处理
+function redirectToFirstPassword() {
+  isLoggedIn = true
+  uni.redirectTo({
+    url: firstPasswordRoute,
+    fail: () => {
+      uni.reLaunch({
+        url: firstPasswordRoute,
+      })
+    },
+  })
+}
+
 function afterLoginSuccess(delay = 1500) {
   isLoggedIn = true
   uni.showToast({
@@ -95,6 +115,18 @@ function initMpWeixinOnLoad() {
 
 // H5 环境的页面初始化（包含微信浏览器自动登录处理）
 async function initH5OnLoad() {
+  const { accessToken, firstLogin } = getLoginState()
+  if (accessToken && firstLogin) {
+    redirectToFirstPassword()
+    return
+  }
+
+  const skipWxAutoAuthOnce = uni.getStorageSync(skipWxAutoAuthOnceKey)
+  if (skipWxAutoAuthOnce) {
+    uni.removeStorageSync(skipWxAutoAuthOnceKey)
+    return
+  }
+
   const wechatAuthLink = await getWeChatAuthLink()
   if (wechatAuthLink) {
     location.href = wechatAuthLink
@@ -127,8 +159,14 @@ onBackPress(() => {
 
 // 页面显示时检查登录状态
 onShow(() => {
+  const { accessToken, firstLogin } = getLoginState()
+
   // 如果已经登录，但不是通过正常流程登录的，直接跳转
-  if (userStore.userInfo.accessToken && !isLoggedIn) {
+  if (accessToken && !isLoggedIn) {
+    if (firstLogin) {
+      redirectToFirstPassword()
+      return
+    }
     redirectToTarget()
   }
 })
@@ -238,7 +276,12 @@ async function handleLogin() {
     const result = await userStore.login(loginForm)
 
     if (result) {
-      afterLoginSuccess()
+      if (result.data.firstLogin) {
+        redirectToFirstPassword()
+      }
+      else {
+        afterLoginSuccess()
+      }
     }
   }
   catch (error: any) {
@@ -275,7 +318,12 @@ async function handleOneClickLogin() {
     // 2. 执行微信登录
     const result = await userStore.socialLogin()
     if (result) {
-      afterLoginSuccess()
+      if (result.data.firstLogin) {
+        redirectToFirstPassword()
+      }
+      else {
+        afterLoginSuccess()
+      }
     }
   }
   catch (error: any) {

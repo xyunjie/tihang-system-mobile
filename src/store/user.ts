@@ -5,7 +5,6 @@ import {
   bindAccount as _bindAccount,
   login as _login,
   logout as _logout,
-  refreshToken as _refreshToken,
   socialLogin as _socialLogin,
   wxLogin as _wxLogin,
   getWxCode,
@@ -24,6 +23,7 @@ const userInfoState: IUserInfoVo = {
   accessToken: '',
   refreshToken: '',
   expiresTime: 0, // 改为数字类型
+  firstLogin: false,
 }
 
 export const useUserStore = defineStore(
@@ -48,12 +48,18 @@ export const useUserStore = defineStore(
       userInfo.value.avatar = avatar
     }
 
+    const setFirstLogin = (firstLogin: boolean) => {
+      userInfo.value.firstLogin = firstLogin
+      uni.setStorageSync('firstLogin', firstLogin)
+    }
+
     // 删除用户信息
     const removeUserInfo = () => {
       userInfo.value = { ...userInfoState }
       uni.removeStorageSync('refreshToken')
       uni.removeStorageSync('expiresTime')
       uni.removeStorageSync('accessToken')
+      uni.removeStorageSync('firstLogin')
       uni.removeStorageSync('systemUserInfo')
       uni.removeStorageSync('userInfo')
       uni.removeStorageSync('user')
@@ -106,8 +112,10 @@ export const useUserStore = defineStore(
         accessToken: loginData.accessToken,
         refreshToken: loginData.refreshToken,
         expiresTime: loginData.expiresTime,
+        firstLogin: loginData.firstLogin === true,
       }
       saveTokenToStorage(loginData.refreshToken, loginData.expiresTime)
+      setFirstLogin(loginData.firstLogin === true)
       const userInfo = await getUserInfo()
       userData.username = userInfo.data.username
       userData.avatar = userInfo.data.avatar
@@ -163,7 +171,7 @@ export const useUserStore = defineStore(
       }
 
       console.log('登录信息', res)
-      handleLoginSuccess(res.data, credentials.username, showToast)
+      await handleLoginSuccess(res.data, credentials.username, showToast)
       return res
     }
 
@@ -224,7 +232,7 @@ export const useUserStore = defineStore(
         return null
       }
       // 登录成功
-      handleLoginSuccess(res.data, undefined, false)
+      await handleLoginSuccess(res.data, undefined, false)
       return res
     }
 
@@ -282,6 +290,7 @@ export const useUserStore = defineStore(
       getUserInfoCache,
       setUserInfo,
       setUserAvatar,
+      setFirstLogin,
       logout,
       clearUserInfo: removeUserInfo, // 为了保持一致性，添加别名
       getExtendedUserInfo, // 新增：获取扩展用户信息

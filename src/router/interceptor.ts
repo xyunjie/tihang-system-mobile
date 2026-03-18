@@ -3,12 +3,15 @@ import { notLoginPages as _notLoginPages, getLastPage, getNotLoginPages } from '
 import { trackPageView } from '@/utils/analytics'
 
 const loginRoute = import.meta.env.VITE_LOGIN_URL
+const firstPasswordRoute = '/pages/login/first-password'
 
 function getTokens() {
   const userStore = useUserStore()
   const accessToken = userStore.userInfo.accessToken || uni.getStorageSync('accessToken')
   const refreshToken = userStore.userInfo.refreshToken || uni.getStorageSync('refreshToken')
-  return { accessToken, refreshToken }
+  const storedFirstLogin = uni.getStorageSync('firstLogin')
+  const firstLogin = userStore.userInfo.firstLogin === true || storedFirstLogin === true || storedFirstLogin === 'true'
+  return { accessToken, refreshToken, firstLogin }
 }
 
 function tryAutoLogin() {
@@ -48,7 +51,18 @@ const navigateToInterceptor = {
       return true
     }
 
-    const { accessToken, refreshToken } = getTokens()
+    const { accessToken, refreshToken, firstLogin } = getTokens()
+
+    if (accessToken && firstLogin) {
+      if (path === firstPasswordRoute) {
+        return true
+      }
+
+      uni.reLaunch({
+        url: firstPasswordRoute,
+      })
+      return false
+    }
 
     if (accessToken) {
       return true
