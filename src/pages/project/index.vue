@@ -76,7 +76,7 @@ function normalizeProjectStatus(status?: string): 'started' | 'completed' | 'gro
 }
 
 function buildProjectFromTeamRaw(teamRaw: any, projectMap: Record<number, ProjectBaseInfo>): ProjectBaseInfo {
-  const projectId = Number(teamRaw?.competitionId || 0)
+  const projectId = Number(teamRaw?.projectId || 0)
   const projectFromMap = projectMap[projectId]
   if (projectFromMap) {
     return {
@@ -87,7 +87,7 @@ function buildProjectFromTeamRaw(teamRaw: any, projectMap: Record<number, Projec
 
   return {
     id: projectId,
-    name: teamRaw?.competitionName || '未命名项目',
+    name: teamRaw?.projectName || '未命名项目',
     year: undefined,
     type: teamRaw?.type || '',
     status: normalizeProjectStatus(teamRaw?.status),
@@ -98,12 +98,12 @@ function mapMyTeamToViewTeam(teamRaw: any, projectMap: Record<number, ProjectBas
   const project = buildProjectFromTeamRaw(teamRaw, projectMap)
   return {
     id: Number(teamRaw?.id || 0),
-    projectId: Number(teamRaw?.competitionId || 0),
+    projectId: Number(teamRaw?.projectId || 0),
     categoryId: Number(teamRaw?.categoryId || 0),
     categoryName: teamRaw?.categoryName,
     name: teamRaw?.name || '未命名队伍',
     description: teamRaw?.description,
-    captainName: teamRaw?.members?.find((m: any) => m?.isCaptain)?.name,
+    captainName: teamRaw?.members?.find((m: any) => m?.isCaptain)?.nickname || teamRaw?.members?.find((m: any) => m?.isCaptain)?.userName,
     recruitCount: teamRaw?.maxMembers,
     currentCount: teamRaw?.currentMembers,
     status: Number(teamRaw?.status || 0),

@@ -106,14 +106,22 @@ export interface ProjectTeamMember {
   teamId: number
   /** 用户ID */
   userId: number
-  /** 用户姓名 */
+  /** 用户姓名（EasyTrans翻译） */
   userName?: string
   /** 用户头像 */
   userAvatar?: string
-  /** 角色（队长/队员） */
+  /** 部门名称 */
+  userDeptName?: string
+  /** 学校组织架构（学院/专业/班级） */
+  userSchoolDeptName?: string
+  /** 角色（字典：project_role） */
   role: string
+  /** 是否是队长 */
+  isCaptain?: boolean
   /** 加入时间 */
   joinTime?: string
+  /** 状态（1正常 0退出） */
+  status?: number
 }
 
 // ==================== 计划管理 ====================
@@ -124,18 +132,38 @@ export interface ProjectTeamPlan {
   id: number
   /** 队伍ID */
   teamId: number
+  /** 用户ID */
+  userId?: number
+  /** 负责人名称（EasyTrans翻译） */
+  userName?: string
+  /** 计划类型 */
+  planType?: string
   /** 计划标题 */
   title: string
+  /** 计划描述 */
+  description?: string
   /** 计划内容 */
   content?: string
-  /** 开始时间 */
+  /** 指派人ID */
+  assignerId?: number
+  /** 指派人名称（EasyTrans翻译） */
+  assignerName?: string
+  /** 被指派人类型 */
+  assigneeType?: string
+  /** 开始日期 */
+  startDate?: string
+  /** 结束日期 */
+  endDate?: string
+  /** 开始时间（兼容） */
   startTime?: string
-  /** 结束时间 */
+  /** 结束时间（兼容） */
   endTime?: string
-  /** 状态（0-待开始，1-进行中，2-已完成，3-已延期） */
-  status: number
+  /** 状态（字典：plan_status） */
+  status: number | string
   /** 进度（0-100） */
   progress?: number
+  /** 优先级 */
+  priority?: number
   /** 创建时间 */
   createTime?: string
 }
@@ -148,20 +176,42 @@ export interface ProjectTeamReport {
   id: number
   /** 队伍ID */
   teamId: number
+  /** 用户ID */
+  userId?: number
+  /** 提交人名称（EasyTrans翻译） */
+  userName?: string
+  /** 报告类型（字典：report_type） */
+  reportType?: string
   /** 周报标题 */
   title?: string
   /** 周报内容 */
   content: string
+  /** 工作总结 */
+  workSummary?: string
+  /** 下周计划 */
+  nextPlan?: string
+  /** 遇到的问题 */
+  problems?: string
+  /** 解决方案 */
+  solutions?: string
   /** 周报日期 */
   reportDate: string
-  /** 状态（0-待审阅，1-已审阅） */
-  status: number
-  /** 审阅人 */
+  /** 周数 */
+  weekNumber?: number
+  /** 年份 */
+  year?: number
+  /** 审阅状态（字典：review_status） */
+  reviewStatus?: string
+  /** 审阅人ID */
   reviewerId?: number
+  /** 审阅人名称（EasyTrans翻译） */
+  reviewerName?: string
   /** 审阅时间 */
   reviewTime?: string
   /** 审阅意见 */
   reviewComment?: string
+  /** 状态（兼容旧版） */
+  status?: number
   /** 创建时间 */
   createTime?: string
 }

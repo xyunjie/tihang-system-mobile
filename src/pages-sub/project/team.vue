@@ -33,7 +33,6 @@ interface TeamMemberExt extends ProjectTeamMember {
   studentNo?: string
   phone?: string
   intro?: string
-  isCaptain?: boolean
 }
 
 interface TeamPlanExt extends ProjectTeamPlan {
@@ -208,7 +207,7 @@ function enrichCaptainNameFromMyTeams(base: ProjectTeamInfo, myTeamsRaw: any[]):
   const captain = matched?.members?.find((m: any) => m?.isCaptain)
   return {
     ...base,
-    captainName: captain?.name || base.captainName,
+    captainName: captain?.nickname || captain?.userName || base.captainName,
   }
 }
 
@@ -231,9 +230,12 @@ async function loadData() {
         userId: Number(m.userId),
         userName: m.userName || m.nickname || `用户${m.userId || ''}`,
         userAvatar: m.userAvatar || m.avatar,
+        userDeptName: m.userDeptName,
+        userSchoolDeptName: m.userSchoolDeptName,
         role: mapMemberRole(m.role, m.isCaptain),
         isCaptain: !!m.isCaptain,
-        className: m.className || m.class || '未知班级',
+        status: m.status,
+        className: m.userSchoolDeptName || m.userDeptName || '未知班级',
         studentNo: m.studentNo,
         phone: m.phone,
         intro: m.intro || m.remark,
@@ -257,6 +259,7 @@ async function loadData() {
     if (plansRes.code === 0 && plansRes.data) {
       plans.value = plansRes.data.map((p: any) => ({
         ...p,
+        assigneeName: p.userName || p.assigneeName,
         status: parsePlanStatusToNumber(p.status),
         startTime: parseDateToDateTime(p.startDate || p.startTime),
         endTime: parseDateToDateTime(p.endDate || p.endTime),
@@ -269,6 +272,7 @@ async function loadData() {
     if (reportsRes.code === 0 && reportsRes.data?.list) {
       reports.value = reportsRes.data.list.map((r: any) => ({
         ...r,
+        authorName: r.userName || r.authorName,
         status: String(r.reviewStatus || '').toLowerCase() === 'approved' ? 1 : 0,
         reportDate: parseDateToDateTime(r.reportDate),
       }))

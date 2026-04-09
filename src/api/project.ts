@@ -60,7 +60,7 @@ export async function getMyTeam(projectId: number) {
     }
   }
 
-  const target = response.data.find((item: any) => Number(item.competitionId) === Number(projectId))
+  const target = response.data.find((item: any) => Number(item.projectId) === Number(projectId))
   if (!target) {
     return {
       ...response,
@@ -70,12 +70,12 @@ export async function getMyTeam(projectId: number) {
 
   const teamInfo: ProjectTeamInfo = {
     id: target.id,
-    projectId: target.competitionId,
+    projectId: target.projectId,
     categoryId: target.categoryId,
     categoryName: target.categoryName,
     name: target.name,
     description: target.description,
-    captainName: target.members?.find((m: any) => m.isCaptain)?.name,
+    captainName: target.members?.find((m: any) => m.isCaptain)?.nickname || target.members?.find((m: any) => m.isCaptain)?.userName,
     recruitCount: target.maxMembers,
     currentCount: target.currentMembers,
     status: target.status,
