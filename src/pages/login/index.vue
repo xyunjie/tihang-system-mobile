@@ -16,6 +16,7 @@
 <script setup lang="ts">
 import type { ILoginForm } from '@/api/types/login'
 import { computed, onMounted, reactive, ref } from 'vue'
+import { getSocialAuthRedirect } from '@/api/login'
 import ThemeCard from '@/components/ThemeCard.vue'
 import { useUserStore } from '@/store'
 import { useAppStore } from '@/store/app'
@@ -355,6 +356,31 @@ function goForgot() {
     uni.showToast({ icon: 'none', title: '无法进入找回密码页' })
   }
 }
+
+// H5 飞书登录
+const feishuLoading = ref(false)
+async function handleFeishuLogin() {
+  if (feishuLoading.value) {
+    return
+  }
+  feishuLoading.value = true
+  try {
+    const redirectUri = `${location.origin}/pages/login/callback?type=40&redirect=${encodeURIComponent(redirectUrl.value || '/pages/index/index')}`
+    const authUrl = await getSocialAuthRedirect({ type: 40, redirectUri })
+    if (authUrl) {
+      window.location.href = authUrl
+    }
+    else {
+      uni.showToast({ icon: 'none', title: '获取飞书授权链接失败' })
+    }
+  }
+  catch (error: any) {
+    uni.showToast({ icon: 'none', title: error?.message || '飞书登录失败' })
+  }
+  finally {
+    feishuLoading.value = false
+  }
+}
 </script>
 
 <template>
@@ -474,6 +500,23 @@ function goForgot() {
                 找回密码
               </wd-button>
             </view>
+
+            <!-- #ifdef H5 -->
+            <!-- 飞书登录 -->
+            <view class="mb-4">
+              <wd-button
+                type="info"
+                size="large"
+                block
+                :loading="feishuLoading"
+                :disabled="feishuLoading"
+                custom-style="height: 48px; border-radius: 12px; font-size: 16px; font-weight: 600;"
+                @click="handleFeishuLogin"
+              >
+                {{ feishuLoading ? '跳转中...' : '飞书登录' }}
+              </wd-button>
+            </view>
+            <!-- #endif -->
           </view>
 
           <!-- 微信登录 -->
