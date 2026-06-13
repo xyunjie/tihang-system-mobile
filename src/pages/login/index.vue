@@ -21,6 +21,7 @@ import ThemeCard from '@/components/ThemeCard.vue'
 import { useUserStore } from '@/store'
 import { useAppStore } from '@/store/app'
 import { currRoute } from '@/utils'
+import { getFeishuAuthLink } from '@/utils/feishu'
 import { getWeChatAuthLink } from '@/utils/wechat'
 
 const userStore = useUserStore()
@@ -128,9 +129,17 @@ async function initH5OnLoad() {
     return
   }
 
+  // 微信浏览器：自动跳转微信授权
   const wechatAuthLink = await getWeChatAuthLink()
   if (wechatAuthLink) {
     location.href = wechatAuthLink
+    return
+  }
+
+  // 飞书内置浏览器：自动跳转飞书授权（与微信同一套逻辑，type=40）
+  const feishuAuthLink = await getFeishuAuthLink()
+  if (feishuAuthLink) {
+    location.href = feishuAuthLink
   }
 }
 
@@ -366,12 +375,12 @@ async function handleFeishuLogin() {
   feishuLoading.value = true
   try {
     const redirectUri = `${location.origin}/pages/login/callback?type=40&redirect=${encodeURIComponent(redirectUrl.value || '/pages/index/index')}`
-    const authUrl = await getSocialAuthRedirect({ type: 40, redirectUri })
-    if (authUrl) {
-      window.location.href = authUrl
+    const res = await getSocialAuthRedirect({ type: 40, redirectUri })
+    if (res.code === 0 && res.data) {
+      window.location.href = res.data
     }
     else {
-      uni.showToast({ icon: 'none', title: '获取飞书授权链接失败' })
+      uni.showToast({ icon: 'none', title: res.msg || '获取飞书授权链接失败' })
     }
   }
   catch (error: any) {
