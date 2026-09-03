@@ -1,4 +1,4 @@
-import type { CommonResultLong, UserRecruitmentArchivesRespVO, UserRecruitmentConfigRespVO, UserRecruitmentRespVO, UserRecruitmentSaveReqVO } from '@/api/types/recruitment'
+import type { CommonResultLong, UserRecruitmentArchivesRespVO, UserRecruitmentConfigRespVO, UserRecruitmentProgressRespVO, UserRecruitmentRespVO, UserRecruitmentSaveReqVO } from '@/api/types/recruitment'
 import { http } from '@/http/http'
 
 /**
@@ -8,6 +8,17 @@ import { http } from '@/http/http'
  */
 export function getSubmitStatus(openid: string, unionId?: string) {
   return http.get<UserRecruitmentRespVO>('/admin-api/system/user-recruitment/get-submit', {
+    openid,
+    unionId,
+  })
+}
+
+/**
+ * 获取当前用户自己的纳新进度。
+ * 服务端只接受 openid/unionId 身份，不接受 recruitmentId，避免越权读取他人进度。
+ */
+export function getRecruitmentProgress(openid: string, unionId?: string) {
+  return http.get<UserRecruitmentProgressRespVO>('/admin-api/system/user-recruitment/get-progress', {
     openid,
     unionId,
   })

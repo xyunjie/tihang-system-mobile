@@ -67,6 +67,42 @@ export interface UserRecruitmentRespVO {
   status: number
   openid?: string
   unionId?: string
+  name?: string
+  studentId?: string
+  email?: string
+  phone?: string
+  qqNumber?: string
+  birthday?: string
+  sex?: number
+  nation?: string
+  politicalOutlook?: string
+  userIntroduce?: string
+  joinReason?: string
+  personalSkills?: string
+  interestDirection?: string
+  grade?: number
+  schoolDeptId?: number
+  settingId?: number
+  imageUrl?: string
+  province?: string
+  city?: string
+  collegeId?: number
+  majorId?: number
+  classId?: number
+}
+
+/** 用户本人可见的纳新考核通过记录 */
+export interface UserRecruitmentAssessmentPublicRespVO {
+  assessmentStage: number
+  assessmentType: string
+  passed: boolean
+  score?: number | string | null
+}
+
+/** 用户本人纳新进度响应，不包含管理员操作人和备注 */
+export interface UserRecruitmentProgressRespVO {
+  status: number
+  assessments: UserRecruitmentAssessmentPublicRespVO[]
 }
 
 /**
@@ -152,17 +188,3 @@ export interface UserRecruitmentSaveReqVO {
   /* 市/区 */
   city: string
 }
-
-/**
- * 纳新状态
- */
-export enum RecruitmentStatus {
-  APPLY = 0,
-  PASS = 1,
-  REFUSE = 2,
-}
-
-/**
- * 纳新状态文案
- */
-

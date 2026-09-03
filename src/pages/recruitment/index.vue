@@ -897,9 +897,7 @@ onLoad(async (options) => {
     const groupLink = recruitmentConfig.value?.groupLink
       ? encodeURIComponent(recruitmentConfig.value.groupLink)
       : ''
-    uni.redirectTo({
-      url: `/pages/recruitment/success?groupLink=${groupLink}&status=${submitData.status}`,
-    })
+    uni.redirectTo({ url: `/pages/recruitment/success?groupLink=${groupLink}` })
     return
   }
 
@@ -1633,8 +1631,8 @@ async function onSubmit() {
                 v-model="formData.userIntroduce"
                 placeholder="请简要介绍自己（兴趣爱好、性格特点等）"
                 :maxlength="200"
-                show-word-limit
                 required
+                show-word-limit
                 prop="userIntroduce"
               />
             </view>
