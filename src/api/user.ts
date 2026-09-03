@@ -1,6 +1,5 @@
 import type { GetDeptTreeUsersParams, GetDeptTreeUsersRes, GetUserProfileParams, ISystemUserInfoVo, IUserProfileLoginLogRespVO, IUserProfileUpdatePasswordReqVO, IUserProfileUpdateReqVO, UserExtraRespVO, UserExtraResult, UserSimpleRespVO } from '@/api/types/user'
 import { http } from '@/http/http'
-import { useUserStore } from '@/store'
 
 /**
  * 获取用户信息
@@ -31,23 +30,12 @@ export function updateUserPassword(data: IUserProfileUpdatePasswordReqVO) {
  * @param directory 文件目录（可选）
  */
 export function uploadFile(filePath: string, directory?: string) {
-  // 使用userStore获取token，保持一致性
-  const userStore = useUserStore()
-  const { accessToken } = userStore.userInfo
-
-  const headers: Record<string, any> = {}
-
-  // 如果有token，添加到请求头中
-  if (accessToken) {
-    headers.Authorization = `Bearer ${accessToken}`
-  }
-
   // 构建上传参数
+  // 注意：Authorization 由 src/http/interceptor.ts 的 uploadFile 拦截器统一注入到 options.header，此处无需重复处理
   const uploadParams: any = {
     url: '/app-api/infra/file/upload',
     filePath,
     name: 'file',
-    headers,
   }
 
   // 如果指定了目录，添加到query参数中
@@ -61,23 +49,60 @@ export function uploadFile(filePath: string, directory?: string) {
     uni.uploadFile({
       ...uploadParams,
       success: (res) => {
-        try {
-          console.log('上传响应:', res)
-          const result = JSON.parse(res.data)
+        const { statusCode } = res
+        // 响应体可能是很长的 HTML 错误页，只截前 200 字符用于定位问题
+        const responseText = typeof res.data === 'string' ? res.data.slice(0, 200) : String(res.data)
 
-          if (result.code === 0) {
-            resolve(result.data) // 返回文件URL
-          }
-          else {
-            reject(new Error(result.msg || '上传失败'))
-          }
+        // 非 2xx 必须先于 JSON.parse 处理：此时响应大概率是 Nginx/Tomcat 的 HTML 错误页
+        // （413 请求体过大 / 500 / 502），parse 必然失败，会把真实的 statusCode 掩盖掉
+        if (statusCode < 200 || statusCode >= 300) {
+          console.error('[uploadFile] HTTP 状态码异常', {
+            url: uploadParams.url,
+            statusCode,
+            responseText,
+          })
+          reject(new Error(`上传失败（HTTP ${statusCode}）：${responseText}`))
+          return
         }
-        catch (error) {
-          reject(new Error('服务器响应格式错误'))
+
+        let result: any
+        try {
+          result = JSON.parse(res.data)
         }
+        catch {
+          console.error('[uploadFile] 响应不是合法 JSON', {
+            url: uploadParams.url,
+            statusCode,
+            responseText,
+          })
+          reject(new Error(`服务器响应格式错误（HTTP ${statusCode}）：${responseText}`))
+          return
+        }
+
+        if (result.code === 0) {
+          resolve(result.data) // 返回文件URL
+          return
+        }
+
+        console.error('[uploadFile] 业务处理失败', {
+          url: uploadParams.url,
+          statusCode,
+          responseText,
+          code: result.code,
+          msg: result.msg,
+        })
+        reject(new Error(`上传失败（code ${result.code}）：${result.msg || '未知错误'}`))
       },
       fail: (error) => {
-        reject(new Error(error.errMsg || '网络请求失败'))
+        // 传输层失败（CORS 预检被拦截、超时、小程序 uploadFile 域名白名单未配置等），
+        // errMsg 是唯一线索，必须完整带出去
+        const errMsg = error?.errMsg || '网络请求失败'
+        console.error('[uploadFile] 请求失败', {
+          url: uploadParams.url,
+          errMsg,
+          error,
+        })
+        reject(new Error(errMsg))
       },
     })
   })
