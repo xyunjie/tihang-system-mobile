@@ -14,7 +14,7 @@ import type { UserRecruitmentAssessmentPublicRespVO, UserRecruitmentProgressResp
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { computed, ref, watch } from 'vue'
 import { getSocialAuthRedirect, getWxUserInfoApi } from '@/api/login'
-import { getRecruitmentProgress } from '@/api/recruitment'
+import { getRecruitmentProgress, getSubmitStatus, takeRecruitmentProgressPreload } from '@/api/recruitment'
 import { RecruitmentStatus } from '@/api/types/recruitment'
 import { useAppStore } from '@/store/app'
 import { getSocialType, isWechatBrowser } from '@/utils/platform'
@@ -25,6 +25,8 @@ const loading = ref(true)
 const error = ref('')
 const groupLink = ref('')
 const progress = ref<UserRecruitmentProgressRespVO | null>(null)
+const lastLoadOptions = ref<Record<string, string>>({})
+const wxIdentity = ref<WxIdentity | null>(null)
 
 const status = computed(() => progress.value?.status ?? RecruitmentStatus.WAIT_AUDIT)
 const assessments = computed(() => progress.value?.assessments ?? [])
@@ -71,7 +73,9 @@ const typeNames: Record<string, string> = {
   PROGRAM: '程序',
 }
 
-const passedKeys = computed(() => new Set(assessments.value.map(item => `${item.assessmentStage}:${item.assessmentType}`)))
+const passedKeys = computed(() => new Set(assessments.value
+  .filter(item => item.passed)
+  .map(item => `${item.assessmentStage}:${item.assessmentType}`)))
 const passedAssessment = computed(() => assessments.value.filter(item => item.passed))
 const availableAssessment = computed(() => {
   if (status.value === RecruitmentStatus.WAIT_AUDIT || status.value === RecruitmentStatus.REFUSE)
@@ -102,20 +106,13 @@ function setPageBackgroundColor() {
   }
 }
 
-function decodeOption(value?: string) {
-  if (!value)
-    return ''
-  try {
-    return decodeURIComponent(value)
-  }
-  catch {
-    return value
-  }
+interface WxIdentity {
+  openid?: string
+  unionId?: string
 }
 
-interface WxIdentity {
-  openid: string
-  unionId?: string
+function hasWechatIdentity(identity: WxIdentity | null | undefined) {
+  return Boolean(identity?.openid?.trim() || identity?.unionId?.trim())
 }
 
 function getWxCode(): Promise<{ code: string }> {
@@ -133,7 +130,7 @@ async function getIdentityByCode(): Promise<WxIdentity | null> {
   try {
     const codeRes = await getWxCode()
     const res = await getWxUserInfoApi({ type: getSocialType(), code: codeRes.code })
-    if (res.code === 0 && res.data?.openid) {
+    if (res.code === 0 && hasWechatIdentity(res.data)) {
       return { openid: res.data.openid, unionId: res.data.unionId }
     }
     return null
@@ -148,7 +145,7 @@ async function getIdentityByCode(): Promise<WxIdentity | null> {
 async function getIdentityH5(code: string, state?: string): Promise<WxIdentity | null> {
   try {
     const res = await getWxUserInfoApi({ type: getSocialType(), code, state })
-    if (res.code === 0 && res.data?.openid) {
+    if (res.code === 0 && hasWechatIdentity(res.data)) {
       return { openid: res.data.openid, unionId: res.data.unionId }
     }
     return null
@@ -161,6 +158,7 @@ async function getIdentityH5(code: string, state?: string): Promise<WxIdentity |
 
 // H5 微信浏览器且 URL 无 code 时，跳转微信授权页；返回 true 表示已发生跳转
 async function redirectToWxAuthH5(): Promise<boolean> {
+  // #ifdef H5
   try {
     const currentUrl = new URL(window.location.href)
     currentUrl.searchParams.delete('code')
@@ -176,52 +174,156 @@ async function redirectToWxAuthH5(): Promise<boolean> {
     console.error('初始化微信认证失败:', err)
     return false
   }
+  // #endif
+  return false
+}
+
+function clearH5OAuthParams() {
+  // #ifdef H5
+  const currentUrl = new URL(window.location.href)
+  currentUrl.searchParams.delete('code')
+  currentUrl.searchParams.delete('state')
+  window.history.replaceState(null, '', currentUrl.toString())
+  // #endif
 }
 
 async function loadProgress(options: Record<string, string> = {}) {
+  const retryOptions = { ...options }
+  delete retryOptions.code
+  delete retryOptions.state
+  // OAuth code 只能兑换一次；任何重试都使用去掉 code/state 的参数并重新发起授权。
+  lastLoadOptions.value = retryOptions
   loading.value = true
   error.value = ''
+  groupLink.value = ''
+  let redirecting = false
   try {
-    let identity: WxIdentity | null = null
+    let identity = wxIdentity.value
 
     // #ifdef MP-WEIXIN
-    identity = await getIdentityByCode()
+    if (!identity)
+      identity = await getIdentityByCode()
     // #endif
 
     // #ifdef APP-PLUS
-    identity = await getIdentityByCode()
+    if (!identity)
+      identity = await getIdentityByCode()
     // #endif
 
     // #ifdef H5
-    if (isWechatBrowser()) {
+    if (!identity && isWechatBrowser()) {
       if (options.code) {
+        clearH5OAuthParams()
         identity = await getIdentityH5(options.code, options.state)
       }
       else if (await redirectToWxAuthH5()) {
+        redirecting = true
         return
       }
     }
     // #endif
 
-    if (!identity) {
+    if (!hasWechatIdentity(identity)) {
       error.value = '获取微信用户信息失败，请重试'
       return
     }
+    wxIdentity.value = identity
 
     const result = await getRecruitmentProgress(identity.openid, identity.unionId)
     if (result.code !== 0 || !result.data) {
       error.value = '未找到您的纳新记录'
       return
     }
+    if (result.data.status === RecruitmentStatus.REFUSE) {
+      // 审核不通过必须回到填表页完成完整回填，状态页不短暂渲染拒绝态内容。
+      redirecting = true
+      uni.redirectTo({
+        url: '/pages/recruitment/index',
+        fail: (err) => {
+          console.error('返回纳新填表页失败:', err)
+          redirecting = false
+          loading.value = false
+          error.value = '打开纳新填表页失败，请重试'
+        },
+      })
+      return
+    }
     progress.value = result.data
+    const submitResult = await getSubmitStatus(identity.openid, identity.unionId)
+    if (submitResult.code !== 0) {
+      throw new Error(submitResult.msg || '获取纳新群信息失败')
+    }
+    if (!submitResult.data) {
+      throw new Error('未找到您的纳新记录')
+    }
+    if (submitResult.data?.status === RecruitmentStatus.REFUSE) {
+      // 以最新本人状态为准，避免进度接口和提交状态接口短暂不一致时展示错误页面。
+      redirecting = true
+      uni.redirectTo({
+        url: '/pages/recruitment/index',
+        fail: (err) => {
+          console.error('返回纳新填表页失败:', err)
+          redirecting = false
+          loading.value = false
+          error.value = '打开纳新填表页失败，请重试'
+        },
+      })
+      return
+    }
+    groupLink.value = submitResult.data?.groupLink || ''
   }
   catch (err: any) {
     console.error('获取纳新进度失败:', err)
     error.value = err?.message || '查询失败，请稍后重试'
   }
   finally {
-    loading.value = false
+    if (!redirecting) {
+      loading.value = false
+    }
   }
+}
+
+function retryLoadProgress() {
+  // #ifdef H5
+  if (!hasWechatIdentity(wxIdentity.value)) {
+    window.location.replace(window.location.pathname)
+  }
+  // #endif
+  // #ifndef H5
+  loadProgress(lastLoadOptions.value)
+  // #endif
+  // #ifdef H5
+  if (hasWechatIdentity(wxIdentity.value))
+    loadProgress(lastLoadOptions.value)
+  // #endif
+}
+
+function usePreloadedProgress(token?: string) {
+  const preload = takeRecruitmentProgressPreload(token)
+  if (!preload)
+    return false
+
+  if (preload.progress.status === RecruitmentStatus.REFUSE) {
+    uni.redirectTo({
+      url: '/pages/recruitment/index',
+      fail: (err) => {
+        console.error('返回纳新填表页失败:', err)
+        loading.value = false
+        error.value = '打开纳新填表页失败，请重试'
+      },
+    })
+    return true
+  }
+
+  progress.value = preload.progress
+  wxIdentity.value = { openid: preload.openid, unionId: preload.unionId }
+  groupLink.value = preload.groupLink || groupLink.value
+  error.value = ''
+  // 先让目标页稳定渲染整页 loading shell，再一次性切换到完整进度内容。
+  setTimeout(() => {
+    loading.value = false
+  }, 80)
+  return true
 }
 
 function onJoinGroup() {
@@ -257,8 +359,9 @@ function assessmentLabel(item: UserRecruitmentAssessmentPublicRespVO) {
 }
 
 onLoad((options) => {
-  groupLink.value = decodeOption(options?.groupLink)
-  loadProgress(options as Record<string, string>)
+  if (!usePreloadedProgress(options?.preloadKey)) {
+    loadProgress(options as Record<string, string>)
+  }
 })
 onShow(setPageBackgroundColor)
 watch(isDark, setPageBackgroundColor)
@@ -266,141 +369,173 @@ watch(isDark, setPageBackgroundColor)
 
 <template>
   <view class="progress-page min-h-screen">
-    <view class="header-section relative overflow-hidden from-[#2563eb] to-[#1e40af] bg-gradient-to-br px-6 pb-20 pt-12">
-      <view class="absolute right-[-40px] top-[-40px] h-32 w-32 rounded-full bg-white/10" />
-      <view class="absolute bottom-[-20px] left-[-20px] h-24 w-24 rounded-full bg-white/5" />
-      <view class="relative z-1">
-        <view class="header-eyebrow">
-          TIHANG STUDIO · RECRUITMENT
-        </view>
-        <view class="mt-2 text-2xl text-white font-bold">
-          纳新进度
-        </view>
-        <view class="mt-1 text-xs text-white/75">
-          每一步都有回应，期待与你在工作室相遇。
-        </view>
-      </view>
+    <view v-if="loading" class="progress-loading-shell">
+      <wd-loading size="40px" color="#2563eb" />
+      <text class="progress-loading-shell__text">
+        正在加载申请状态...
+      </text>
     </view>
 
-    <view class="relative z-10 mt-[-34px] px-4 pb-8">
-      <view v-if="loading" class="progress-card flex flex-col items-center rounded-2xl bg-white p-8 shadow-sm dark:bg-slate-800">
-        <wd-loading size="40px" color="#2563eb" />
-        <text class="mt-4 text-sm" :class="textMutedClass">
-          查询中，请稍候...
-        </text>
+    <template v-else>
+      <view class="header-section relative overflow-hidden from-[#2563eb] to-[#1e40af] bg-gradient-to-br px-6 pb-20 pt-12">
+        <view class="absolute right-[-40px] top-[-40px] h-32 w-32 rounded-full bg-white/10" />
+        <view class="absolute bottom-[-20px] left-[-20px] h-24 w-24 rounded-full bg-white/5" />
+        <view class="relative z-1">
+          <view class="header-eyebrow">
+            TIHANG STUDIO · RECRUITMENT
+          </view>
+          <view class="mt-2 text-2xl text-white font-bold">
+            纳新进度
+          </view>
+          <view class="mt-1 text-xs text-white/75">
+            每一步都有回应，期待与你在工作室相遇。
+          </view>
+        </view>
       </view>
 
-      <template v-else>
-        <view class="progress-card rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-800">
-          <view class="flex items-center gap-3">
-            <view class="status-icon flex shrink-0 items-center justify-center rounded-2xl" :class="`status-${statusConfig.tone}`">
-              <wd-icon :name="statusConfig.icon" size="30px" :color="statusConfig.iconColor" />
-            </view>
-            <view class="min-w-0 flex-1">
-              <view class="text-lg font-bold" :class="textPrimaryClass">
-                {{ statusConfig.title }}
+      <view class="relative z-10 mt-[-34px] px-4 pb-8">
+        <template v-if="!error">
+          <view class="progress-card rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-800">
+            <view class="flex items-center gap-3">
+              <view class="status-icon flex shrink-0 items-center justify-center rounded-2xl" :class="`status-${statusConfig.tone}`">
+                <wd-icon :name="statusConfig.icon" size="30px" :color="statusConfig.iconColor" />
               </view>
-              <view class="mt-1 text-sm leading-relaxed" :class="textMutedClass">
-                {{ statusConfig.copy }}
+              <view class="min-w-0 flex-1">
+                <view class="text-lg font-bold" :class="textPrimaryClass">
+                  {{ statusConfig.title }}
+                </view>
+                <view class="mt-1 text-sm leading-relaxed" :class="textMutedClass">
+                  {{ statusConfig.copy }}
+                </view>
               </view>
             </view>
-          </view>
 
-          <view v-if="error" class="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-300">
-            {{ error }}
-          </view>
-          <view v-else class="next-box mt-5 rounded-xl bg-blue-50 p-3.5 dark:bg-blue-500/10">
-            <view class="mb-1 flex items-center text-sm text-blue-700 font-semibold dark:text-blue-300">
-              <wd-icon name="arrow-right" size="16px" color="#2563eb" />
-              <text class="ml-1">
-                下一步
-              </text>
-            </view>
-            <view class="text-xs leading-relaxed" :class="textSecondaryClass">
-              {{ statusConfig.next }}
-            </view>
-          </view>
-
-          <view class="stage-progress mt-6">
-            <view v-for="(label, index) in stageLabels" :key="label" class="stage-node" :class="{ done: index < statusConfig.current, active: index === statusConfig.current, rejected: statusConfig.rejected && index === 1 }">
-              <view class="stage-dot">
-                <wd-icon v-if="index < statusConfig.current" name="check" size="13px" color="#fff" />
-                <text v-else>
-                  {{ index + 1 }}
+            <view class="next-box mt-5 rounded-xl bg-blue-50 p-3.5 dark:bg-blue-500/10">
+              <view class="mb-1 flex items-center text-sm text-blue-700 font-semibold dark:text-blue-300">
+                <wd-icon name="arrow-right" size="16px" color="#2563eb" />
+                <text class="ml-1">
+                  下一步
                 </text>
               </view>
-              <text>{{ label }}</text>
+              <view class="text-xs leading-relaxed" :class="textSecondaryClass">
+                {{ statusConfig.next }}
+              </view>
             </view>
+
+            <view class="stage-progress mt-6">
+              <view v-for="(label, index) in stageLabels" :key="label" class="stage-node" :class="{ done: index < statusConfig.current, active: index === statusConfig.current, rejected: statusConfig.rejected && index === 1 }">
+                <view class="stage-dot">
+                  <wd-icon v-if="index < statusConfig.current" name="check" size="13px" color="#fff" />
+                  <text v-else>
+                    {{ index + 1 }}
+                  </text>
+                </view>
+                <text>{{ label }}</text>
+              </view>
+            </view>
+          </view>
+
+          <view v-if="passedAssessment.length || availableAssessment.length" class="progress-card mt-3 rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-800">
+            <view class="section-title flex items-center text-sm font-bold" :class="textPrimaryClass">
+              <i />与我相关的考核
+            </view>
+            <view v-for="item in passedAssessment" :key="`${item.assessmentStage}-${item.assessmentType}`" class="assessment-row flex items-center justify-between border-b border-slate-100 py-3 last:border-0 dark:border-white/10">
+              <view>
+                <view class="text-sm font-semibold" :class="textPrimaryClass">
+                  {{ assessmentLabel(item) }}
+                </view>
+                <view class="mt-1 text-xs" :class="textMutedClass">
+                  考核记录已确认
+                </view>
+              </view>
+              <view class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300">
+                {{ scoreText(item) }}
+              </view>
+            </view>
+            <view v-for="item in availableAssessment" :key="`${item.stage}-${item.type}`" class="assessment-row flex items-center justify-between border-b border-slate-100 py-3 last:border-0 dark:border-white/10">
+              <view>
+                <view class="text-sm font-semibold" :class="textPrimaryClass">
+                  {{ item.label }}
+                </view>
+                <view class="mt-1 text-xs" :class="textMutedClass">
+                  {{ item.stage === 2 ? '已解锁对应方向' : '其他方向仍可继续参加' }}
+                </view>
+              </view>
+              <view class="rounded-full bg-blue-50 px-2.5 py-1 text-xs text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                {{ item.stage === 2 ? '可参加' : '可继续参加' }}
+              </view>
+            </view>
+          </view>
+
+          <view class="progress-card mt-3 rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-800">
+            <view class="section-title flex items-center text-sm font-bold" :class="textPrimaryClass">
+              <i />操作区
+            </view>
+            <view v-if="statusConfig.rejected" class="action-button primary flex items-center justify-center text-white font-semibold" hover-class="opacity-90" @click="onResubmit">
+              <wd-icon name="edit" size="18px" color="#fff" />
+              <text class="ml-2">
+                修改并重新提交
+              </text>
+            </view>
+            <view v-if="statusConfig.rejected" class="action-button secondary mt-3 flex items-center justify-center font-semibold" :class="groupLink ? 'text-blue-600 dark:text-blue-300' : 'disabled text-slate-400 dark:text-slate-500'" :hover-class="groupLink ? 'bg-blue-50 dark:bg-blue-500/10' : ''" @click="onJoinGroup">
+              <wd-icon name="chat" size="18px" :color="groupLink ? '#2563eb' : '#94a3b8'" />
+              <text class="ml-2">
+                {{ groupLink ? '加入纳新群' : '纳新群暂未开放' }}
+              </text>
+            </view>
+            <view v-else class="action-button primary flex items-center justify-center text-white font-semibold" :class="{ disabled: !groupLink }" :hover-class="groupLink ? 'opacity-90' : ''" @click="onJoinGroup">
+              <wd-icon name="chat" size="18px" color="#fff" />
+              <text class="ml-2">
+                {{ groupLink ? '加入纳新群' : '纳新群暂未开放' }}
+              </text>
+            </view>
+          </view>
+        </template>
+
+        <view v-else class="progress-card error-card flex flex-col items-center rounded-2xl bg-white p-8 text-center shadow-sm dark:bg-slate-800">
+          <wd-icon name="warning" size="38px" color="#ef4444" />
+          <view class="mt-4 text-base font-bold" :class="textPrimaryClass">
+            申请状态加载失败
+          </view>
+          <view class="mt-2 text-sm leading-relaxed" :class="textMutedClass">
+            {{ error }}
+          </view>
+          <view class="action-button primary mt-6 w-full flex items-center justify-center text-white font-semibold" hover-class="opacity-90" @click="retryLoadProgress">
+            重新加载
           </view>
         </view>
 
-        <view v-if="!error && (passedAssessment.length || availableAssessment.length)" class="progress-card mt-3 rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-800">
-          <view class="section-title flex items-center text-sm font-bold" :class="textPrimaryClass">
-            <i />与我相关的考核
-          </view>
-          <view v-for="item in passedAssessment" :key="`${item.assessmentStage}-${item.assessmentType}`" class="assessment-row flex items-center justify-between border-b border-slate-100 py-3 last:border-0 dark:border-white/10">
-            <view>
-              <view class="text-sm font-semibold" :class="textPrimaryClass">
-                {{ assessmentLabel(item) }}
-              </view>
-              <view class="mt-1 text-xs" :class="textMutedClass">
-                考核记录已确认
-              </view>
-            </view>
-            <view class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300">
-              {{ scoreText(item) }}
-            </view>
-          </view>
-          <view v-for="item in availableAssessment" :key="`${item.stage}-${item.type}`" class="assessment-row flex items-center justify-between border-b border-slate-100 py-3 last:border-0 dark:border-white/10">
-            <view>
-              <view class="text-sm font-semibold" :class="textPrimaryClass">
-                {{ item.label }}
-              </view>
-              <view class="mt-1 text-xs" :class="textMutedClass">
-                {{ item.stage === 2 ? '已解锁对应方向' : '其他方向仍可继续参加' }}
-              </view>
-            </view>
-            <view class="rounded-full bg-blue-50 px-2.5 py-1 text-xs text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
-              {{ item.stage === 2 ? '可参加' : '可继续参加' }}
-            </view>
-          </view>
+        <view class="mt-7 text-center text-xs" :class="textMutedClass">
+          梯航智能车创新工作室
         </view>
-
-        <view v-if="!error" class="progress-card mt-3 rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-800">
-          <view class="section-title flex items-center text-sm font-bold" :class="textPrimaryClass">
-            <i />操作区
-          </view>
-          <view v-if="statusConfig.rejected" class="action-button primary flex items-center justify-center text-white font-semibold" hover-class="opacity-90" @click="onResubmit">
-            <wd-icon name="edit" size="18px" color="#fff" />
-            <text class="ml-2">
-              修改并重新提交
-            </text>
-          </view>
-          <view v-if="statusConfig.rejected" class="action-button secondary mt-3 flex items-center justify-center font-semibold" :class="groupLink ? 'text-blue-600 dark:text-blue-300' : 'disabled text-slate-400 dark:text-slate-500'" :hover-class="groupLink ? 'bg-blue-50 dark:bg-blue-500/10' : ''" @click="onJoinGroup">
-            <wd-icon name="chat" size="18px" :color="groupLink ? '#2563eb' : '#94a3b8'" />
-            <text class="ml-2">
-              {{ groupLink ? '加入纳新群' : '纳新群暂未开放' }}
-            </text>
-          </view>
-          <view v-else class="action-button primary flex items-center justify-center text-white font-semibold" :class="{ disabled: !groupLink }" :hover-class="groupLink ? 'opacity-90' : ''" @click="onJoinGroup">
-            <wd-icon name="chat" size="18px" color="#fff" />
-            <text class="ml-2">
-              {{ groupLink ? '加入纳新群' : '纳新群暂未开放' }}
-            </text>
-          </view>
-        </view>
-      </template>
-
-      <view class="mt-7 text-center text-xs" :class="textMutedClass">
-        梯航智能车创新工作室
       </view>
-    </view>
+    </template>
   </view>
 </template>
 
 <style scoped>
 .progress-page {
   --brand: #2563eb;
+}
+.progress-loading-shell {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #f5f7fa;
+}
+.dark .progress-loading-shell {
+  background: #020617;
+}
+.progress-loading-shell__text {
+  margin-top: 16px;
+  color: #64748b;
+  font-size: 14px;
+}
+.dark .progress-loading-shell__text {
+  color: #94a3b8;
 }
 .progress-card {
   box-shadow:

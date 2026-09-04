@@ -63,7 +63,8 @@ export type CommonResultLong = number
  * 用户纳新提交状态响应 VO
  */
 export interface UserRecruitmentRespVO {
-  id: number
+  /** 仅审核不通过、需要回填表单时返回 */
+  id?: number
   status: number
   openid?: string
   unionId?: string
@@ -89,6 +90,10 @@ export interface UserRecruitmentRespVO {
   collegeId?: number
   majorId?: number
   classId?: number
+  /** 跳转状态页所需的最小本人进度，不包含管理员字段 */
+  progress?: UserRecruitmentProgressRespVO
+  /** 报名批次对应的纳新群链接 */
+  groupLink?: string
 }
 
 /** 用户本人可见的纳新考核通过记录 */
@@ -103,6 +108,16 @@ export interface UserRecruitmentAssessmentPublicRespVO {
 export interface UserRecruitmentProgressRespVO {
   status: number
   assessments: UserRecruitmentAssessmentPublicRespVO[]
+}
+
+/** 填表页与状态页之间的一次性预加载缓存；身份仅用于消费后的同本人重试 */
+export interface UserRecruitmentProgressPreload {
+  token: string
+  createdAt: number
+  openid?: string
+  unionId?: string
+  progress: UserRecruitmentProgressRespVO
+  groupLink?: string
 }
 
 /**

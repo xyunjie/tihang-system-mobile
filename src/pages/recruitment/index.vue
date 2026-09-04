@@ -16,7 +16,7 @@ import { computed, getCurrentInstance, ref, watch } from 'vue'
 import { useMessage } from 'wot-design-uni'
 import { getCityList, getProvinceList } from '@/api/area'
 import { getSocialAuthRedirect, getWxCode, getWxUserInfoApi } from '@/api/login'
-import { createUserRecruitment, getSubmitStatus, getUserRecruitmentConfig, updateUserRecruitment } from '@/api/recruitment'
+import { clearRecruitmentProgressPreload, createUserRecruitment, getRecruitmentProgress, getSubmitStatus, getUserRecruitmentConfig, setRecruitmentProgressPreload, updateUserRecruitment } from '@/api/recruitment'
 import { getClassList, getCollegeList, getMajorList } from '@/api/school-dept'
 import { RecruitmentStatus } from '@/api/types/recruitment'
 import { uploadFile } from '@/api/user'
@@ -37,16 +37,23 @@ const brandColor = computed(() => (isDark.value ? '#3b82f6' : '#2563eb'))
 
 function setPageBackgroundColor() {
   const bgColor = isDark.value ? '#0b1220' : '#f5f7fa'
-  uni.setBackgroundColor({
-    backgroundColor: bgColor,
-    backgroundColorTop: bgColor,
-    backgroundColorBottom: bgColor,
-  })
+  const api = (uni as any).setBackgroundColor
+  if (typeof api === 'function') {
+    api({
+      backgroundColor: bgColor,
+      backgroundColorTop: bgColor,
+      backgroundColorBottom: bgColor,
+    })
+  }
 }
 
 // 页面状态
 const loading = ref(true)
 const submitting = ref(false)
+const loadingText = ref('正在加载纳新配置...')
+const pageError = ref('')
+const pendingProgressSubmitData = ref<UserRecruitmentRespVO | null>(null)
+const progressRedirectPending = ref(false)
 
 // 是否为重新提交模式（审核不通过后重新填写）
 const isResubmit = ref(false)
@@ -84,7 +91,11 @@ const formData = ref<UserRecruitmentSaveReqVO>(
 )
 
 // 微信用户信息缓存
-const wxUserInfo = ref<{ openid: string, unionId?: string, subscribe?: boolean } | null>(null)
+const wxUserInfo = ref<{ openid?: string, unionId?: string, subscribe?: boolean } | null>(null)
+
+function hasWechatIdentity(identity: { openid?: string, unionId?: string } | null | undefined) {
+  return Boolean(identity?.openid?.trim() || identity?.unionId?.trim())
+}
 
 // 照片上传
 const showCropper = ref(false)
@@ -332,7 +343,7 @@ function scrollToField(key: string) {
     ? uni.createSelectorQuery().in(instance.proxy)
     : uni.createSelectorQuery()
   query.select(`#field-${key}`).boundingClientRect()
-  query.selectViewport().scrollOffset()
+  query.selectViewport().scrollOffset(() => {})
   query.exec((res: any[]) => {
     const rect = res && res[0]
     const viewport = res && res[1]
@@ -551,8 +562,6 @@ type ConfigLoadStatus = 'ok' | 'unavailable' | 'failed' | 'error'
 // 因此提示与跳转统一交给 onLoad 决策，避免弹窗和 redirect 互相打架
 async function loadRecruitmentConfig(): Promise<ConfigLoadStatus> {
   try {
-    loading.value = true
-
     // 获取真实纳新配置
     const response = await getUserRecruitmentConfig()
 
@@ -574,19 +583,12 @@ async function loadRecruitmentConfig(): Promise<ConfigLoadStatus> {
     console.error('获取纳新配置失败:', error)
     return 'error'
   }
-  finally {
-    loading.value = false
-  }
 }
 
 // 纳新配置不可用时的统一处理：提示后返回上一页，不再触发任何跳转
 function handleConfigUnavailable(status: ConfigLoadStatus) {
-  // 网络异常：仅提示，保留在当前页面让用户自行重试
+  // 网络异常由稳定错误页承接，保留在当前页面供用户重试。
   if (status === 'error') {
-    showToast({
-      message: '网络错误，请稍后重试',
-      icon: 'error',
-    })
     return
   }
 
@@ -619,7 +621,7 @@ async function getWxUserInfo() {
       code: codeRes.code,
     })
 
-    if (res.code === 0 && res.data) {
+    if (res.code === 0 && res.data && hasWechatIdentity(res.data)) {
       wxUserInfo.value = {
         openid: res.data.openid,
         unionId: res.data.unionId,
@@ -639,6 +641,10 @@ async function getWxUserInfo() {
 // 检查是否在微信环境中
 function checkWechatEnvironment(): boolean {
   // #ifdef MP-WEIXIN
+  return true
+  // #endif
+
+  // #ifdef APP-PLUS
   return true
   // #endif
 
@@ -675,10 +681,11 @@ function handleNonWechatEnvironment() {
 }
 
 // 初始化微信认证信息（H5 微信浏览器环境）
-async function initWxAuthH5() {
+async function initWxAuthH5(): Promise<boolean> {
+  // #ifdef H5
   // 如果已经有 openid，不需要再次授权
-  if (wxUserInfo.value?.openid) {
-    return
+  if (hasWechatIdentity(wxUserInfo.value)) {
+    return true
   }
 
   try {
@@ -697,14 +704,19 @@ async function initWxAuthH5() {
     if (res.code === 0 && res.data) {
       // 跳转到微信授权页面
       window.location.href = res.data
+      return true
     }
     else {
       console.error('获取微信授权链接失败:', res.msg)
+      return false
     }
   }
   catch (error) {
     console.error('初始化微信认证失败:', error)
+    return false
   }
+  // #endif
+  return false
 }
 
 // 处理微信授权回调（H5 微信浏览器环境）
@@ -744,6 +756,15 @@ async function handleWxAuthCallback(code: string, state?: string) {
   }
 }
 
+function clearH5OAuthParams() {
+  // #ifdef H5
+  const currentUrl = new URL(window.location.href)
+  currentUrl.searchParams.delete('code')
+  currentUrl.searchParams.delete('state')
+  window.history.replaceState(null, '', currentUrl.toString())
+  // #endif
+}
+
 // 服务号二维码链接
 const WECHAT_QRCODE_URL = 'https://file.tihangstudio.cn/image/wechat-qrcode.jpg'
 
@@ -780,21 +801,77 @@ function handleNotSubscribed() {
 
 // 检查是否已提交过纳新申请
 async function checkSubmitStatus(): Promise<UserRecruitmentRespVO | null> {
-  if (!wxUserInfo.value?.openid) {
+  if (!hasWechatIdentity(wxUserInfo.value)) {
     return null
   }
 
+  const res = await getSubmitStatus(wxUserInfo.value?.openid, wxUserInfo.value?.unionId)
+  if (res.code !== 0) {
+    throw new Error(res.msg || '查询申请状态失败')
+  }
+  return res.data || null
+}
+
+async function prepareProgressAndRedirect(initialSubmitData?: UserRecruitmentRespVO) {
+  if (!hasWechatIdentity(wxUserInfo.value)) {
+    throw new Error('缺少微信身份，无法加载申请进度')
+  }
+
+  loadingText.value = '正在准备申请状态...'
+  loading.value = true
+  pageError.value = ''
+  pendingProgressSubmitData.value = initialSubmitData || null
+  progressRedirectPending.value = true
+  let preloadToken: string | undefined
   try {
-    const res = await getSubmitStatus(wxUserInfo.value.openid, wxUserInfo.value.unionId)
-    if (res.code === 0 && res.data) {
-      return res.data
+    const submitData = initialSubmitData || await checkSubmitStatus()
+    if (!submitData) {
+      throw new Error('申请已提交，但暂时无法加载申请状态')
     }
-    return null
+
+    let progress = submitData.progress
+    if (!progress) {
+      const result = await getRecruitmentProgress(wxUserInfo.value?.openid, wxUserInfo.value?.unionId)
+      if (result.code !== 0 || !result.data) {
+        throw new Error(result.msg || '未找到您的纳新记录')
+      }
+      progress = result.data
+    }
+
+    preloadToken = setRecruitmentProgressPreload({
+      openid: wxUserInfo.value?.openid,
+      unionId: wxUserInfo.value?.unionId,
+      progress,
+      groupLink: submitData.groupLink || recruitmentConfig.value?.groupLink || '',
+    })
+    await new Promise<void>((resolve, reject) => {
+      uni.redirectTo({
+        url: `/pages/recruitment/success?preloadKey=${encodeURIComponent(preloadToken!)}`,
+        success: () => resolve(),
+        fail: err => reject(err),
+      })
+    })
   }
-  catch (error) {
-    console.error('检查提交状态失败:', error)
-    return null
+  catch (error: any) {
+    clearRecruitmentProgressPreload(preloadToken)
+    console.error('准备申请状态页失败:', error)
+    loading.value = false
+    loadingText.value = '正在加载纳新配置...'
+    pageError.value = error?.message || '加载申请状态失败，请稍后重试'
   }
+}
+
+function retryPageLoad() {
+  if (progressRedirectPending.value && hasWechatIdentity(wxUserInfo.value)) {
+    prepareProgressAndRedirect(pendingProgressSubmitData.value || undefined)
+    return
+  }
+  // #ifdef H5
+  window.location.replace(window.location.pathname)
+  // #endif
+  // #ifndef H5
+  uni.reLaunch({ url: '/pages/recruitment/index' })
+  // #endif
 }
 
 // 回填表单数据
@@ -873,10 +950,13 @@ onLoad(async (options) => {
   if (isWechatBrowser()) {
     // 检查是否从微信授权回调返回（URL 中包含 code 和 state 参数）
     if (options?.code) {
+      // OAuth code 只能兑换一次。先从地址栏移除，失败重试时重新走授权，不能复用旧 code。
+      clearH5OAuthParams()
       // 从微信授权回调返回，处理获取用户信息
       const success = await handleWxAuthCallback(options.code, options.state)
       if (!success) {
-        showToast('获取微信用户信息失败，请重试')
+        loading.value = false
+        pageError.value = '获取微信用户信息失败，请重试'
         return
       }
 
@@ -884,6 +964,7 @@ onLoad(async (options) => {
       if (!wxUserInfo.value?.subscribe) {
         // 未关注服务号，先加载纳新配置（用于获取服务号二维码等信息）
         await loadRecruitmentConfig()
+        loading.value = false
         // 显示引导关注弹窗
         handleNotSubscribed()
         return
@@ -894,55 +975,97 @@ onLoad(async (options) => {
     else {
       // 没有 code 参数，需要跳转到微信授权页面
       // 跳转微信授权
-      await initWxAuthH5()
+      const redirecting = await initWxAuthH5()
+      if (!redirecting) {
+        loading.value = false
+        pageError.value = '微信授权初始化失败，请稍后重试'
+      }
       return
     }
   }
   // #endif
 
-  // #ifdef MP-WEIXIN
-  // 微信小程序环境：直接获取微信用户信息
+  // #ifdef MP-WEIXIN || APP-PLUS
+  // 微信小程序 / APP 环境：直接获取微信用户信息
   const wxSuccess = await getWxUserInfo()
   if (!wxSuccess) {
-    console.warn('微信小程序获取用户信息失败')
+    console.warn('获取微信用户信息失败')
+    loading.value = false
+    pageError.value = '获取微信用户信息失败，请重试'
+    return
   }
   // #endif
 
   // 并行加载纳新配置、报名状态、省市区数据、学院数据
   // 报名状态必须与配置一起查，且由下面的分支统一决策，避免"弹窗提示"与"跳转状态页"同时发生
-  const [configStatus, submitData] = await Promise.all([
-    loadRecruitmentConfig(),
-    checkSubmitStatus(),
+  let configStatus: ConfigLoadStatus
+  let submitData: UserRecruitmentRespVO | null
+  try {
+    [configStatus, submitData] = await Promise.all([
+      loadRecruitmentConfig(),
+      checkSubmitStatus(),
+    ])
+  }
+  catch (error: any) {
+    console.error('初始化纳新页面失败:', error)
+    loading.value = false
+    pageError.value = error?.message || '加载纳新信息失败，请稍后重试'
+    return
+  }
+
+  // 1. 已提交且不是审核不通过：直接进入自己的状态/结果页
+  // 评审期（报名已截止、尚未完成录取）配置不可用，但不能拦住已报名的学生，此时 groupLink 取不到就传空
+  if (submitData && submitData.status !== RecruitmentStatus.REFUSE) {
+    await prepareProgressAndRedirect(submitData)
+    return
+  }
+
+  // 2. 未报名且配置不可用：提示后返回，流程到此结束。
+  // 审核不通过者已有报名批次，必须优先完成回填；不能被已关闭的报名时间窗拦住。
+  if (!submitData && configStatus !== 'ok') {
+    loading.value = false
+    if (configStatus === 'error') {
+      pageError.value = '网络错误，请稍后重试'
+    }
+    handleConfigUnavailable(configStatus)
+    return
+  }
+
+  // 3. 审核不通过，先在全局 loading 内完成回填，避免空表单短暂出现
+  if (submitData) {
+    isResubmit.value = true
+    if (!submitData.id) {
+      loading.value = false
+      pageError.value = '报名记录缺少必要信息，请联系管理员'
+      return
+    }
+    previousSubmitId.value = submitData.id
+    if (!recruitmentConfig.value && submitData.settingId && submitData.grade) {
+      // 评审期 runtime 配置会关闭；回填仍沿用本人原报名批次和年级。
+      recruitmentConfig.value = {
+        id: submitData.settingId,
+        grade: submitData.grade,
+        groupLink: submitData.groupLink,
+      }
+    }
+  }
+
+  // Only the form branches need the large option datasets. Existing non-refused
+  // applicants have already redirected above, so their transition is not delayed.
+  await Promise.all([
     loadAreaData(),
     loadCollegeData(),
     loadNationData(),
     loadPoliticalStatusData(),
   ])
-
-  // 1. 已提交且不是审核不通过：直接进入自己的状态/结果页
-  // 评审期（报名已截止、尚未完成录取）配置不可用，但不能拦住已报名的学生，此时 groupLink 取不到就传空
-  if (submitData && submitData.status !== RecruitmentStatus.REFUSE) {
-    const groupLink = recruitmentConfig.value?.groupLink
-      ? encodeURIComponent(recruitmentConfig.value.groupLink)
-      : ''
-    uni.redirectTo({ url: `/pages/recruitment/success?groupLink=${groupLink}` })
-    return
-  }
-
-  // 2. 配置不可用（未报名 / 审核不通过的学生）：提示后返回，流程到此结束
-  if (configStatus !== 'ok') {
-    handleConfigUnavailable(configStatus)
-    return
-  }
-
-  // 3. 配置可用，展示纳新须知
-  showRecruitmentNotice()
-
-  // 4. 审核不通过，允许重新提交，回填表单数据
   if (submitData) {
-    isResubmit.value = true
-    previousSubmitId.value = submitData.id
     await fillFormData(submitData)
+  }
+
+  // 4. 所有页面数据准备完毕后再一次性展示表单与纳新须知
+  loading.value = false
+  if (configStatus === 'ok' && recruitmentConfig.value) {
+    showRecruitmentNotice()
   }
 })
 
@@ -1277,16 +1400,7 @@ async function onSubmit() {
       : await createUserRecruitment(submitData)
 
     if (response.code === 0) {
-      showToast('申请提交成功')
-      // 跳转到提交成功页面，传递纳新群链接
-      setTimeout(() => {
-        const groupLink = recruitmentConfig.value?.groupLink
-          ? encodeURIComponent(recruitmentConfig.value.groupLink)
-          : ''
-        uni.redirectTo({
-          url: `/pages/recruitment/success?groupLink=${groupLink}`,
-        })
-      }, 1000)
+      await prepareProgressAndRedirect()
     }
     else {
       showToast(response.msg || '提交失败，请重试')
@@ -1765,8 +1879,23 @@ async function onSubmit() {
       <view class="page-loading__inner">
         <wd-loading :color="brandColor" />
         <view class="page-loading__text">
-          正在加载纳新配置...
+          {{ loadingText }}
         </view>
+      </view>
+    </view>
+
+    <view v-else-if="pageError" class="page-loading">
+      <view class="page-loading__inner page-loading__error">
+        <wd-icon name="warning" size="36px" color="#ef4444" />
+        <view class="page-loading__error-title">
+          申请状态加载失败
+        </view>
+        <view class="page-loading__text">
+          {{ pageError }}
+        </view>
+        <wd-button type="primary" custom-class="page-loading__retry" @click="retryPageLoad">
+          重新加载
+        </wd-button>
       </view>
     </view>
   </view>
@@ -2192,6 +2321,24 @@ async function onSubmit() {
   font-size: 14px;
   line-height: 20px;
   color: var(--c-text-3);
+}
+
+.page-loading__error {
+  width: calc(100vw - 48px);
+  max-width: 320px;
+}
+
+.page-loading__error-title {
+  margin-top: 14px;
+  color: var(--c-text);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+:deep(.page-loading__retry) {
+  margin-top: 24px;
+  min-width: 140px;
 }
 
 /* ---------------- wot-design-uni 组件覆盖 ---------------- */
