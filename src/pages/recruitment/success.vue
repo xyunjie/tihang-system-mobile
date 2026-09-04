@@ -370,19 +370,19 @@ watch(isDark, setPageBackgroundColor)
           <view class="section-title flex items-center text-sm font-bold" :class="textPrimaryClass">
             <i />操作区
           </view>
-          <view v-if="statusConfig.rejected" class="action-button primary flex items-center justify-center rounded-xl py-3.5 text-sm text-white font-semibold" hover-class="opacity-90" @click="onResubmit">
+          <view v-if="statusConfig.rejected" class="action-button primary flex items-center justify-center text-white font-semibold" hover-class="opacity-90" @click="onResubmit">
             <wd-icon name="edit" size="18px" color="#fff" />
             <text class="ml-2">
               修改并重新提交
             </text>
           </view>
-          <view v-if="statusConfig.rejected" class="action-button secondary mt-3 flex items-center justify-center rounded-xl py-3.5 text-sm font-semibold" :class="groupLink ? 'text-blue-600 dark:text-blue-300' : 'disabled text-slate-400 dark:text-slate-500'" :hover-class="groupLink ? 'bg-blue-50 dark:bg-blue-500/10' : ''" @click="onJoinGroup">
+          <view v-if="statusConfig.rejected" class="action-button secondary mt-3 flex items-center justify-center font-semibold" :class="groupLink ? 'text-blue-600 dark:text-blue-300' : 'disabled text-slate-400 dark:text-slate-500'" :hover-class="groupLink ? 'bg-blue-50 dark:bg-blue-500/10' : ''" @click="onJoinGroup">
             <wd-icon name="chat" size="18px" :color="groupLink ? '#2563eb' : '#94a3b8'" />
             <text class="ml-2">
               {{ groupLink ? '加入纳新群' : '纳新群暂未开放' }}
             </text>
           </view>
-          <view v-else class="action-button primary flex items-center justify-center rounded-xl py-3.5 text-sm text-white font-semibold" :class="{ disabled: !groupLink }" :hover-class="groupLink ? 'opacity-90' : ''" @click="onJoinGroup">
+          <view v-else class="action-button primary flex items-center justify-center text-white font-semibold" :class="{ disabled: !groupLink }" :hover-class="groupLink ? 'opacity-90' : ''" @click="onJoinGroup">
             <wd-icon name="chat" size="18px" color="#fff" />
             <text class="ml-2">
               {{ groupLink ? '加入纳新群' : '纳新群暂未开放' }}
@@ -514,7 +514,12 @@ watch(isDark, setPageBackgroundColor)
   background: #2563eb;
 }
 .action-button {
-  min-height: 48px;
+  /* 常规移动端按钮高度：44px 同时满足视觉高度与最小触控目标 */
+  height: 44px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 20px;
   transition:
     opacity 0.2s ease,
     background-color 0.2s ease;

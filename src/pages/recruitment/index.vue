@@ -91,6 +91,34 @@ const showCropper = ref(false)
 const cropperImageUrl = ref('')
 const uploadingPhoto = ref(false)
 
+/* -------------------------------------------------------------------------
+ * 弹层开关跟踪：任何弹层打开期间暂时隐藏底部提交栏，关闭后及时恢复
+ * wot-design-uni 的 picker 类组件没有 v-model:visible，
+ * 这里统一用 open / confirm / cancel 事件跟踪（蒙层会阻断页面交互，
+ * 同一时刻最多只有一个 picker 弹层处于打开状态）
+ * ---------------------------------------------------------------------- */
+const pickerPopupVisible = ref(false)
+// wd-message-box（纳新须知等 alert / confirm）的显示状态
+const messageBoxVisible = ref(false)
+
+function onPickerPopupOpen() {
+  pickerPopupVisible.value = true
+}
+
+function onPickerPopupClose() {
+  pickerPopupVisible.value = false
+}
+
+// 包装 message.alert / message.confirm 返回的 Promise：打开期间置真，关闭（then 或 catch）后恢复
+function trackMessageBox<T>(promise: Promise<T>): Promise<T> {
+  messageBoxVisible.value = true
+  const restore = () => {
+    messageBoxVisible.value = false
+  }
+  promise.then(restore, restore)
+  return promise
+}
+
 const politicalOptions = ref<Array<{ label: string, value: string, id: number }>>([])
 
 const nationOptions = ref<Array<{ label: string, value: string, id: number }>>([])
@@ -563,12 +591,12 @@ function handleConfigUnavailable(status: ConfigLoadStatus) {
   }
 
   const noPlan = status === 'unavailable'
-  message.alert({
+  trackMessageBox(message.alert({
     msg: noPlan ? '当前暂无正在进行的纳新计划，请关注官方通知。' : '获取纳新计划失败，请联系管理员解决！',
     title: noPlan ? '暂无纳新计划' : '请求失败',
     closeOnClickModal: false,
     showCancelButton: false,
-  }).then(() => {
+  })).then(() => {
     // 尝试回到上一层，如果失败则不做任何操作
     uni.navigateBack({
       fail: () => {
@@ -624,13 +652,13 @@ function checkWechatEnvironment(): boolean {
 
 // 处理非微信环境的访问
 function handleNonWechatEnvironment() {
-  message.alert({
+  trackMessageBox(message.alert({
     msg: '纳新登记功能仅在微信环境中可用，请在微信小程序或微信浏览器中访问。',
     title: '访问受限',
     confirmButtonText: '我知道了',
     showCancelButton: false,
     closeOnClickModal: false,
-  }).then(() => {
+  })).then(() => {
     // 返回上一页
     uni.navigateBack({
       fail: () => {
@@ -721,13 +749,13 @@ const WECHAT_QRCODE_URL = 'https://file.tihangstudio.cn/image/wechat-qrcode.jpg'
 
 // 处理未关注服务号的情况
 function handleNotSubscribed() {
-  message.confirm({
+  trackMessageBox(message.confirm({
     title: '请先关注服务号',
     msg: '为了更好地为您提供服务，请先关注我们的微信服务号后再进行纳新登记。\n\n关注后请刷新页面重新进入。',
     confirmButtonText: '查看二维码',
     cancelButtonText: '返回',
     closeOnClickModal: false,
-  }).then(() => {
+  })).then(() => {
     // 用户点击"查看二维码"，跳转到二维码图片页面
     // #ifdef H5
     window.open(WECHAT_QRCODE_URL, '_blank')
@@ -930,7 +958,7 @@ watch(() => isDark.value, () => {
 
 // 显示纳新须知
 function showRecruitmentNotice() {
-  message.confirm({
+  trackMessageBox(message.confirm({
     title: '纳新须知',
     msg: `您的信息仅用于工作室报名申请，不会发生泄露！
 请保证所填写的信息真实有效，请按照要求正确填写！
@@ -940,7 +968,7 @@ function showRecruitmentNotice() {
     confirmButtonText: '我知道了',
     cancelButtonText: '加入纳新群',
     closeOnClickModal: false,
-  }).then(() => {
+  })).then(() => {
   }).catch(() => {
     // 用户点击了"加入纳新群"
     if (recruitmentConfig.value?.groupLink) {
@@ -1480,7 +1508,9 @@ async function onSubmit() {
                   v-model="formData.birthday"
                   :min-date="946656000000"
                   type="date"
-                  @confirm="onBirthdayChange"
+                  @open="onPickerPopupOpen"
+                  @confirm="onPickerPopupClose(); onBirthdayChange($event)"
+                  @cancel="onPickerPopupClose"
                 />
               </wd-cell>
               <view v-if="fieldErrors.birthday" class="field-error">
@@ -1493,7 +1523,9 @@ async function onSubmit() {
                 <wd-picker
                   v-model="formData.nation"
                   :columns="nationOptions"
-                  @confirm="onNationChange"
+                  @open="onPickerPopupOpen"
+                  @confirm="onPickerPopupClose(); onNationChange($event)"
+                  @cancel="onPickerPopupClose"
                 />
               </wd-cell>
               <view v-if="fieldErrors.nation" class="field-error">
@@ -1506,7 +1538,9 @@ async function onSubmit() {
                 <wd-picker
                   v-model="formData.politicalOutlook"
                   :columns="politicalOptions"
-                  @confirm="onPoliticalChange"
+                  @open="onPickerPopupOpen"
+                  @confirm="onPickerPopupClose(); onPoliticalChange($event)"
+                  @cancel="onPickerPopupClose"
                 />
               </wd-cell>
               <view v-if="fieldErrors.politicalOutlook" class="field-error">
@@ -1520,7 +1554,9 @@ async function onSubmit() {
                   v-model="formData.province"
                   :columns="provinceOptions"
                   placeholder="请选择省份"
-                  @confirm="onProvinceChange"
+                  @open="onPickerPopupOpen"
+                  @confirm="onPickerPopupClose(); onProvinceChange($event)"
+                  @cancel="onPickerPopupClose"
                 />
               </wd-cell>
               <view v-if="fieldErrors.province" class="field-error">
@@ -1535,7 +1571,9 @@ async function onSubmit() {
                   :columns="cityOptions"
                   placeholder="请选择市或区"
                   :disabled="!selectedProvinceId"
-                  @confirm="onCityChange"
+                  @open="onPickerPopupOpen"
+                  @confirm="onPickerPopupClose(); onCityChange($event)"
+                  @cancel="onPickerPopupClose"
                 />
               </wd-cell>
               <view v-if="fieldErrors.city" class="field-error">
@@ -1567,7 +1605,9 @@ async function onSubmit() {
                   v-model="selectedCollegeId"
                   :columns="collegeOptions"
                   placeholder="请选择学院"
-                  @confirm="onCollegeChange"
+                  @open="onPickerPopupOpen"
+                  @confirm="onPickerPopupClose(); onCollegeChange($event)"
+                  @cancel="onPickerPopupClose"
                 />
               </wd-cell>
               <view v-if="fieldErrors.college" class="field-error">
@@ -1582,7 +1622,9 @@ async function onSubmit() {
                   :columns="majorOptions"
                   placeholder="请选择专业"
                   :disabled="!selectedCollegeId"
-                  @confirm="onMajorChange"
+                  @open="onPickerPopupOpen"
+                  @confirm="onPickerPopupClose(); onMajorChange($event)"
+                  @cancel="onPickerPopupClose"
                 />
               </wd-cell>
               <view v-if="fieldErrors.major" class="field-error">
@@ -1597,7 +1639,9 @@ async function onSubmit() {
                   :columns="classOptions"
                   placeholder="请选择班级"
                   :disabled="!selectedMajorId"
-                  @confirm="onClassChange"
+                  @open="onPickerPopupOpen"
+                  @confirm="onPickerPopupClose(); onClassChange($event)"
+                  @cancel="onPickerPopupClose"
                 />
               </wd-cell>
               <view v-if="fieldErrors.class" class="field-error">
@@ -1693,8 +1737,11 @@ async function onSubmit() {
       </wd-form>
     </view>
 
-    <!-- 吸底提交栏 -->
-    <view v-if="!loading && recruitmentConfig && !showCropper" class="submit-bar">
+    <!-- 吸底提交栏：任何弹层（须知弹窗 / 选择器 / 裁剪器）打开时暂时隐藏，关闭后恢复 -->
+    <view
+      v-if="!loading && recruitmentConfig && !showCropper && !pickerPopupVisible && !messageBoxVisible"
+      class="submit-bar"
+    >
       <view class="submit-bar__progress">
         <text class="submit-bar__count">
           已填 {{ filledCount }}/{{ requiredTotal }}
