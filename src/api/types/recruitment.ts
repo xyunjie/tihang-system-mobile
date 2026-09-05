@@ -66,6 +66,8 @@ export interface UserRecruitmentRespVO {
   /** 仅审核不通过、需要回填表单时返回 */
   id?: number
   status: number
+  /** 审核不通过时的审核备注 */
+  remark?: string | null
   openid?: string
   unionId?: string
   name?: string

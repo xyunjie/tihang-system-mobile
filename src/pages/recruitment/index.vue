@@ -57,6 +57,7 @@ const progressRedirectPending = ref(false)
 
 // 是否为重新提交模式（审核不通过后重新填写）
 const isResubmit = ref(false)
+const submitDataRemark = ref('')
 // 之前提交的记录ID（用于更新）
 const previousSubmitId = ref<number | null>(null)
 
@@ -1034,6 +1035,8 @@ onLoad(async (options) => {
   // 3. 审核不通过，先在全局 loading 内完成回填，避免空表单短暂出现
   if (submitData) {
     isResubmit.value = true
+    const remark = submitData.remark
+    submitDataRemark.value = typeof remark === 'string' ? remark.trim() : ''
     if (!submitData.id) {
       loading.value = false
       pageError.value = '报名记录缺少必要信息，请联系管理员'
@@ -1432,8 +1435,8 @@ async function onSubmit() {
       @cancel="onCropperCancel"
     />
 
-    <!-- 顶部 Header -->
-    <view class="header-section">
+    <!-- 顶部 Header：重新提交时直接从审核结果开始，不显示欢迎头部 -->
+    <view v-if="!isResubmit" class="header-section">
       <view class="header-title">
         纳新登记
       </view>
@@ -1445,13 +1448,21 @@ async function onSubmit() {
     <!-- 重新提交提示 -->
     <view v-if="isResubmit && recruitmentConfig" class="notice-wrap">
       <view class="notice-card">
-        <wd-icon name="warning" size="20px" color="#d97706" />
+        <wd-icon name="warning" size="20px" color="#fbbf24" />
         <view class="notice-body">
           <view class="notice-title">
             您的申请未通过审核
           </view>
           <view class="notice-desc">
             请修改信息后重新提交，我们会尽快审核
+          </view>
+          <view v-if="submitDataRemark" class="notice-remark">
+            <text class="notice-remark__label">
+              审核意见：
+            </text>
+            <text class="notice-remark__content">
+              {{ submitDataRemark }}
+            </text>
           </view>
         </view>
       </view>
@@ -1848,10 +1859,21 @@ async function onSubmit() {
         <view class="form-footnote">
           提交即表示您同意我们的信息收集与使用规范
         </view>
+
+        <view class="form-submit">
+          <wd-button
+            type="primary"
+            :loading="submitting"
+            custom-class="submit-btn"
+            @click="onSubmit"
+          >
+            {{ isResubmit ? '重新提交申请' : '提交申请' }}
+          </wd-button>
+        </view>
       </wd-form>
     </view>
 
-    <!-- 吸底提交栏：任何弹层（须知弹窗 / 选择器 / 裁剪器）打开时暂时隐藏，关闭后恢复 -->
+    <!-- 吸底进度栏：任何弹层（须知弹窗 / 选择器 / 裁剪器）打开时暂时隐藏，关闭后恢复 -->
     <view
       v-if="!loading && recruitmentConfig && !showCropper && !pickerPopupVisible && !messageBoxVisible"
       class="submit-bar"
@@ -1864,14 +1886,6 @@ async function onSubmit() {
           <view class="submit-bar__fill" :style="{ width: `${progressPercent}%` }" />
         </view>
       </view>
-      <wd-button
-        type="primary"
-        :loading="submitting"
-        custom-class="submit-btn"
-        @click="onSubmit"
-      >
-        提交申请
-      </wd-button>
     </view>
 
     <!-- 加载状态 -->
@@ -1984,20 +1998,21 @@ async function onSubmit() {
 .notice-wrap {
   position: relative;
   z-index: 2;
-  margin: -16px 16px 16px;
+  margin: 16px;
 }
 
 .notice-card {
   display: flex;
   align-items: flex-start;
-  padding: 12px 16px;
-  border-radius: 12px;
-  background: #fffbeb;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  padding: 16px;
+  border-left: 3px solid #f59e0b;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+  box-shadow: 0 8px 24px rgba(30, 64, 175, 0.18);
 }
 
 .recruitment-page.dark .notice-card {
-  background: rgba(245, 158, 11, 0.14);
+  background: linear-gradient(135deg, #172554 0%, #1e3a8a 100%);
 }
 
 .notice-body {
@@ -2006,25 +2021,37 @@ async function onSubmit() {
 }
 
 .notice-title {
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 20px;
-  color: #b45309;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 22px;
+  color: #ffffff;
 }
 
 .notice-desc {
   margin-top: 4px;
-  font-size: 12px;
-  line-height: 18px;
-  color: #d97706;
+  font-size: 13px;
+  line-height: 20px;
+  color: rgba(255, 255, 255, 0.76);
 }
 
-.recruitment-page.dark .notice-title {
-  color: #fcd34d;
+.notice-remark {
+  display: block;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  font-size: 13px;
+  line-height: 20px;
+  color: #fbbf24;
 }
 
-.recruitment-page.dark .notice-desc {
-  color: rgba(252, 211, 77, 0.8);
+.notice-remark__content {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.notice-remark__label {
+  white-space: nowrap;
 }
 
 /* ---------------- 表单容器 ---------------- */
@@ -2254,6 +2281,10 @@ async function onSubmit() {
   color: var(--c-text-3);
 }
 
+.form-submit {
+  padding: 0 0 24px;
+}
+
 /* ---------------- 吸底提交栏 ---------------- */
 .submit-bar {
   position: fixed;
@@ -2274,7 +2305,6 @@ async function onSubmit() {
 
 .submit-bar__progress {
   flex: 1;
-  margin-right: 16px;
 }
 
 .submit-bar__count {
@@ -2343,7 +2373,7 @@ async function onSubmit() {
 
 /* ---------------- wot-design-uni 组件覆盖 ---------------- */
 :deep(.submit-btn) {
-  min-width: 140px;
+  width: 100%;
   height: 44px !important;
   border: none !important;
   border-radius: 12px !important;
