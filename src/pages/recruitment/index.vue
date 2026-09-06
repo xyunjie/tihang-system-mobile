@@ -91,6 +91,11 @@ const formData = ref<UserRecruitmentSaveReqVO>(
   },
 )
 
+// wd-datetime-picker needs a timestamp to initialize its date columns. Keep this
+// separate from the form string so the API payload remains YYYY-MM-DD.
+const BIRTHDAY_MIN_DATE = 946656000000
+const birthdayPickerValue = ref<number>(BIRTHDAY_MIN_DATE)
+
 // 微信用户信息缓存
 const wxUserInfo = ref<{ openid?: string, unionId?: string, subscribe?: boolean } | null>(null)
 
@@ -877,6 +882,7 @@ function retryPageLoad() {
 
 // 回填表单数据
 async function fillFormData(data: UserRecruitmentRespVO) {
+  const birthday = normalizeBirthday(data.birthday)
   formData.value = {
     id: data.id,
     name: data.name,
@@ -886,7 +892,7 @@ async function fillFormData(data: UserRecruitmentRespVO) {
     email: data.email,
     phone: data.phone,
     qqNumber: data.qqNumber,
-    birthday: data.birthday,
+    birthday,
     sex: data.sex,
     nation: data.nation,
     politicalOutlook: data.politicalOutlook,
@@ -901,6 +907,7 @@ async function fillFormData(data: UserRecruitmentRespVO) {
     province: data.province,
     city: data.city,
   }
+  birthdayPickerValue.value = birthdayToPickerTimestamp(birthday)
 
   // 回填省份并加载城市
   if (data.province) {
@@ -1134,19 +1141,80 @@ function formatTime(timeStr: string | number) {
   }
 }
 
+function isValidBirthdayParts(year: number, month: number, day: number): boolean {
+  if (!Number.isInteger(year) || year < 1 || year > 9999 || !Number.isInteger(month) || month < 1 || month > 12 || !Number.isInteger(day) || day < 1 || day > 31) {
+    return false
+  }
+
+  const date = new Date(year, month - 1, day)
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day
+}
+
+function normalizeBirthday(value: unknown): string {
+  if (Array.isArray(value) && value.length === 3) {
+    const [year, month, day] = value
+    if ([year, month, day].every(item => typeof item === 'number') && isValidBirthdayParts(year, month, day)) {
+      return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    }
+    return ''
+  }
+
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) {
+      return ''
+    }
+    const date = new Date(value)
+    return Number.isNaN(date.getTime()) ? '' : formatTime(value)
+  }
+
+  if (typeof value === 'string') {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+    if (!match) {
+      return ''
+    }
+    const [, year, month, day] = match
+    return isValidBirthdayParts(Number(year), Number(month), Number(day)) ? value : ''
+  }
+
+  return ''
+}
+
+function birthdayToPickerTimestamp(value: string): number {
+  const normalized = normalizeBirthday(value)
+  if (!normalized) {
+    return BIRTHDAY_MIN_DATE
+  }
+
+  const [year, month, day] = normalized.split('-').map(Number)
+  return new Date(year, month - 1, day).getTime()
+}
+
+function formatBirthdayPickerDisplay() {
+  // Returning an empty string lets wd-datetime-picker render its own
+  // placeholder while keeping the actual form value empty.
+  return formData.value.birthday
+}
+
 // 生日选择
-function onBirthdayChange(value: any) {
-  // 处理时间戳转换为日期格式
-  const timestamp = value.value // 获取时间戳
-  if (!timestamp)
+function onBirthdayConfirm({ value }: { value: number | string | Array<number | string> }) {
+  if (Array.isArray(value))
     return
 
-  // 将时间戳转换为 yyyy-MM-dd 格式
-  const date = new Date(Number(timestamp))
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  formData.value.birthday = `${year}-${month}-${day}`
+  const normalized = normalizeBirthday(Number(value))
+  if (!normalized) {
+    birthdayPickerValue.value = birthdayToPickerTimestamp(formData.value.birthday)
+    return
+  }
+
+  formData.value.birthday = normalized
+  birthdayPickerValue.value = birthdayToPickerTimestamp(normalized)
+}
+
+function onBirthdayCancel() {
+  // Picker-view emits intermediate values while scrolling. Restore the last
+  // confirmed form value when the user cancels instead of retaining one of
+  // those intermediate timestamps for the next open.
+  birthdayPickerValue.value = birthdayToPickerTimestamp(formData.value.birthday)
 }
 
 // 政治面貌选择
@@ -1630,12 +1698,13 @@ async function onSubmit() {
             <view id="field-birthday" class="field-row" :class="fieldRowClass('birthday')">
               <wd-cell title-width="88px" title="出生日期" required center :border="false">
                 <wd-datetime-picker
-                  v-model="formData.birthday"
-                  :min-date="946656000000"
+                  v-model="birthdayPickerValue"
+                  :min-date="BIRTHDAY_MIN_DATE"
                   type="date"
+                  :display-format="formatBirthdayPickerDisplay"
                   @open="onPickerPopupOpen"
-                  @confirm="onPickerPopupClose(); onBirthdayChange($event)"
-                  @cancel="onPickerPopupClose"
+                  @confirm="onPickerPopupClose(); onBirthdayConfirm($event)"
+                  @cancel="onPickerPopupClose(); onBirthdayCancel()"
                 />
               </wd-cell>
               <view v-if="fieldErrors.birthday" class="field-error">
