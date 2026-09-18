@@ -10,13 +10,14 @@
 </route>
 
 <script setup lang="ts">
-import type { UserRecruitmentAssessmentPublicRespVO, UserRecruitmentProgressRespVO } from '@/api/types/recruitment'
+import type { RecruitmentDateTime, RecruitmentLongId, UserRecruitmentAssessmentPublicRespVO, UserRecruitmentProgressRespVO, UserRecruitmentSessionItem, UserRecruitmentSessionRuntimeRespVO, UserRecruitmentSessionSubjectGroup } from '@/api/types/recruitment'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { computed, ref, watch } from 'vue'
 import { getSocialAuthRedirect, getWxUserInfoApi } from '@/api/login'
-import { getRecruitmentProgress, getSubmitStatus, takeRecruitmentProgressPreload } from '@/api/recruitment'
+import { bookRecruitmentSession, cancelRecruitmentSession, getRecruitmentProgress, getSubmitStatus, listRecruitmentSessions, takeRecruitmentProgressPreload } from '@/api/recruitment'
 import { RecruitmentStatus } from '@/api/types/recruitment'
 import { useAppStore } from '@/store/app'
+import { parseDateTime } from '@/utils'
 import { getSocialType, isWechatBrowser } from '@/utils/platform'
 
 const appStore = useAppStore()
@@ -249,6 +250,8 @@ async function loadProgress(options: Record<string, string> = {}) {
       return
     }
     progress.value = result.data
+    // 场次是进度页自己发起的第二次请求，失败只隐藏预约卡片，不阻塞进度页。
+    void loadSessions()
     const submitResult = await getSubmitStatus(identity.openid, identity.unionId)
     if (submitResult.code !== 0) {
       throw new Error(submitResult.msg || '获取纳新群信息失败')
@@ -319,6 +322,7 @@ function usePreloadedProgress(token?: string) {
   wxIdentity.value = { openid: preload.openid, unionId: preload.unionId }
   groupLink.value = preload.groupLink || groupLink.value
   error.value = ''
+  void loadSessions()
   // 先让目标页稳定渲染整页 loading shell，再一次性切换到完整进度内容。
   setTimeout(() => {
     loading.value = false
@@ -356,6 +360,168 @@ function scoreText(item: UserRecruitmentAssessmentPublicRespVO) {
 
 function assessmentLabel(item: UserRecruitmentAssessmentPublicRespVO) {
   return `${typeNames[item.assessmentType] || item.assessmentType} · ${item.assessmentStage === 1 ? '流动考核' : '集中考核'}`
+}
+
+// ---------- 流动考核场次预约 ----------
+const sessionData = ref<UserRecruitmentSessionRuntimeRespVO | null>(null)
+const pickerVisible = ref(false)
+const pickerType = ref<string | null>(null)
+const bookingSessionId = ref<RecruitmentLongId | null>(null)
+const cancelingType = ref<string | null>(null)
+// 只接受最后一次请求的结果，避免预约后刷新与首屏加载交错
+let sessionLoadSeq = 0
+
+const canBookSessions = computed(() => displayStatus.value === RecruitmentStatus.PASS
+  || displayStatus.value === RecruitmentStatus.WAIT_INTERVIEW)
+const sessionSubjects = computed(() => sessionData.value?.subjects ?? [])
+const showSessionCard = computed(() => canBookSessions.value && sessionSubjects.value.length > 0)
+const sessionBusy = computed(() => bookingSessionId.value !== null || cancelingType.value !== null)
+const pickerSubject = computed(() => sessionSubjects.value.find(item => item.assessmentType === pickerType.value) ?? null)
+const pickerSessions = computed(() => pickerSubject.value?.sessions ?? [])
+
+function subjectName(subject: UserRecruitmentSessionSubjectGroup) {
+  return subject.assessmentTypeName || typeNames[subject.assessmentType] || subject.assessmentType
+}
+
+function pad2(value: number) {
+  return String(value).padStart(2, '0')
+}
+
+// 后端 LocalDateTime 默认是毫秒时间戳，parseDateTime 同时兼容字符串。输出 `M/D HH:mm–HH:mm`
+function formatSessionTime(start: RecruitmentDateTime, end: RecruitmentDateTime) {
+  const startDate = parseDateTime(start)
+  const endDate = parseDateTime(end)
+  if (!startDate)
+    return '--'
+  const startDay = `${startDate.getMonth() + 1}/${startDate.getDate()}`
+  const startClock = `${pad2(startDate.getHours())}:${pad2(startDate.getMinutes())}`
+  if (!endDate)
+    return `${startDay} ${startClock}`
+  const endClock = `${pad2(endDate.getHours())}:${pad2(endDate.getMinutes())}`
+  if (startDate.toDateString() === endDate.toDateString())
+    return `${startDay} ${startClock}–${endClock}`
+  return `${startDay} ${startClock}–${endDate.getMonth() + 1}/${endDate.getDate()} ${endClock}`
+}
+
+function sessionCountText(item: UserRecruitmentSessionItem) {
+  return item.full ? `已满 ${item.bookedCount}/${item.capacity}` : `已预约 ${item.bookedCount}/${item.capacity}`
+}
+
+async function loadSessions() {
+  const identity = wxIdentity.value
+  if (!canBookSessions.value || !identity || !hasWechatIdentity(identity)) {
+    sessionData.value = null
+    return
+  }
+  const seq = ++sessionLoadSeq
+  try {
+    const res = await listRecruitmentSessions(identity.openid, identity.unionId)
+    if (seq !== sessionLoadSeq)
+      return
+    // code≠0（如 USER_RECRUITMENT_NOT_EXISTS）只隐藏卡片，不影响进度页其它内容
+    sessionData.value = res.code === 0 && Array.isArray(res.data?.subjects) ? res.data : null
+  }
+  catch (err) {
+    if (seq !== sessionLoadSeq)
+      return
+    console.error('获取流动考核场次失败:', err)
+    sessionData.value = null
+  }
+}
+
+function confirmModal(title: string, content: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    uni.showModal({
+      title,
+      content,
+      confirmText: '确定',
+      cancelText: '取消',
+      success: res => resolve(Boolean(res.confirm)),
+      fail: () => resolve(false),
+    })
+  })
+}
+
+function canOpenSessionPicker(type: string) {
+  const subject = sessionSubjects.value.find(item => item.assessmentType === type)
+  return Boolean(subject && !subject.passed && !subject.myBooking && subject.sessions.length)
+}
+
+function openSessionPicker(type: string) {
+  if (sessionBusy.value || !canOpenSessionPicker(type))
+    return
+  pickerType.value = type
+  pickerVisible.value = true
+}
+
+function closeSessionPicker() {
+  pickerVisible.value = false
+}
+
+async function onPickSession(item: UserRecruitmentSessionItem) {
+  const subject = pickerSubject.value
+  const identity = wxIdentity.value
+  if (!subject || !identity || !item.bookable || sessionBusy.value)
+    return
+  const confirmed = await confirmModal(
+    '确认预约',
+    `${subjectName(subject)}流动考核：${formatSessionTime(item.startTime, item.endTime)}，${item.location}`,
+  )
+  if (!confirmed)
+    return
+
+  bookingSessionId.value = item.id
+  try {
+    const res = await bookRecruitmentSession({ openid: identity.openid, unionId: identity.unionId, sessionId: item.id })
+    if (res.code !== 0) {
+      uni.showToast({ title: res.msg || '预约失败，请稍后重试', icon: 'none' })
+      // 满员/时间冲突等说明本地列表已过期，顺手刷新
+      await loadSessions()
+      return
+    }
+    pickerVisible.value = false
+    uni.showToast({ title: '预约成功', icon: 'success' })
+    await loadSessions()
+  }
+  catch (err) {
+    console.error('预约流动考核场次失败:', err)
+    uni.showToast({ title: '预约失败，请稍后重试', icon: 'none' })
+  }
+  finally {
+    bookingSessionId.value = null
+  }
+}
+
+async function onCancelBooking(subject: UserRecruitmentSessionSubjectGroup) {
+  const booking = subject.myBooking
+  const identity = wxIdentity.value
+  if (!booking || !identity || !booking.cancelable || sessionBusy.value)
+    return
+  const confirmed = await confirmModal(
+    '取消预约',
+    `确定取消${subjectName(subject)}流动考核的预约吗？${formatSessionTime(booking.startTime, booking.endTime)}，${booking.location}`,
+  )
+  if (!confirmed)
+    return
+
+  cancelingType.value = subject.assessmentType
+  try {
+    const res = await cancelRecruitmentSession({ openid: identity.openid, unionId: identity.unionId, sessionId: booking.sessionId })
+    if (res.code !== 0) {
+      uni.showToast({ title: res.msg || '取消失败，请稍后重试', icon: 'none' })
+      await loadSessions()
+      return
+    }
+    uni.showToast({ title: '已取消预约', icon: 'success' })
+    await loadSessions()
+  }
+  catch (err) {
+    console.error('取消流动考核场次预约失败:', err)
+    uni.showToast({ title: '取消失败，请稍后重试', icon: 'none' })
+  }
+  finally {
+    cancelingType.value = null
+  }
 }
 
 onLoad((options) => {
@@ -461,8 +627,66 @@ watch(isDark, setPageBackgroundColor)
                   {{ item.stage === 2 ? '已解锁对应方向' : '其他方向仍可继续参加' }}
                 </view>
               </view>
-              <view class="rounded-full bg-blue-50 px-2.5 py-1 text-xs text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+              <view v-if="item.stage === 1 && canOpenSessionPicker(item.type)" class="rounded-full bg-blue-600 px-2.5 py-1 text-xs text-white" hover-class="opacity-80" @click="openSessionPicker(item.type)">
+                去预约
+              </view>
+              <view v-else class="rounded-full bg-blue-50 px-2.5 py-1 text-xs text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
                 {{ item.stage === 2 ? '可参加' : '可继续参加' }}
+              </view>
+            </view>
+          </view>
+
+          <view v-if="showSessionCard" class="progress-card mt-3 rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-800">
+            <view class="section-title flex items-center text-sm font-bold" :class="textPrimaryClass">
+              <i />流动考核场次预约
+            </view>
+            <view class="mt-2 text-xs leading-relaxed" :class="textMutedClass">
+              每个科目只能预约一个场次；开始前 2 小时内不可预约或取消。
+            </view>
+            <view v-for="subject in sessionSubjects" :key="subject.assessmentType" class="assessment-row flex items-center justify-between border-b border-slate-100 py-3 last:border-0 dark:border-white/10">
+              <view class="min-w-0 flex-1 pr-3">
+                <view class="text-sm font-semibold" :class="textPrimaryClass">
+                  {{ subjectName(subject) }} · 流动考核
+                </view>
+                <template v-if="subject.myBooking">
+                  <view class="mt-1 text-xs" :class="textSecondaryClass">
+                    {{ formatSessionTime(subject.myBooking.startTime, subject.myBooking.endTime) }} · {{ subject.myBooking.location }}
+                  </view>
+                  <view v-if="!subject.myBooking.cancelable && subject.myBooking.uncancelableReason" class="mt-1 text-xs text-amber-600 dark:text-amber-300">
+                    {{ subject.myBooking.uncancelableReason }}
+                  </view>
+                </template>
+                <view v-else-if="!subject.passed && subject.sessions.length" class="mt-1 text-xs" :class="textMutedClass">
+                  尚未预约场次
+                </view>
+              </view>
+              <view class="shrink-0">
+                <view v-if="subject.passed" class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300">
+                  已通过
+                </view>
+                <wd-button
+                  v-else-if="subject.myBooking"
+                  size="small"
+                  type="info"
+                  plain
+                  :disabled="!subject.myBooking.cancelable || (sessionBusy && cancelingType !== subject.assessmentType)"
+                  :loading="cancelingType === subject.assessmentType"
+                  @click="onCancelBooking(subject)"
+                >
+                  取消预约
+                </wd-button>
+                <wd-button
+                  v-else-if="subject.sessions.length"
+                  size="small"
+                  type="primary"
+                  :disabled="sessionBusy"
+                  @click="openSessionPicker(subject.assessmentType)"
+                >
+                  选择场次
+                </wd-button>
+                <text v-else class="text-xs" :class="textMutedClass">
+                  暂无场次
+                </text>
               </view>
             </view>
           </view>
@@ -510,6 +734,48 @@ watch(isDark, setPageBackgroundColor)
         </view>
       </view>
     </template>
+
+    <wd-popup v-model="pickerVisible" position="bottom" closable safe-area-inset-bottom @close="closeSessionPicker">
+      <view class="session-popup">
+        <view class="pr-8 text-base font-bold" :class="textPrimaryClass">
+          选择{{ pickerSubject ? subjectName(pickerSubject) : '' }}场次
+        </view>
+        <view class="mt-1 text-xs leading-relaxed" :class="textMutedClass">
+          开始前 2 小时截止预约；已满或与你其他科目预约时间冲突的场次不可选。
+        </view>
+        <scroll-view scroll-y class="session-popup__list mt-3">
+          <view
+            v-for="item in pickerSessions"
+            :key="item.id"
+            class="session-item"
+            :class="{ 'session-item--disabled': !item.bookable, 'session-item--booked': item.booked }"
+            :hover-class="item.bookable && !sessionBusy ? 'session-item--hover' : ''"
+            @click="onPickSession(item)"
+          >
+            <view class="flex items-center justify-between">
+              <view class="text-sm font-semibold" :class="textPrimaryClass">
+                {{ formatSessionTime(item.startTime, item.endTime) }}
+              </view>
+              <view class="flex shrink-0 items-center text-xs" :class="item.full ? 'text-red-500 dark:text-red-400' : textMutedClass">
+                <wd-loading v-if="bookingSessionId === item.id" size="14px" color="#2563eb" />
+                <text :class="{ 'ml-1': bookingSessionId === item.id }">
+                  {{ sessionCountText(item) }}
+                </text>
+              </view>
+            </view>
+            <view class="mt-1 text-xs" :class="textSecondaryClass">
+              {{ item.location }}
+            </view>
+            <view v-if="!item.bookable && item.unbookableReason" class="mt-1 text-xs text-amber-600 dark:text-amber-300">
+              {{ item.unbookableReason }}
+            </view>
+          </view>
+          <view v-if="!pickerSessions.length" class="py-8 text-center text-sm" :class="textMutedClass">
+            暂无场次
+          </view>
+        </scroll-view>
+      </view>
+    </wd-popup>
   </view>
 </template>
 
@@ -675,8 +941,41 @@ watch(isDark, setPageBackgroundColor)
   border-color: rgba(96, 165, 250, 0.45);
   background: #1e293b;
 }
+.session-popup {
+  padding: 20px 16px 12px;
+}
+.session-popup__list {
+  max-height: 60vh;
+}
+.session-item {
+  margin-bottom: 10px;
+  padding: 12px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+  transition:
+    opacity 0.2s ease,
+    background-color 0.2s ease;
+}
+.dark .session-item {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+}
+.session-item--hover {
+  background: #eff6ff;
+}
+.dark .session-item--hover {
+  background: rgba(59, 130, 246, 0.12);
+}
+.session-item--booked {
+  border-color: #2563eb;
+}
+.session-item--disabled {
+  opacity: 0.55;
+}
 @media (prefers-reduced-motion: reduce) {
-  .action-button {
+  .action-button,
+  .session-item {
     transition: none;
   }
 }

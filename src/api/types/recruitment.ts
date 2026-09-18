@@ -122,6 +122,63 @@ export interface UserRecruitmentProgressPreload {
   groupLink?: string
 }
 
+/** 流动考核科目，对应后端 RecruitmentAssessmentType 枚举 */
+export type RecruitmentAssessmentType = 'ELECTRONIC' | 'STRUCTURE' | 'PROGRAM'
+
+/** 后端 LocalDateTime 序列化值：默认毫秒时间戳，兼容字符串 */
+export type RecruitmentDateTime = number | string
+
+/**
+ * 后端 Long 型雪花 id：超出 JS 安全整数，后端 NumberSerializer 会序列化成字符串。
+ * 只原样回传或与同源 id 比较，禁止 Number() 转换（会丢精度）。
+ */
+export type RecruitmentLongId = string | number
+
+/** 本人在某科目的当前预约摘要 */
+export interface UserRecruitmentSessionMyBooking {
+  sessionId: RecruitmentLongId
+  startTime: RecruitmentDateTime
+  endTime: RecruitmentDateTime
+  location: string
+  cancelable: boolean
+  uncancelableReason: string | null
+}
+
+/** 学生端可见的场次公开字段 + 本人预约状态 */
+export interface UserRecruitmentSessionItem {
+  id: RecruitmentLongId
+  startTime: RecruitmentDateTime
+  endTime: RecruitmentDateTime
+  location: string
+  capacity: number
+  bookedCount: number
+  full: boolean
+  booked: boolean
+  bookable: boolean
+  unbookableReason: string | null
+}
+
+/** 按科目分组的场次列表，三个科目固定都返回 */
+export interface UserRecruitmentSessionSubjectGroup {
+  assessmentType: RecruitmentAssessmentType
+  assessmentTypeName: string
+  passed: boolean
+  myBooking: UserRecruitmentSessionMyBooking | null
+  sessions: UserRecruitmentSessionItem[]
+}
+
+/** GET /system/user-recruitment-session/list-runtime 响应 */
+export interface UserRecruitmentSessionRuntimeRespVO {
+  subjects: UserRecruitmentSessionSubjectGroup[]
+}
+
+/** 预约 / 取消预约共用请求，身份只用 openid/unionId */
+export interface UserRecruitmentSessionBookReqVO {
+  openid?: string
+  unionId?: string
+  sessionId: RecruitmentLongId
+}
+
 /**
  * 纳新计划配置响应 VO
  */

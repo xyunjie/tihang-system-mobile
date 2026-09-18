@@ -1,4 +1,4 @@
-import type { CommonResultLong, UserRecruitmentArchivesRespVO, UserRecruitmentConfigRespVO, UserRecruitmentProgressPreload, UserRecruitmentProgressRespVO, UserRecruitmentRespVO, UserRecruitmentSaveReqVO } from '@/api/types/recruitment'
+import type { CommonResultLong, UserRecruitmentArchivesRespVO, UserRecruitmentConfigRespVO, UserRecruitmentProgressPreload, UserRecruitmentProgressRespVO, UserRecruitmentRespVO, UserRecruitmentSaveReqVO, UserRecruitmentSessionBookReqVO, UserRecruitmentSessionRuntimeRespVO } from '@/api/types/recruitment'
 import { http } from '@/http/http'
 
 const RECRUITMENT_PROGRESS_PRELOAD_KEY = 'recruitment-progress-preload'
@@ -91,6 +91,27 @@ export function getRecruitmentProgress(openid?: string, unionId?: string) {
     openid,
     unionId,
   })
+}
+
+/**
+ * 获取当前计划下本人可见的流动考核场次（按科目分组）。
+ * 与 getRecruitmentProgress 同一信任模型：只按 openid/unionId 定位本人，不接受 recruitmentId。
+ */
+export function listRecruitmentSessions(openid?: string, unionId?: string) {
+  return http.get<UserRecruitmentSessionRuntimeRespVO>('/admin-api/system/user-recruitment-session/list-runtime', {
+    openid,
+    unionId,
+  })
+}
+
+/** 预约流动考核场次；失败时 res.msg 为可直接展示的中文提示 */
+export function bookRecruitmentSession(data: UserRecruitmentSessionBookReqVO) {
+  return http.post<boolean>('/admin-api/system/user-recruitment-session/book', data)
+}
+
+/** 取消流动考核场次预约；失败时 res.msg 为可直接展示的中文提示 */
+export function cancelRecruitmentSession(data: UserRecruitmentSessionBookReqVO) {
+  return http.post<boolean>('/admin-api/system/user-recruitment-session/cancel', data)
 }
 
 /**
