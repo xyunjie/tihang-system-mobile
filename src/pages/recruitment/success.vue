@@ -72,7 +72,10 @@ const typeNames: Record<string, string> = {
   ELECTRONIC: '电子',
   STRUCTURE: '结构',
   PROGRAM: '程序',
+  OTHER: '其它',
 }
+/** 科目展示顺序，与后端 RecruitmentAssessmentType 枚举一致 */
+const typeOrder = ['ELECTRONIC', 'STRUCTURE', 'PROGRAM', 'OTHER']
 
 const passedKeys = computed(() => new Set(assessments.value
   .filter(item => item.passed)
@@ -82,8 +85,7 @@ const availableAssessment = computed(() => {
   if (status.value === RecruitmentStatus.WAIT_AUDIT || status.value === RecruitmentStatus.REFUSE)
     return []
 
-  const types = ['ELECTRONIC', 'STRUCTURE', 'PROGRAM']
-  return types.flatMap((type) => {
+  return typeOrder.flatMap((type) => {
     const result: Array<{ stage: number, type: string, label: string }> = []
     if (!passedKeys.value.has(`1:${type}`)) {
       result.push({ stage: 1, type, label: `${typeNames[type]} · 流动考核` })
@@ -250,7 +252,7 @@ async function loadProgress(options: Record<string, string> = {}) {
       return
     }
     progress.value = result.data
-    // 场次是进度页自己发起的第二次请求，失败只隐藏预约卡片，不阻塞进度页。
+    // 场次是进度页自己发起的第二次请求，失败只隐藏预约入口，不阻塞进度页。
     void loadSessions()
     const submitResult = await getSubmitStatus(identity.openid, identity.unionId)
     if (submitResult.code !== 0) {
@@ -374,7 +376,26 @@ let sessionLoadSeq = 0
 const canBookSessions = computed(() => displayStatus.value === RecruitmentStatus.PASS
   || displayStatus.value === RecruitmentStatus.WAIT_INTERVIEW)
 const sessionSubjects = computed(() => sessionData.value?.subjects ?? [])
-const showSessionCard = computed(() => canBookSessions.value && sessionSubjects.value.length > 0)
+// 场次数据可用（状态允许预约且接口成功返回科目）；否则流动考核行退回静态展示
+const sessionsAvailable = computed(() => canBookSessions.value && sessionSubjects.value.length > 0)
+// 已通过的科目不需要预约入口，不进入映射
+const sessionSubjectByType = computed(() => {
+  const map = new Map<string, UserRecruitmentSessionSubjectGroup>()
+  if (!sessionsAvailable.value)
+    return map
+  sessionSubjects.value.forEach((subject) => {
+    if (!subject.passed)
+      map.set(subject.assessmentType, subject)
+  })
+  return map
+})
+// 待参加的考核行；流动考核行附带对应科目的场次信息（无则为 null）
+const availableRows = computed(() => availableAssessment.value.map(item => ({
+  ...item,
+  subject: item.stage === 1 ? sessionSubjectByType.value.get(item.type) ?? null : null,
+})))
+const showSessionHint = computed(() => availableRows.value.some(item => item.subject
+  && (item.subject.myBooking || item.subject.sessions.length > 0)))
 const sessionBusy = computed(() => bookingSessionId.value !== null || cancelingType.value !== null)
 const pickerSubject = computed(() => sessionSubjects.value.find(item => item.assessmentType === pickerType.value) ?? null)
 const pickerSessions = computed(() => pickerSubject.value?.sessions ?? [])
@@ -418,7 +439,7 @@ async function loadSessions() {
     const res = await listRecruitmentSessions(identity.openid, identity.unionId)
     if (seq !== sessionLoadSeq)
       return
-    // code≠0（如 USER_RECRUITMENT_NOT_EXISTS）只隐藏卡片，不影响进度页其它内容
+    // code≠0（如 USER_RECRUITMENT_NOT_EXISTS）只隐藏预约入口，不影响进度页其它内容
     sessionData.value = res.code === 0 && Array.isArray(res.data?.subjects) ? res.data : null
   }
   catch (err) {
@@ -442,13 +463,9 @@ function confirmModal(title: string, content: string): Promise<boolean> {
   })
 }
 
-function canOpenSessionPicker(type: string) {
-  const subject = sessionSubjects.value.find(item => item.assessmentType === type)
-  return Boolean(subject && !subject.passed && !subject.myBooking && subject.sessions.length)
-}
-
 function openSessionPicker(type: string) {
-  if (sessionBusy.value || !canOpenSessionPicker(type))
+  const subject = sessionSubjectByType.value.get(type)
+  if (sessionBusy.value || !subject || subject.myBooking || !subject.sessions.length)
     return
   pickerType.value = type
   pickerVisible.value = true
@@ -605,6 +622,9 @@ watch(isDark, setPageBackgroundColor)
             <view class="section-title flex items-center text-sm font-bold" :class="textPrimaryClass">
               <i />与我相关的考核
             </view>
+            <view v-if="showSessionHint" class="mt-2 text-xs leading-relaxed" :class="textMutedClass">
+              每个科目只能预约一个场次；开始前 30 分钟内不可预约或取消。
+            </view>
             <view v-for="item in passedAssessment" :key="`${item.assessmentStage}-${item.assessmentType}`" class="assessment-row flex items-center justify-between border-b border-slate-100 py-3 last:border-0 dark:border-white/10">
               <view>
                 <view class="text-sm font-semibold" :class="textPrimaryClass">
@@ -618,75 +638,55 @@ watch(isDark, setPageBackgroundColor)
                 {{ scoreText(item) }}
               </view>
             </view>
-            <view v-for="item in availableAssessment" :key="`${item.stage}-${item.type}`" class="assessment-row flex items-center justify-between border-b border-slate-100 py-3 last:border-0 dark:border-white/10">
-              <view>
+            <view v-for="item in availableRows" :key="`${item.stage}-${item.type}`" class="assessment-row flex items-center justify-between border-b border-slate-100 py-3 last:border-0 dark:border-white/10">
+              <view class="min-w-0 flex-1 pr-3">
                 <view class="text-sm font-semibold" :class="textPrimaryClass">
                   {{ item.label }}
                 </view>
-                <view class="mt-1 text-xs" :class="textMutedClass">
+                <template v-if="item.subject && item.subject.myBooking">
+                  <view class="mt-1 text-xs" :class="textSecondaryClass">
+                    {{ formatSessionTime(item.subject.myBooking.startTime, item.subject.myBooking.endTime) }} · {{ item.subject.myBooking.location }}
+                  </view>
+                  <view v-if="!item.subject.myBooking.cancelable && item.subject.myBooking.uncancelableReason" class="mt-1 text-xs text-amber-600 dark:text-amber-300">
+                    {{ item.subject.myBooking.uncancelableReason }}
+                  </view>
+                </template>
+                <view v-else-if="item.subject && item.subject.sessions.length" class="mt-1 text-xs" :class="textMutedClass">
+                  尚未预约场次
+                </view>
+                <view v-else class="mt-1 text-xs" :class="textMutedClass">
                   {{ item.stage === 2 ? '已解锁对应方向' : '其他方向仍可继续参加' }}
                 </view>
               </view>
-              <view v-if="item.stage === 1 && canOpenSessionPicker(item.type)" class="rounded-full bg-blue-600 px-2.5 py-1 text-xs text-white" hover-class="opacity-80" @click="openSessionPicker(item.type)">
-                去预约
-              </view>
-              <view v-else class="rounded-full bg-blue-50 px-2.5 py-1 text-xs text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
-                {{ item.stage === 2 ? '可参加' : '可继续参加' }}
-              </view>
-            </view>
-          </view>
-
-          <view v-if="showSessionCard" class="progress-card mt-3 rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-800">
-            <view class="section-title flex items-center text-sm font-bold" :class="textPrimaryClass">
-              <i />流动考核场次预约
-            </view>
-            <view class="mt-2 text-xs leading-relaxed" :class="textMutedClass">
-              每个科目只能预约一个场次；开始前 2 小时内不可预约或取消。
-            </view>
-            <view v-for="subject in sessionSubjects" :key="subject.assessmentType" class="assessment-row flex items-center justify-between border-b border-slate-100 py-3 last:border-0 dark:border-white/10">
-              <view class="min-w-0 flex-1 pr-3">
-                <view class="text-sm font-semibold" :class="textPrimaryClass">
-                  {{ subjectName(subject) }} · 流动考核
-                </view>
-                <template v-if="subject.myBooking">
-                  <view class="mt-1 text-xs" :class="textSecondaryClass">
-                    {{ formatSessionTime(subject.myBooking.startTime, subject.myBooking.endTime) }} · {{ subject.myBooking.location }}
-                  </view>
-                  <view v-if="!subject.myBooking.cancelable && subject.myBooking.uncancelableReason" class="mt-1 text-xs text-amber-600 dark:text-amber-300">
-                    {{ subject.myBooking.uncancelableReason }}
-                  </view>
-                </template>
-                <view v-else-if="!subject.passed && subject.sessions.length" class="mt-1 text-xs" :class="textMutedClass">
-                  尚未预约场次
-                </view>
-              </view>
               <view class="shrink-0">
-                <view v-if="subject.passed" class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300">
-                  已通过
+                <template v-if="item.subject">
+                  <wd-button
+                    v-if="item.subject.myBooking"
+                    size="small"
+                    type="info"
+                    plain
+                    :disabled="!item.subject.myBooking.cancelable || (sessionBusy && cancelingType !== item.type)"
+                    :loading="cancelingType === item.type"
+                    @click="onCancelBooking(item.subject)"
+                  >
+                    取消预约
+                  </wd-button>
+                  <wd-button
+                    v-else-if="item.subject.sessions.length"
+                    size="small"
+                    type="primary"
+                    :disabled="sessionBusy"
+                    @click="openSessionPicker(item.type)"
+                  >
+                    选择场次
+                  </wd-button>
+                  <text v-else class="text-xs" :class="textMutedClass">
+                    暂无场次
+                  </text>
+                </template>
+                <view v-else class="rounded-full bg-blue-50 px-2.5 py-1 text-xs text-blue-600 dark:bg-blue-500/10 dark:text-blue-300">
+                  {{ item.stage === 2 ? '可参加' : '可继续参加' }}
                 </view>
-                <wd-button
-                  v-else-if="subject.myBooking"
-                  size="small"
-                  type="info"
-                  plain
-                  :disabled="!subject.myBooking.cancelable || (sessionBusy && cancelingType !== subject.assessmentType)"
-                  :loading="cancelingType === subject.assessmentType"
-                  @click="onCancelBooking(subject)"
-                >
-                  取消预约
-                </wd-button>
-                <wd-button
-                  v-else-if="subject.sessions.length"
-                  size="small"
-                  type="primary"
-                  :disabled="sessionBusy"
-                  @click="openSessionPicker(subject.assessmentType)"
-                >
-                  选择场次
-                </wd-button>
-                <text v-else class="text-xs" :class="textMutedClass">
-                  暂无场次
-                </text>
               </view>
             </view>
           </view>
@@ -741,7 +741,7 @@ watch(isDark, setPageBackgroundColor)
           选择{{ pickerSubject ? subjectName(pickerSubject) : '' }}场次
         </view>
         <view class="mt-1 text-xs leading-relaxed" :class="textMutedClass">
-          开始前 2 小时截止预约；已满或与你其他科目预约时间冲突的场次不可选。
+          开始前 30 分钟截止预约；已满或与你其他科目预约时间冲突的场次不可选。
         </view>
         <scroll-view scroll-y class="session-popup__list mt-3">
           <view

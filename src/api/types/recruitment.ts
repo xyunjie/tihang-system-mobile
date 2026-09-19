@@ -123,7 +123,7 @@ export interface UserRecruitmentProgressPreload {
 }
 
 /** 流动考核科目，对应后端 RecruitmentAssessmentType 枚举 */
-export type RecruitmentAssessmentType = 'ELECTRONIC' | 'STRUCTURE' | 'PROGRAM'
+export type RecruitmentAssessmentType = 'ELECTRONIC' | 'STRUCTURE' | 'PROGRAM' | 'OTHER'
 
 /** 后端 LocalDateTime 序列化值：默认毫秒时间戳，兼容字符串 */
 export type RecruitmentDateTime = number | string
