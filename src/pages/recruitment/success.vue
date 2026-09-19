@@ -408,20 +408,12 @@ function pad2(value: number) {
   return String(value).padStart(2, '0')
 }
 
-// 后端 LocalDateTime 默认是毫秒时间戳，parseDateTime 同时兼容字符串。输出 `M/D HH:mm–HH:mm`
-function formatSessionTime(start: RecruitmentDateTime, end: RecruitmentDateTime) {
-  const startDate = parseDateTime(start)
-  const endDate = parseDateTime(end)
-  if (!startDate)
+// 后端 LocalDateTime 默认是毫秒时间戳，parseDateTime 同时兼容字符串。输出 `M/D HH:mm`
+function formatSessionTime(examTime: RecruitmentDateTime) {
+  const date = parseDateTime(examTime)
+  if (!date)
     return '--'
-  const startDay = `${startDate.getMonth() + 1}/${startDate.getDate()}`
-  const startClock = `${pad2(startDate.getHours())}:${pad2(startDate.getMinutes())}`
-  if (!endDate)
-    return `${startDay} ${startClock}`
-  const endClock = `${pad2(endDate.getHours())}:${pad2(endDate.getMinutes())}`
-  if (startDate.toDateString() === endDate.toDateString())
-    return `${startDay} ${startClock}–${endClock}`
-  return `${startDay} ${startClock}–${endDate.getMonth() + 1}/${endDate.getDate()} ${endClock}`
+  return `${date.getMonth() + 1}/${date.getDate()} ${pad2(date.getHours())}:${pad2(date.getMinutes())}`
 }
 
 function sessionCountText(item: UserRecruitmentSessionItem) {
@@ -482,7 +474,7 @@ async function onPickSession(item: UserRecruitmentSessionItem) {
     return
   const confirmed = await confirmModal(
     '确认预约',
-    `${subjectName(subject)}流动考核：${formatSessionTime(item.startTime, item.endTime)}，${item.location}`,
+    `${subjectName(subject)}流动考核：${formatSessionTime(item.examTime)}，${item.location}`,
   )
   if (!confirmed)
     return
@@ -492,7 +484,7 @@ async function onPickSession(item: UserRecruitmentSessionItem) {
     const res = await bookRecruitmentSession({ openid: identity.openid, unionId: identity.unionId, sessionId: item.id })
     if (res.code !== 0) {
       uni.showToast({ title: res.msg || '预约失败，请稍后重试', icon: 'none' })
-      // 满员/时间冲突等说明本地列表已过期，顺手刷新
+      // 满员/已截止等说明本地列表已过期，顺手刷新
       await loadSessions()
       return
     }
@@ -516,7 +508,7 @@ async function onCancelBooking(subject: UserRecruitmentSessionSubjectGroup) {
     return
   const confirmed = await confirmModal(
     '取消预约',
-    `确定取消${subjectName(subject)}流动考核的预约吗？${formatSessionTime(booking.startTime, booking.endTime)}，${booking.location}`,
+    `确定取消${subjectName(subject)}流动考核的预约吗？${formatSessionTime(booking.examTime)}，${booking.location}`,
   )
   if (!confirmed)
     return
@@ -645,7 +637,7 @@ watch(isDark, setPageBackgroundColor)
                 </view>
                 <template v-if="item.subject && item.subject.myBooking">
                   <view class="mt-1 text-xs" :class="textSecondaryClass">
-                    {{ formatSessionTime(item.subject.myBooking.startTime, item.subject.myBooking.endTime) }} · {{ item.subject.myBooking.location }}
+                    {{ formatSessionTime(item.subject.myBooking.examTime) }} · {{ item.subject.myBooking.location }}
                   </view>
                   <view v-if="!item.subject.myBooking.cancelable && item.subject.myBooking.uncancelableReason" class="mt-1 text-xs text-amber-600 dark:text-amber-300">
                     {{ item.subject.myBooking.uncancelableReason }}
@@ -741,7 +733,7 @@ watch(isDark, setPageBackgroundColor)
           选择{{ pickerSubject ? subjectName(pickerSubject) : '' }}场次
         </view>
         <view class="mt-1 text-xs leading-relaxed" :class="textMutedClass">
-          开始前 30 分钟截止预约；已满或与你其他科目预约时间冲突的场次不可选。
+          开始前 30 分钟截止预约；已满的场次不可选。
         </view>
         <scroll-view scroll-y class="session-popup__list mt-3">
           <view
@@ -754,7 +746,7 @@ watch(isDark, setPageBackgroundColor)
           >
             <view class="flex items-center justify-between">
               <view class="text-sm font-semibold" :class="textPrimaryClass">
-                {{ formatSessionTime(item.startTime, item.endTime) }}
+                {{ formatSessionTime(item.examTime) }}
               </view>
               <view class="flex shrink-0 items-center text-xs" :class="item.full ? 'text-red-500 dark:text-red-400' : textMutedClass">
                 <wd-loading v-if="bookingSessionId === item.id" size="14px" color="#2563eb" />

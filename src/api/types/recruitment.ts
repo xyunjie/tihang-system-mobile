@@ -137,8 +137,8 @@ export type RecruitmentLongId = string | number
 /** 本人在某科目的当前预约摘要 */
 export interface UserRecruitmentSessionMyBooking {
   sessionId: RecruitmentLongId
-  startTime: RecruitmentDateTime
-  endTime: RecruitmentDateTime
+  /** 考核时间（单个时间点） */
+  examTime: RecruitmentDateTime
   location: string
   cancelable: boolean
   uncancelableReason: string | null
@@ -147,8 +147,8 @@ export interface UserRecruitmentSessionMyBooking {
 /** 学生端可见的场次公开字段 + 本人预约状态 */
 export interface UserRecruitmentSessionItem {
   id: RecruitmentLongId
-  startTime: RecruitmentDateTime
-  endTime: RecruitmentDateTime
+  /** 考核时间（单个时间点） */
+  examTime: RecruitmentDateTime
   location: string
   capacity: number
   bookedCount: number
