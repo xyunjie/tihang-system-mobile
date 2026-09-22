@@ -11,13 +11,14 @@
 
 <script setup lang="ts">
 import type { UserRecruitmentConfigRespVO, UserRecruitmentRespVO, UserRecruitmentSaveReqVO } from '@/api/types/recruitment'
+import type { SchoolDeptRespVO } from '@/api/types/school-dept'
 import { onLoad, onShow } from '@dcloudio/uni-app'
 import { computed, getCurrentInstance, ref, watch } from 'vue'
 import { useMessage } from 'wot-design-uni'
 import { getCityList, getProvinceList } from '@/api/area'
 import { getSocialAuthRedirect, getWxCode, getWxUserInfoApi } from '@/api/login'
 import { clearRecruitmentProgressPreload, createUserRecruitment, getRecruitmentProgress, getSubmitStatus, getUserRecruitmentConfig, setRecruitmentProgressPreload, updateUserRecruitment } from '@/api/recruitment'
-import { getClassList, getCollegeList, getMajorList } from '@/api/school-dept'
+import { getRecruitmentSchoolDeptList } from '@/api/school-dept'
 import { RecruitmentStatus } from '@/api/types/recruitment'
 import { uploadFile } from '@/api/user'
 import KspCropper from '@/components/ksp-cropper.vue'
@@ -64,8 +65,9 @@ const previousSubmitId = ref<number | null>(null)
 // 纳新配置
 const recruitmentConfig = ref<UserRecruitmentConfigRespVO | null>(null)
 
-// 表单数据
-const formData = ref<UserRecruitmentSaveReqVO>(
+// 表单数据：未选班级前 schoolDeptId 为空，提交时再组装成必填的请求
+type RecruitmentFormData = Omit<UserRecruitmentSaveReqVO, 'schoolDeptId'> & { schoolDeptId?: number }
+const formData = ref<RecruitmentFormData>(
   {
     name: '',
     studentId: '',
@@ -83,7 +85,7 @@ const formData = ref<UserRecruitmentSaveReqVO>(
     personalSkills: '',
     interestDirection: '',
     grade: 0,
-    schoolDeptId: 1,
+    schoolDeptId: undefined,
     settingId: 0,
     imageUrl: '',
     province: '',
@@ -298,7 +300,7 @@ const REQUIRED_FIELDS: RequiredFieldMeta[] = [
   { key: 'city', card: 'detail', isFilled: () => Boolean(formData.value.city) },
   { key: 'college', card: 'school', isFilled: () => Boolean(selectedCollegeId.value) },
   { key: 'major', card: 'school', isFilled: () => Boolean(selectedMajorId.value) },
-  { key: 'class', card: 'school', isFilled: () => Boolean(selectedClassId.value) },
+  { key: 'class', card: 'school', isFilled: isClassSelected },
   { key: 'userIntroduce', card: 'ability', isFilled: () => Boolean(formData.value.userIntroduce) },
   { key: 'joinReason', card: 'ability', isFilled: () => Boolean(formData.value.joinReason) },
   { key: 'personalSkills', card: 'ability', isFilled: () => Boolean(formData.value.personalSkills) },
@@ -463,18 +465,25 @@ async function loadCityData(provinceId: number) {
   }
 }
 
+// 纳新可选的学院、专业、班级（后端已剔除没有本届班级的专业及其空学院）
+const recruitmentDeptList = ref<SchoolDeptRespVO[]>([])
+
+function toDeptOptions(parentId: number) {
+  return recruitmentDeptList.value
+    .filter(dept => dept.parentId === parentId)
+    .map(dept => ({ label: dept.name, value: dept.id, id: dept.id }))
+}
+
 // 加载学院数据
 async function loadCollegeData() {
   try {
-    // 获取学院列表（parentId为0表示顶级学院）
-    const colleges = await getCollegeList()
-    console.log('colleges', colleges)
-    collegeOptions.value = colleges.map(college => ({
-      label: college.name,
-      value: college.id,
-      id: college.id,
-    }))
-    console.log('collegeOptions', collegeOptions.value)
+    const grade = recruitmentConfig.value?.grade
+    if (!grade) {
+      console.error('❌ 加载学院数据失败: 缺少年级信息')
+      return
+    }
+    recruitmentDeptList.value = await getRecruitmentSchoolDeptList(grade)
+    collegeOptions.value = toDeptOptions(0)
   }
   catch (error) {
     console.error('❌ 加载学院数据失败:', error)
@@ -483,43 +492,19 @@ async function loadCollegeData() {
 }
 
 // 加载专业数据
-async function loadMajorData(collegeId: number) {
-  try {
-    // 获取专业列表
-    const majors = await getMajorList(collegeId)
-    majorOptions.value = majors.map(major => ({
-      label: major.name,
-      value: major.id,
-      id: major.id,
-    }))
-  }
-  catch (error) {
-    console.error('❌ 加载专业数据失败:', error)
-    showToast('网络错误，请稍后重试')
-  }
+function loadMajorData(collegeId: number) {
+  majorOptions.value = toDeptOptions(collegeId)
 }
 
 // 加载班级数据
-async function loadClassData(majorId: number, grade?: number) {
-  try {
-    // 优先使用传入的 grade，否则使用配置中的 grade
-    const gradeValue = grade ?? recruitmentConfig.value?.grade
-    if (!gradeValue) {
-      console.error('❌ 加载班级数据失败: 缺少年级信息')
-      return
-    }
-    // 获取班级列表
-    const classes = await getClassList(majorId, String(gradeValue).slice(-2))
-    classOptions.value = classes.map(classItem => ({
-      label: classItem.name,
-      value: classItem.id,
-      id: classItem.id,
-    }))
-  }
-  catch (error) {
-    console.error('❌ 加载班级数据失败:', error)
-    showToast('网络错误，请稍后重试')
-  }
+function loadClassData(majorId: number) {
+  classOptions.value = toDeptOptions(majorId)
+}
+
+// 班级必须是当前专业下可选的班级，防止 picker 在空选项时写入 [] 之类的值绕过校验
+function isClassSelected() {
+  const deptId = formData.value.schoolDeptId
+  return Boolean(deptId) && classOptions.value.some(option => option.value === deptId)
 }
 
 async function loadNationData() {
@@ -926,18 +911,20 @@ async function fillFormData(data: UserRecruitmentRespVO) {
   }
 
   // 回填学院专业班级（按顺序加载）
-  if (data.collegeId) {
+  // 原班级若已不在本次开放范围内则不回显，让用户重新选择
+  formData.value.schoolDeptId = undefined
+  if (data.collegeId && collegeOptions.value.some(option => option.value === data.collegeId)) {
     // 1. 回显学院
     selectedCollegeId.value = data.collegeId
 
     // 2. 加载专业列表并回显专业
-    await loadMajorData(data.collegeId)
-    if (data.majorId) {
+    loadMajorData(data.collegeId)
+    if (data.majorId && majorOptions.value.some(option => option.value === data.majorId)) {
       selectedMajorId.value = data.majorId
 
       // 3. 加载班级列表并回显班级
-      await loadClassData(data.majorId, data.grade)
-      if (data.classId) {
+      loadClassData(data.majorId)
+      if (data.classId && classOptions.value.some(option => option.value === data.classId)) {
         selectedClassId.value = data.classId
         formData.value.schoolDeptId = data.classId
       }
@@ -1272,7 +1259,7 @@ function onCityChange(value: any) {
 }
 
 // 学院选择
-async function onCollegeChange(value: any) {
+function onCollegeChange(value: any) {
   console.log('学院选择', value)
   // 如果没有滑动选择，value.value 可能是 undefined，默认选择第一个选项
   const selectedValue = value.value ?? collegeOptions.value[0]?.value
@@ -1280,35 +1267,33 @@ async function onCollegeChange(value: any) {
     return
 
   const selectedOption = collegeOptions.value.find(option => option.value === selectedValue)
+  selectedCollegeId.value = selectedOption?.id
+  selectedMajorId.value = undefined
+  selectedClassId.value = undefined
+  formData.value.schoolDeptId = undefined
+  majorOptions.value = []
+  classOptions.value = []
   if (selectedOption) {
-    selectedCollegeId.value = selectedOption.id
-
-    selectedMajorId.value = undefined
-    selectedClassId.value = undefined
-    majorOptions.value = []
-    classOptions.value = []
-
     // 加载对应的专业数据
-    await loadMajorData(selectedOption.id)
+    loadMajorData(selectedOption.id)
   }
 }
 
 // 专业选择
-async function onMajorChange(value: any) {
+function onMajorChange(value: any) {
   // 如果没有滑动选择，value.value 可能是 undefined，默认选择第一个选项
   const selectedValue = value.value ?? majorOptions.value[0]?.value
   if (selectedValue === undefined)
     return
 
   const selectedOption = majorOptions.value.find(option => option.value === selectedValue)
+  selectedMajorId.value = selectedOption?.id
+  selectedClassId.value = undefined
+  formData.value.schoolDeptId = undefined
+  classOptions.value = []
   if (selectedOption) {
-    selectedMajorId.value = selectedOption.id
-
-    selectedClassId.value = undefined
-    classOptions.value = []
-
     // 加载对应的班级数据
-    await loadClassData(selectedOption.id)
+    loadClassData(selectedOption.id)
   }
 }
 
@@ -1319,11 +1304,10 @@ function onClassChange(value: any) {
   if (selectedValue === undefined)
     return
 
+  // v-model 已先把 picker 的值写进 selectedClassId，匹配不到选项时必须一起清空
   const selectedOption = classOptions.value.find(option => option.value === selectedValue)
-  if (selectedOption) {
-    formData.value.schoolDeptId = selectedOption.value
-    selectedClassId.value = selectedOption.id
-  }
+  selectedClassId.value = selectedOption?.id
+  formData.value.schoolDeptId = selectedOption?.value
 }
 
 // 选择证件照
@@ -1435,7 +1419,8 @@ async function onSubmit() {
       return
     }
 
-    if (!selectedClassId.value) {
+    const schoolDeptId = formData.value.schoolDeptId
+    if (!schoolDeptId || !isClassSelected()) {
       showToast('请选择班级')
       reportFieldError('class', '请选择班级', errorKeys)
       return
@@ -1458,8 +1443,9 @@ async function onSubmit() {
     }
 
     // 准备提交数据，包含 openid、unionId 和 socialType
-    const submitData = {
+    const submitData: UserRecruitmentSaveReqVO = {
       ...formData.value,
+      schoolDeptId,
       openid: formData.value.openid,
       unionId: formData.value.unionId,
       socialType: getSocialType(), // 34=微信小程序，31=微信H5（服务号）
@@ -1798,7 +1784,8 @@ async function onSubmit() {
                 <wd-picker
                   v-model="selectedCollegeId"
                   :columns="collegeOptions"
-                  placeholder="请选择学院"
+                  :placeholder="collegeOptions.length ? '请选择学院' : '本次纳新暂无开放的专业'"
+                  :disabled="!collegeOptions.length"
                   @open="onPickerPopupOpen"
                   @confirm="onPickerPopupClose(); onCollegeChange($event)"
                   @cancel="onPickerPopupClose"

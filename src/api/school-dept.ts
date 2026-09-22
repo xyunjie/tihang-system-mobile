@@ -44,6 +44,16 @@ export async function getClassList(majorId: number, name: string): Promise<Schoo
 }
 
 /**
+ * 获取纳新可选的学院、专业、班级（扁平列表，按 parentId 组织层级）
+ * 没有本届班级的专业视为本次纳新不开放，不会返回
+ * @param grade 纳新年级，如 2026
+ */
+export async function getRecruitmentSchoolDeptList(grade: number | string): Promise<SchoolDeptRespVO[]> {
+  const response = await http.get<SchoolDeptRespVO[]>('/admin-api/system/school-dept/recruitment-list', { grade })
+  return response.data || []
+}
+
+/**
  * 获取部门精简信息列表
  * 只包含被开启的部门，主要用于前端的下拉选项
  * @returns 部门精简信息列表
