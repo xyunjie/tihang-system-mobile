@@ -16,12 +16,11 @@
 <script setup lang="ts">
 import type { ILoginForm } from '@/api/types/login'
 import { computed, onMounted, reactive, ref } from 'vue'
-import { getSocialAuthRedirect } from '@/api/login'
 import ThemeCard from '@/components/ThemeCard.vue'
 import { useUserStore } from '@/store'
 import { useAppStore } from '@/store/app'
 import { currRoute } from '@/utils'
-import { getFeishuAuthLink } from '@/utils/feishu'
+import { buildFeishuAuthLink, getFeishuAuthLink } from '@/utils/feishu'
 import { getWeChatAuthLink } from '@/utils/wechat'
 
 const userStore = useUserStore()
@@ -374,14 +373,7 @@ async function handleFeishuLogin() {
   }
   feishuLoading.value = true
   try {
-    const redirectUri = `${location.origin}/pages/login/callback?type=40&redirect=${encodeURIComponent(redirectUrl.value || '/pages/index/index')}`
-    const res = await getSocialAuthRedirect({ type: 40, redirectUri })
-    if (res.code === 0 && res.data) {
-      window.location.href = res.data
-    }
-    else {
-      uni.showToast({ icon: 'none', title: res.msg || '获取飞书授权链接失败' })
-    }
+    window.location.href = await buildFeishuAuthLink(redirectUrl.value || '/pages/index/index')
   }
   catch (error: any) {
     uni.showToast({ icon: 'none', title: error?.message || '飞书登录失败' })

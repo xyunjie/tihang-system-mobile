@@ -14,6 +14,7 @@
 <script setup lang="ts">
 import { useUserStore } from '@/store'
 import { currRoute } from '@/utils'
+import { popFeishuLoginContext } from '@/utils/feishu'
 
 const userStore = useUserStore()
 const firstPasswordRoute = '/pages/login/first-password'
@@ -65,9 +66,11 @@ onLoad(async (options) => {
   // 仅支持 history 模式，直接从 query 中取值
   const code = query?.code as string
   const state = query?.state as string
-  const typeParam = Number(query?.type)
+  // 飞书的 redirect_uri 不带 query，type、redirect 从发起授权时暂存的上下文读取；微信仍走 query
+  const feishuContext = popFeishuLoginContext()
+  const typeParam = Number(query?.type ?? feishuContext?.type)
   const type = Number.isFinite(typeParam) ? typeParam : 31 // 默认微信H5
-  const redirect = query?.redirect as string | undefined
+  const redirect = (query?.redirect ?? feishuContext?.redirect) as string | undefined
 
   if (!code) {
     uni.showToast({ icon: 'none', title: '缺少授权 code，请重试' })
